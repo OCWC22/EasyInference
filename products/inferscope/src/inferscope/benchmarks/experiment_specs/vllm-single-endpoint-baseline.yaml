@@ -1,0 +1,21 @@
+version: "1"
+name: vllm-single-endpoint-baseline
+description: Baseline colocated vLLM deployment with one request and metrics endpoint.
+engine: vllm
+workload: coding-long-context
+topology:
+  mode: single_endpoint
+  session_routing: sticky
+  session_header_name: X-Session-ID
+  request_target_name: primary
+cache:
+  strategy: prefix_only
+  tiers: [gpu_hbm]
+  session_affinity: true
+  prefix_cache_expected: true
+metrics_targets:
+  - name: primary
+    role: primary
+    endpoint_source: metrics_endpoint
+    expected_engine: vllm
+tags: [vllm, baseline, single-endpoint]

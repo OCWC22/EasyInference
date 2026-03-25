@@ -1,0 +1,31 @@
+version: "1"
+name: coding-long-context
+description: Cursor-style multi-turn coding workload with repeated repo context.
+workload_class: coding
+model: Qwen3.5-32B
+concurrency: 2
+stream: true
+tags:
+  - coding
+  - long-context
+requests:
+  - name: repo-review-seed
+    session_id: coding-session-1
+    max_tokens: 256
+    messages:
+      - role: system
+        content: You are a coding agent. Prefer precise diffs and short rationale.
+      - role: user
+        content: |
+          Review a Python service with telemetry, CLI, and benchmark modules.
+          Identify the most likely bottleneck in a long-context code review flow.
+  - name: follow-up-fix-plan
+    session_id: coding-session-1
+    max_tokens: 384
+    messages:
+      - role: system
+        content: You are a coding agent. Prefer precise diffs and short rationale.
+      - role: user
+        content: |
+          Given the same repository context, propose a minimal patch plan to reduce
+          TTFT and preserve prefix cache reuse across tool calls.

@@ -1,0 +1,27 @@
+version: "1"
+name: disagg-long-prompt
+description: Massive prompt workload designed to test KV cache transfer latency in disaggregated prefill setups.
+workload_class: coding
+model: Qwen3.5-32B
+concurrency: 1
+stream: true
+tags:
+  - disaggregated
+  - ttft
+  - long-context
+requests:
+  - name: full-repo-review
+    session_id: disagg-session
+    max_tokens: 256
+    messages:
+      - role: system
+        content: |
+          You are a security auditor. Analyze the following exhaustive repository dump.
+          <repo_dump>
+          Imagine this block contains 64,000 tokens of Python, Rust, and YAML source code.
+          For the purpose of benchmarking, the proxy will load the real multi-megabyte payload.
+          </repo_dump>
+      - role: user
+        content: |
+          Provide a bulleted list of the top 3 critical security vulnerabilities across the codebase.
+          Do not explain how to fix them, just list them.

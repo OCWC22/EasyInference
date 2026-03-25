@@ -1,0 +1,51 @@
+version: "1"
+name: tool-agent
+description: Multi-turn tool-calling agent workload with repeated tool schema.
+workload_class: tool_agent
+model: DeepSeek-R1
+concurrency: 2
+stream: true
+tags:
+  - agent
+  - tools
+requests:
+  - name: planner-turn
+    session_id: agent-session-1
+    max_tokens: 180
+    messages:
+      - role: system
+        content: You are an agent planner. Call tools when required and keep reasoning concise.
+      - role: user
+        content: Plan a repo migration, then ask for the next tool call you need.
+    tools:
+      - type: function
+        function:
+          name: search_repo
+          description: Search the repository for matching code patterns.
+          parameters:
+            type: object
+            properties:
+              pattern:
+                type: string
+            required:
+              - pattern
+  - name: executor-turn
+    session_id: agent-session-1
+    max_tokens: 220
+    messages:
+      - role: system
+        content: You are an agent planner. Call tools when required and keep reasoning concise.
+      - role: user
+        content: The tool found five matching files. Decide the next patch step.
+    tools:
+      - type: function
+        function:
+          name: apply_patch
+          description: Apply a patch to the repository.
+          parameters:
+            type: object
+            properties:
+              patch:
+                type: string
+            required:
+              - patch
