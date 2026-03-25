@@ -1,21 +1,11 @@
-"""InferScope MCP server — the main entry point for MCP-compatible agents.
-
-Supports stdio transport (Claude Code, Codex, Cursor) and
-Streamable HTTP (production / remote agents).
-"""
+"""InferScope MCP server — the main entry point for MCP-compatible agents."""
 
 from __future__ import annotations
 
 from fastmcp import FastMCP
 
-from inferscope.endpoint_auth import resolve_auth_payload
 from inferscope.server_benchmarks import register_benchmark_tools
-from inferscope.tools.audit import audit_deployment
-from inferscope.tools.diagnose import (
-    check_deployment,
-    check_memory_pressure,
-    get_cache_effectiveness,
-)
+from inferscope.server_profiling import register_profiling_tools
 from inferscope.tools.hardware_intel import compare_gpus, get_gpu_specs
 from inferscope.tools.kv_cache import (
     calculate_kv_budget,
@@ -23,7 +13,6 @@ from inferscope.tools.kv_cache import (
     recommend_disaggregation,
     recommend_kv_strategy,
 )
-from inferscope.tools.live_tuner import auto_tune_deployment
 from inferscope.tools.model_intel import (
     estimate_capacity,
     get_model_profile,
@@ -55,13 +44,21 @@ mcp = FastMCP(
     - get_gpu_specs / compare_gpus: ISA-level GPU hardware reference
     - get_model_profile: Model architecture, memory requirements, serving commands
 
+    Runtime profiling capabilities:
+    - tool_profile_runtime: unified Prometheus-based runtime profile for a live endpoint
+    - tool_audit_deployment / tool_check_deployment / tool_check_memory_pressure / tool_get_cache_effectiveness
+    - tool_auto_tune_deployment: preview scheduling and cache adjustments from live findings
+
     Evaluation subsystem capabilities:
     - packaged workload and experiment catalogs
     - benchmark plan resolution and OpenAI-compatible replay
     - artifact comparison and benchmark stack planning/materialization
 
-    Profiling is currently exposed as an advisory seam (nsys / rocprofv3 intent).
-    Direct kernel execution remains future work.
+    On NVIDIA, InferScope currently auto-selects vLLM or SGLang for supported deployments.
+    TRT-LLM and Dynamo are exposed as preview planning targets and are not auto-promoted.
+
+    Runtime profiling is first-class today through Prometheus scraping and normalized metrics.
+    Direct trace and kernel execution remain future work behind the profiling boundary.
     """,
 )
 
@@ -71,23 +68,13 @@ mcp = FastMCP(
 
 @mcp.tool()
 async def tool_get_gpu_specs(gpu: str) -> dict:
-    """Return complete ISA-level specs for a GPU.
-
-    Includes tensor core instructions, memory hierarchy, cache sizes,
-    FP8/FP4 support, interconnect bandwidth, and inference-specific notes.
-
-    Examples: h100, a100, b200, mi300x, mi355x, a10g
-    """
+    """Return complete ISA-level specs for a GPU."""
     return get_gpu_specs(gpu)
 
 
 @mcp.tool()
 async def tool_compare_gpus(gpu_a: str, gpu_b: str, workload: str = "inference") -> dict:
-    """Side-by-side GPU comparison with inference-relevant metrics.
-
-    Includes roofline analysis and cost-performance ratio.
-    Examples: compare_gpus("h100", "mi355x") or compare_gpus("a100", "h200")
-    """
+    """Side-by-side GPU comparison with inference-relevant metrics."""
     return compare_gpus(gpu_a, gpu_b, workload)
 
 
@@ -96,13 +83,7 @@ async def tool_compare_gpus(gpu_a: str, gpu_b: str, workload: str = "inference")
 
 @mcp.tool()
 async def tool_get_model_profile(model: str) -> dict:
-    """Return complete serving profile for a model.
-
-    Architecture (dense/MoE/MLA), memory requirements, recommended GPUs,
-    exact vLLM/SGLang/ATOM commands, known issues, and optimization tips.
-
-    Examples: DeepSeek-R1, Qwen3.5-72B, Kimi-K2.5, Mixtral-8x7B, Llama-3-70B
-    """
+    """Return complete serving profile for a model."""
     return get_model_profile(model)
 
 
@@ -114,11 +95,7 @@ async def tool_validate_serving_config(
     quantization: str = "auto",
     engine: str = "vllm",
 ) -> dict:
-    """Pre-flight check: does this serving config work?
-
-    Checks TP divisibility, memory fit, format compatibility, known bugs.
-    Run this BEFORE deploying to catch misconfigurations early.
-    """
+    """Pre-flight check: does this serving config work?"""
     return validate_serving_config(model, gpu, tp, quantization, engine)
 
 
@@ -130,10 +107,7 @@ async def tool_estimate_capacity(
     quantization: str = "auto",
     max_context: int = 0,
 ) -> dict:
-    """Calculate max concurrent users, max context length, and KV cache budget.
-
-    Uses exact per-layer KV cache formulas from model profile.
-    """
+    """Calculate max concurrent users, max context length, and KV cache budget."""
     return estimate_capacity(model, gpu, num_gpus, quantization, max_context)
 
 
@@ -224,101 +198,9 @@ async def tool_compare_quantization(model: str, gpu: str) -> dict:
     return compare_quantization(model, gpu)
 
 
-# === GROUP 5: LIVE DIAGNOSTICS ===
+# === GROUP 5: RUNTIME PROFILING ===
 
-
-@mcp.tool()
-async def tool_audit_deployment(
-    endpoint: str,
-    gpu_arch: str = "",
-    model_name: str = "",
-    model_type: str = "",
-    attention_type: str = "",
-    experts_total: int = 0,
-    tp: int = 1,
-    quantization: str = "",
-    kv_cache_dtype: str = "",
-    provider: str = "",
-    metrics_auth: dict | None = None,
-) -> dict:
-    """Run all audit checks against a live vLLM/SGLang/ATOM endpoint."""
-    return await audit_deployment(
-        endpoint,
-        gpu_arch=gpu_arch,
-        model_name=model_name,
-        model_type=model_type,
-        attention_type=attention_type,
-        experts_total=experts_total,
-        tp=tp,
-        quantization=quantization,
-        kv_cache_dtype=kv_cache_dtype,
-        allow_private=False,
-        metrics_auth=resolve_auth_payload(metrics_auth, provider=provider),
-    )
-
-
-@mcp.tool()
-async def tool_check_deployment(
-    endpoint: str,
-    provider: str = "",
-    metrics_auth: dict | None = None,
-) -> dict:
-    """Scrape a live endpoint and return a health snapshot."""
-    return await check_deployment(
-        endpoint,
-        allow_private=False,
-        metrics_auth=resolve_auth_payload(metrics_auth, provider=provider),
-    )
-
-
-@mcp.tool()
-async def tool_check_memory_pressure(
-    endpoint: str,
-    provider: str = "",
-    metrics_auth: dict | None = None,
-) -> dict:
-    """Analyze KV cache utilization and preemption rates from live metrics."""
-    return await check_memory_pressure(
-        endpoint,
-        allow_private=False,
-        metrics_auth=resolve_auth_payload(metrics_auth, provider=provider),
-    )
-
-
-@mcp.tool()
-async def tool_get_cache_effectiveness(
-    endpoint: str,
-    provider: str = "",
-    metrics_auth: dict | None = None,
-) -> dict:
-    """Measure prefix cache hit rate and cache-aware routing effectiveness."""
-    return await get_cache_effectiveness(
-        endpoint,
-        allow_private=False,
-        metrics_auth=resolve_auth_payload(metrics_auth, provider=provider),
-    )
-
-
-@mcp.tool()
-async def tool_auto_tune_deployment(
-    endpoint: str,
-    current_engine: str = "",
-    current_workload: str = "",
-    current_scheduler: dict | None = None,
-    current_cache: dict | None = None,
-    provider: str = "",
-    metrics_auth: dict | None = None,
-) -> dict:
-    """Analyze a live endpoint and recommend config adjustments."""
-    return await auto_tune_deployment(
-        endpoint,
-        current_engine=current_engine,
-        current_workload=current_workload,
-        current_scheduler=current_scheduler,
-        current_cache=current_cache,
-        allow_private=False,
-        metrics_auth=resolve_auth_payload(metrics_auth, provider=provider),
-    )
+register_profiling_tools(mcp)
 
 
 # === GROUP 6: EVALUATION SUBSYSTEM ===

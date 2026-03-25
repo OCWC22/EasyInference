@@ -11,7 +11,19 @@ EasyInference is designed to be **complementary** to [InferenceX](https://infere
 
 - **InferenceX** is the external, continuously updated, vendor-neutral public reference for cross-hardware and cross-framework inference performance.
 - **ISB-1** is the reproducible benchmark standard for local validation, methodology, publication, and scenario-specific workloads.
-- **InferScope** is the operator surface that exposes recommendation, diagnostics, and benchmark tooling through a CLI and MCP.
+- **InferScope** is the operator surface that exposes recommendation, diagnostics, profiling, and benchmark tooling through a CLI and MCP.
+
+As of **March 25, 2026**, the InferScope NVIDIA recommendation path is explicitly hardened around the same hardware families InferenceX publicly tracks today: **H100, H200, B200, GB200, and GB300**. EasyInference does not try to replace that public leaderboard; it tries to make those platform choices actionable for operators.
+
+The extension path is explicit:
+
+- InferenceX covers the public cross-vendor frontier
+- EasyInference extends that with operator-facing scenarios such as:
+  - long-context coding
+  - tool-agent / MCP workloads
+  - realistic KV-cache overflow and cold-session reuse
+  - LMCache / disaggregated-prefill studies
+  - Grace-coherent overflow modeling for GH200 / GB200 / GB300 systems
 
 This repo also absorbs workload ideas from the local `inferscope-bench/` donor harness — especially **MCP/tool-call** and **long-context coding** patterns — without turning that subtree into a third public product.
 
@@ -52,7 +64,7 @@ Start here:
 ### InferScope
 
 Use `products/inferscope/` if you need to:
-- recommend serving configs for vLLM, SGLang, TRT-LLM, Dynamo, or ATOM
+- recommend serving configs for vLLM, SGLang, or ATOM, with preview planning for TRT-LLM and Dynamo
 - expose optimization and diagnostics through MCP
 - replay packaged benchmark workloads against a real endpoint
 - procedurally expand **tool-agent** and **coding-long-context** workloads from the benchmark bridge

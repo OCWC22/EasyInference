@@ -15,7 +15,7 @@ MetricTargetRole = Literal["primary", "router", "prefill", "decode", "cache", "o
 TopologyMode = Literal["single_endpoint", "prefill_decode_split", "router_prefill_decode"]
 SessionRoutingMode = Literal["unknown", "none", "sticky", "hash"]
 CacheStrategy = Literal["unknown", "none", "prefix_only", "lmcache", "hicache", "offloading_connector"]
-CacheTier = Literal["gpu_hbm", "cpu_dram", "local_ssd", "remote_cache"]
+CacheTier = Literal["gpu_hbm", "grace_coherent", "cpu_dram", "local_ssd", "remote_cache"]
 
 
 class MetricCaptureTargetSpec(BaseModel):

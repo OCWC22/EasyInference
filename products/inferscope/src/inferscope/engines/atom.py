@@ -11,6 +11,7 @@ from typing import Any
 
 import httpx
 
+from inferscope.endpoint_auth import EndpointAuthConfig, build_auth_headers
 from inferscope.engines.base import (
     ConfigCompiler,
     DeploymentInventory,
@@ -162,11 +163,17 @@ class ATOMAdapter(EngineAdapter):
             pass
         return metrics
 
-    async def get_config(self, endpoint: str) -> dict[str, Any]:
+    async def get_config(
+        self,
+        endpoint: str,
+        *,
+        allow_private: bool = True,
+        auth: EndpointAuthConfig | None = None,
+    ) -> dict[str, Any]:
         try:
-            url = self._validate_endpoint(endpoint)
+            url = self._validate_endpoint(endpoint, allow_private=allow_private)
             async with httpx.AsyncClient(timeout=10.0) as client:
-                resp = await client.get(f"{url}/v1/models")
+                resp = await client.get(f"{url}/v1/models", headers=build_auth_headers(auth))
                 return resp.json()
         except Exception:  # noqa: S110
             return {}

@@ -167,6 +167,22 @@ def resolve_metrics_url(endpoint: str, metrics_path: str = "/metrics") -> str:
     return urlunsplit((parsed.scheme, parsed.netloc, resolved_path, parsed.query, parsed.fragment)).rstrip("/")
 
 
+def resolve_api_base_url(endpoint: str, metrics_path: str = "/metrics") -> str:
+    """Resolve a base API URL from either a base URL or a full metrics URL."""
+    if not metrics_path.startswith("/"):
+        raise ValueError("metrics_path must start with '/'")
+
+    parsed = urlsplit(endpoint)
+    existing_path = parsed.path or ""
+    metrics_suffix = metrics_path.rstrip("/")
+    if existing_path.rstrip("/").endswith(metrics_suffix):
+        base_path = existing_path[: -len(metrics_suffix)]
+        base_path = base_path.rstrip("/") or "/"
+        return urlunsplit((parsed.scheme, parsed.netloc, base_path, "", "")).rstrip("/")
+
+    return urlunsplit((parsed.scheme, parsed.netloc, existing_path or "/", "", "")).rstrip("/")
+
+
 async def scrape_metrics(
     endpoint: str,
     allow_private: bool = True,

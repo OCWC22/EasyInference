@@ -4,8 +4,9 @@ from __future__ import annotations
 
 from inferscope.hardware.gpu_profiles import get_gpu_profile, list_gpus
 from inferscope.models.registry import get_model_variant, list_models
+from inferscope.optimization.platform_policy import EngineSupportTier, resolve_engine_support
 from inferscope.optimization.recommender import recommend
-from inferscope.optimization.serving_profile import WorkloadMode
+from inferscope.optimization.serving_profile import EngineType, WorkloadMode
 from inferscope.security import InputValidationError, validate_gpu_name, validate_model_name, validate_positive_int
 
 
@@ -53,7 +54,7 @@ def recommend_config(
         wm = WorkloadMode(workload)
     except ValueError:
         return {
-            "error": f"Unknown workload: '{workload}'. Use: coding, chat, agent",
+            "error": f"Unknown workload: '{workload}'. Use: coding, chat, agent, long_context_rag",
             "confidence": 0.0,
         }
 
@@ -83,6 +84,7 @@ def recommend_config(
             f"TP={profile.topology.tp} DP={profile.topology.dp} EP={profile.topology.ep} | "
             f"Precision: {profile.precision.weights} | "
             f"Workload: {workload} | "
+            f"Support: {engine_config.support_tier} | "
             f"{'✅ fits' if mem_plan.fits else '❌ does not fit'}"
         ),
         "launch_command": engine_config.command,
@@ -113,87 +115,57 @@ def recommend_engine(
         return {"error": f"Unknown workload: '{workload}'", "confidence": 0.0}
 
     # Generate recommendations for all viable engines
-    # Use (rank, order) tuple to break ties deterministically
+    _, selected_engine_config, _ = recommend(
+        model=variant,
+        gpu=gpu_profile,
+        num_gpus=num_gpus,
+        workload=wm,
+        engine="auto",
+    )
+    selected_engine = selected_engine_config.engine
+    tier_priority = {
+        EngineSupportTier.RECOMMENDED: 1,
+        EngineSupportTier.SUPPORTED: 2,
+        EngineSupportTier.PREVIEW: 3,
+    }
     rankings = []
-    is_amd = gpu_profile.vendor == "amd"
-    is_mla_moe = variant.attention_type == "MLA" or (variant.model_type == "moe" and variant.experts_total > 64)
+    is_multi_node = multi_node or num_gpus > 1
+    for candidate in EngineType:
+        support = resolve_engine_support(candidate, gpu_profile, multi_node=is_multi_node)
+        if support.tier == EngineSupportTier.UNSUPPORTED:
+            continue
 
-    if is_amd:
-        if is_mla_moe:
-            rankings.append(
-                {
-                    "engine": "atom",
-                    "rank": 1,
-                    "rationale": (
-                        "ATOM is purpose-built for MLA+MoE on AMD — "
-                        "uses AITER kernels with up to 17x MLA decode speedup"
-                    ),
-                    "best_for": "Maximum performance for DeepSeek/Kimi on MI300X/MI355X",
-                }
-            )
-            rankings.append(
-                {
-                    "engine": "vllm (--model-impl atom)",
-                    "rank": 2,
-                    "rationale": "vLLM serving stack with ATOM model execution — best of both ecosystems",
-                    "best_for": "Mixed NVIDIA+AMD fleets, need vLLM ecosystem features",
-                }
-            )
-        rankings.append(
-            {
-                "engine": "vllm",
-                "rank": 2 if not is_mla_moe else 3,
-                "rationale": "vLLM with AITER env vars — broadest model compatibility on AMD",
-                "best_for": "General AMD inference, models not yet supported by ATOM",
-            }
-        )
-        rankings.append(
-            {
-                "engine": "sglang",
-                "rank": 3 if not is_mla_moe else 4,
-                "rationale": "SGLang RadixAttention for high prefix reuse",
-                "best_for": "Coding workloads with heavy prefix caching on AMD",
-            }
-        )
-    else:
-        # NVIDIA
-        if wm in (WorkloadMode.CODING, WorkloadMode.AGENT):
-            rankings.append(
-                {
-                    "engine": "sglang",
-                    "rank": 1,
-                    "rationale": "RadixAttention provides 85-95% cache hit rates for coding/agent workloads",
-                    "best_for": "Coding copilots, multi-turn agents with high prefix reuse",
-                }
-            )
-        rankings.append(
-            {
-                "engine": "vllm",
-                "rank": 1 if wm == WorkloadMode.CHAT else 2,
-                "rationale": "Broadest model compatibility, V1 engine with zero-overhead prefix caching",
-                "best_for": "General-purpose serving, broadest model support",
-            }
-        )
-        if multi_node and is_mla_moe:
-            rankings.append(
-                {
-                    "engine": "dynamo",
-                    "rank": 0,  # Rank 0 = highest priority for multi-node MoE
-                    "rationale": "KV-aware routing + NIXL transfers for distributed MoE inference",
-                    "best_for": "Multi-node MoE with disaggregated serving",
-                }
-            )
-        if gpu_profile.architecture == "Blackwell":
-            rankings.append(
-                {
-                    "engine": "trtllm",
-                    "rank": 2,
-                    "rationale": "Native NVFP4 + Helix parallelism for maximum Blackwell throughput",
-                    "best_for": "Maximum single-engine throughput on Blackwell",
-                }
-            )
+        rank = tier_priority[support.tier] * 10
+        best_for = "General inference planning"
+        rationale = support.reason
 
-    # Sort by rank
+        if candidate.value == selected_engine:
+            rank = 0
+            rationale = f"Matches InferScope's full DAG recommendation. {support.reason}"
+        elif candidate == EngineType.SGLANG and wm in (WorkloadMode.CODING, WorkloadMode.AGENT):
+            rank -= 3
+            best_for = "Coding copilots, multi-turn agents, and prefix-heavy workloads"
+            rationale = f"Prefix-heavy workload bias. {support.reason}"
+        elif candidate == EngineType.VLLM:
+            best_for = "Broad compatibility and first-class InferScope support"
+        elif candidate == EngineType.TRTLLM:
+            best_for = "Manual Blackwell throughput experiments after explicit validation"
+        elif candidate == EngineType.DYNAMO:
+            best_for = "Multi-node or disaggregated planning experiments"
+        elif candidate == EngineType.ATOM:
+            best_for = "AMD MLA/MoE deployments"
+
+        rankings.append(
+            {
+                "engine": candidate.value,
+                "rank": rank,
+                "rationale": rationale,
+                "best_for": best_for,
+                "support_tier": support.tier.value,
+                "support_reason": support.reason,
+            }
+        )
+
     rankings.sort(key=lambda x: x["rank"])
 
     return {
@@ -201,6 +173,7 @@ def recommend_engine(
         "model": variant.name,
         "gpu": gpu_profile.name,
         "workload": workload,
+        "selected_engine": selected_engine,
         "summary": f"Top pick: {rankings[0]['engine']} — {rankings[0]['rationale']}",
         "confidence": 0.85,
         "evidence": "engine_selection_rules",

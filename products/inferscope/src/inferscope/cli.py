@@ -2,6 +2,7 @@
 
 Usage:
     inferscope profile DeepSeek-R1
+    inferscope profile-runtime http://localhost:8000
     inferscope validate DeepSeek-R1 h100 --tp 8
     inferscope recommend DeepSeek-R1 mi355x --num-gpus 8 --workload coding
     inferscope gpu h100
@@ -13,7 +14,6 @@ Usage:
 from __future__ import annotations
 
 import json
-from typing import Annotated
 
 import typer
 from rich.console import Console
@@ -21,6 +21,7 @@ from rich.panel import Panel
 from rich.syntax import Syntax
 
 from inferscope.cli_benchmarks import register_benchmark_commands
+from inferscope.cli_profiling import register_profiling_commands
 from inferscope.endpoint_auth import parse_header_values, resolve_auth_config
 from inferscope.tools.hardware_intel import compare_gpus, get_gpu_specs
 from inferscope.tools.kv_cache import (
@@ -112,7 +113,7 @@ def validate(
 def recommend_cmd(
     model: str = typer.Argument(help="Model name"),
     gpu: str = typer.Argument(help="GPU type"),
-    workload: str = typer.Option("chat", help="Workload: coding, chat, agent"),
+    workload: str = typer.Option("chat", help="Workload: coding, chat, agent, long_context_rag"),
     num_gpus: int = typer.Option(1, help="Number of GPUs"),
     engine: str = typer.Option("auto", help="Engine (auto, vllm, sglang, atom, trtllm, dynamo)"),
 ):
@@ -150,7 +151,7 @@ def capacity(
 def engine_cmd(
     model: str = typer.Argument(help="Model name"),
     gpu: str = typer.Argument(help="GPU type"),
-    workload: str = typer.Option("chat", help="Workload type"),
+    workload: str = typer.Option("chat", help="Workload type (coding, chat, agent, long_context_rag)"),
     num_gpus: int = typer.Option(1, help="Number of GPUs"),
     multi_node: bool = typer.Option(False, help="Multi-node deployment"),
 ):
@@ -183,7 +184,7 @@ def kv_budget(
 def kv_strategy(
     model: str = typer.Argument(help="Model name"),
     gpu: str = typer.Argument(help="GPU type"),
-    workload: str = typer.Option("chat", help="Workload type"),
+    workload: str = typer.Option("chat", help="Workload type (coding, chat, agent, long_context_rag)"),
     max_context: int = typer.Option(32768, help="Max context length"),
     concurrent_sessions: int = typer.Option(100, help="Concurrent sessions"),
 ):
@@ -213,149 +214,7 @@ def quantization_cmd(
     _print_result(compare_quantization(model, gpu))
 
 
-@app.command(name="audit")
-def audit_cmd(
-    endpoint: str = typer.Argument(help="Inference endpoint URL (e.g., http://localhost:8000)"),
-    gpu_arch: str = typer.Option("", help="GPU arch (sm_90a, gfx950, etc.) for richer checks"),
-    model_name: str = typer.Option("", help="Model name for context"),
-    model_type: str = typer.Option("", help="Model type: dense or moe"),
-    attention_type: str = typer.Option("", help="Attention: GQA, MLA, MHA"),
-    tp: int = typer.Option(1, help="Tensor parallelism degree"),
-    quantization: str = typer.Option("", help="Current quantization (fp8, bf16, etc.)"),
-    kv_cache_dtype: str = typer.Option("", help="KV cache dtype (fp8_e4m3, auto)"),
-    provider: str = typer.Option("", help="Managed provider preset (fireworks, baseten, huggingface)"),
-    metrics_api_key: str = typer.Option("", help="API key for scraping authenticated metrics endpoints"),
-    metrics_auth_scheme: str = typer.Option("", help="Metrics auth scheme: bearer, api-key, x-api-key, raw"),
-    metrics_auth_header_name: str = typer.Option("", help="Override metrics auth header name"),
-    metrics_header: Annotated[
-        list[str] | None,
-        typer.Option(help="Additional metrics headers as Header=Value. Repeat for multiple headers."),
-    ] = None,
-):
-    """Run all audit checks against a live endpoint. The flagship command."""
-    import asyncio
-
-    from inferscope.tools.audit import audit_deployment
-
-    result = asyncio.run(
-        audit_deployment(
-            endpoint,
-            gpu_arch=gpu_arch,
-            model_name=model_name,
-            model_type=model_type,
-            attention_type=attention_type,
-            tp=tp,
-            quantization=quantization,
-            kv_cache_dtype=kv_cache_dtype,
-            allow_private=True,
-            metrics_auth=_resolve_metrics_auth(
-                provider=provider,
-                metrics_api_key=metrics_api_key,
-                metrics_auth_scheme=metrics_auth_scheme,
-                metrics_auth_header_name=metrics_auth_header_name,
-                metrics_header=metrics_header,
-            ),
-        )
-    )
-    _print_result(result)
-
-
-@app.command(name="check")
-def check_cmd(
-    endpoint: str = typer.Argument(help="Inference endpoint URL (e.g., http://localhost:8000)"),
-    provider: str = typer.Option("", help="Managed provider preset (fireworks, baseten, huggingface)"),
-    metrics_api_key: str = typer.Option("", help="API key for scraping authenticated metrics endpoints"),
-    metrics_auth_scheme: str = typer.Option("", help="Metrics auth scheme: bearer, api-key, x-api-key, raw"),
-    metrics_auth_header_name: str = typer.Option("", help="Override metrics auth header name"),
-    metrics_header: Annotated[
-        list[str] | None,
-        typer.Option(help="Additional metrics headers as Header=Value. Repeat for multiple headers."),
-    ] = None,
-):
-    """Scrape a live endpoint and show health snapshot."""
-    import asyncio
-
-    from inferscope.tools.diagnose import check_deployment
-
-    result = asyncio.run(
-        check_deployment(
-            endpoint,
-            metrics_auth=_resolve_metrics_auth(
-                provider=provider,
-                metrics_api_key=metrics_api_key,
-                metrics_auth_scheme=metrics_auth_scheme,
-                metrics_auth_header_name=metrics_auth_header_name,
-                metrics_header=metrics_header,
-            ),
-        )
-    )
-    _print_result(result)
-
-
-@app.command(name="memory")
-def memory_cmd(
-    endpoint: str = typer.Argument(help="Inference endpoint URL"),
-    provider: str = typer.Option("", help="Managed provider preset (fireworks, baseten, huggingface)"),
-    metrics_api_key: str = typer.Option("", help="API key for scraping authenticated metrics endpoints"),
-    metrics_auth_scheme: str = typer.Option("", help="Metrics auth scheme: bearer, api-key, x-api-key, raw"),
-    metrics_auth_header_name: str = typer.Option("", help="Override metrics auth header name"),
-    metrics_header: Annotated[
-        list[str] | None,
-        typer.Option(help="Additional metrics headers as Header=Value. Repeat for multiple headers."),
-    ] = None,
-):
-    """Check KV cache memory pressure on a live endpoint."""
-    import asyncio
-
-    from inferscope.tools.diagnose import check_memory_pressure
-
-    result = asyncio.run(
-        check_memory_pressure(
-            endpoint,
-            metrics_auth=_resolve_metrics_auth(
-                provider=provider,
-                metrics_api_key=metrics_api_key,
-                metrics_auth_scheme=metrics_auth_scheme,
-                metrics_auth_header_name=metrics_auth_header_name,
-                metrics_header=metrics_header,
-            ),
-        )
-    )
-    _print_result(result)
-
-
-@app.command(name="cache")
-def cache_cmd(
-    endpoint: str = typer.Argument(help="Inference endpoint URL"),
-    provider: str = typer.Option("", help="Managed provider preset (fireworks, baseten, huggingface)"),
-    metrics_api_key: str = typer.Option("", help="API key for scraping authenticated metrics endpoints"),
-    metrics_auth_scheme: str = typer.Option("", help="Metrics auth scheme: bearer, api-key, x-api-key, raw"),
-    metrics_auth_header_name: str = typer.Option("", help="Override metrics auth header name"),
-    metrics_header: Annotated[
-        list[str] | None,
-        typer.Option(help="Additional metrics headers as Header=Value. Repeat for multiple headers."),
-    ] = None,
-):
-    """Measure prefix cache hit rate on a live endpoint."""
-    import asyncio
-
-    from inferscope.tools.diagnose import get_cache_effectiveness
-
-    result = asyncio.run(
-        get_cache_effectiveness(
-            endpoint,
-            metrics_auth=_resolve_metrics_auth(
-                provider=provider,
-                metrics_api_key=metrics_api_key,
-                metrics_auth_scheme=metrics_auth_scheme,
-                metrics_auth_header_name=metrics_auth_header_name,
-                metrics_header=metrics_header,
-            ),
-        )
-    )
-    _print_result(result)
-
-
+register_profiling_commands(app, print_result=_print_result, resolve_metrics_auth=_resolve_metrics_auth)
 register_benchmark_commands(app, print_result=_print_result)
 
 

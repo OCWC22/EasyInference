@@ -17,6 +17,13 @@ class ProfilingIntent:
     mode: ProfilingMode = "advisory"
     summary: str = ""
 
+    def to_dict(self) -> dict[str, str]:
+        return {
+            "tool": self.tool,
+            "mode": self.mode,
+            "summary": self.summary,
+        }
+
 
 def resolve_profiling_intent(gpu_vendor: str) -> ProfilingIntent:
     """Resolve the advisory profiling tool for a GPU vendor."""

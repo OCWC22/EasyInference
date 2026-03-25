@@ -9,6 +9,7 @@ from dataclasses import dataclass
 
 from inferscope.hardware.gpu_profiles import GPUProfile
 from inferscope.models.registry import ModelVariant
+from inferscope.optimization.platform_policy import resolve_platform_traits
 
 
 @dataclass
@@ -24,6 +25,9 @@ class MemoryPlan:
     max_tokens_in_cache: int = 0
     max_concurrent_sequences: int = 0
     max_context_length: int = 0
+    platform_overflow_tier: str = "gpu_only"
+    overflow_memory_gb: float = 0.0
+    overflow_bandwidth_gb_s: float = 0.0
     fits: bool = False
     notes: list[str] = None  # type: ignore[assignment]
 
@@ -42,6 +46,9 @@ class MemoryPlan:
             "max_tokens_in_cache": self.max_tokens_in_cache,
             "max_concurrent_sequences": self.max_concurrent_sequences,
             "max_context_length": self.max_context_length,
+            "platform_overflow_tier": self.platform_overflow_tier,
+            "overflow_memory_gb": round(self.overflow_memory_gb, 2),
+            "overflow_bandwidth_gb_s": round(self.overflow_bandwidth_gb_s, 2),
             "fits": self.fits,
             "notes": self.notes,
         }
@@ -70,6 +77,7 @@ def plan_memory(
         max_context: Max context length (0 = model default)
     """
     plan = MemoryPlan()
+    traits = resolve_platform_traits(gpu)
 
     # Resolve KV precision
     if kv_precision == "auto":
@@ -116,6 +124,13 @@ def plan_memory(
 
     # Does it fit?
     plan.fits = per_gpu_kv_budget > 0
+    plan.platform_overflow_tier = traits.overflow_tier
+    if traits.is_grace:
+        plan.overflow_memory_gb = traits.grace_memory_gb
+        plan.overflow_bandwidth_gb_s = traits.grace_memory_bandwidth_gb_s
+        plan.notes.append(
+            "Coherent Grace overflow is available for KV spill/staging, but HBM fit is still evaluated independently."
+        )
 
     # Notes
     if not plan.fits:
@@ -140,6 +155,11 @@ def plan_memory(
         plan.notes.append(
             f"MLA attention compresses KV cache ~{model.serving.get('compression_ratio', 32)}x — "
             f"much larger effective context than standard GQA"
+        )
+    if not plan.fits and traits.is_grace:
+        plan.notes.append(
+            "Grace coherent memory can extend session capacity, "
+            "but model weights still need an HBM-resident serving plan."
         )
 
     return plan

@@ -1,6 +1,6 @@
 # InferScope
 
-InferScope is the operator-facing product in EasyInference: a self-contained CLI and MCP for inference tuning, diagnostics, planning, and benchmark replay.
+InferScope is the operator-facing product in EasyInference: a self-contained CLI and MCP for inference tuning, runtime profiling, diagnostics, planning, and benchmark replay.
 
 ## Product role
 
@@ -10,7 +10,25 @@ EasyInference has three distinct layers of concern:
 - **ISB-1** is the reproducible benchmark standard in this repo.
 - **InferScope** is the high-leverage operator surface that turns those ideas into day-to-day workflows.
 
-If the goal is benchmarking through an MCP, this is the product that matters.
+If the goal is benchmarking and profiling through an MCP, this is the product that matters.
+
+## NVIDIA platform stance
+
+As of **March 25, 2026**, InferScope's production recommendation path is validated around:
+
+- **H100**
+- **H200**
+- **B200**
+- **GB200**
+
+Key policy decisions:
+
+- **vLLM** and **SGLang** are the supported NVIDIA auto-selection paths
+- **TRT-LLM** and **Dynamo** remain **preview planning targets**
+- Blackwell is treated explicitly as **B200/B300 vs GB200/GB300**, not inferred from raw memory size
+- Grace coherent overflow is surfaced as an advisory capacity tier, not silently treated as normal HBM fit
+
+This is intentionally complementary to InferenceX: InferenceX measures the public frontier continuously; InferScope turns those platform assumptions into operator recommendations, validation, profiling, and benchmark workflows.
 
 ## What InferScope does
 
@@ -18,10 +36,42 @@ InferScope helps operators:
 
 - choose an engine and serving profile
 - validate topology, quantization, and memory fit
-- audit running endpoints
+- profile live endpoints through Prometheus-based runtime analysis
+- audit bottlenecks and preview tuning changes
 - plan benchmark stacks
 - replay benchmark workloads against OpenAI-compatible endpoints
 - compare saved benchmark artifacts before and after a change
+
+## Benchmark and MCP focus
+
+The highest-leverage InferScope loop is:
+
+1. recommend a serving plan
+2. validate it against platform/model constraints
+3. benchmark it against a representative workload
+4. profile the live endpoint through MCP
+5. tighten the deployment from observed bottlenecks
+
+That is the main reason this product exists.
+
+## Runtime profiling
+
+InferScope now exposes a first-class runtime profiling surface:
+
+- CLI: `inferscope profile-runtime http://localhost:8000`
+- MCP: `tool_profile_runtime`
+
+This surface is Prometheus-first:
+
+- scrape `/metrics`
+- normalize cross-engine runtime metrics
+- classify workload heuristically
+- run audit checks
+- group findings into bottlenecks
+- optionally preview scheduler/cache tuning
+- optionally enrich runtime identity from `/v1/models`
+
+`inferscope profile` remains the static model-intel command. `profile-runtime` is the live endpoint profiler.
 
 ## Benchmark bridge
 
@@ -31,13 +81,25 @@ Key bridge workloads:
 
 - `tool-agent` — MCP / tool-calling benchmark pack
 - `coding-long-context` — long-context repository review and coding benchmark pack
+- `long-context-kv-offload-rag` — realistic multi-turn long-context RAG pack for KV spill and cold-session reuse
 
 These are practical operator-facing built-ins, not new benchmark-standard families. They map back to the canonical ISB-1 families:
 
 - `tool-agent` → `agent`
 - `coding-long-context` → `coding`
+- `long-context-kv-offload-rag` → `rag`
 
 The local `inferscope-bench/` tree informed these workload shapes, but it is not a public product or runtime dependency.
+
+## Benchmark architecture lanes
+
+InferScope now carries three distinct long-context operator lanes:
+
+- **GPU-resident baseline** — compare against a clean single-endpoint vLLM or SGLang path
+- **OffloadingConnector lane** — single-endpoint vLLM with explicit cold-session KV spill
+- **LMCache disaggregated lane** — vLLM prefill/decode split with LMCache and optional Grace-aware overflow modeling
+
+These lanes are the main way InferScope extends beyond InferenceX today: not by cloning the public leaderboard, but by giving operators a reproducible way to study realistic KV-tiering behavior.
 
 ## Procedural benchmark materialization
 
@@ -80,6 +142,10 @@ uv sync --dev
 inferscope recommend DeepSeek-R1 h100 --num-gpus 8 --workload coding
 inferscope validate Llama-3-70B h200 --tp 2 --quantization fp8
 
+# runtime profiling and audit
+inferscope profile-runtime http://localhost:8000 --gpu-arch sm_90a
+inferscope audit http://localhost:8000 --gpu-arch sm_90a
+
 # benchmark catalog and replay
 inferscope benchmark-workloads
 inferscope benchmark-plan tool-agent http://localhost:8000 --synthetic-requests 4
@@ -99,9 +165,12 @@ InferScope keeps runtime benchmark output outside the source tree by default:
 
 This directory holds benchmark artifacts, comparisons, and generated stack bundles.
 
+Runtime profiles are **not** persisted to disk by default in v1.
+
 ## Documentation
 
 - [ARCHITECTURE.md](ARCHITECTURE.md)
+- [docs/PROFILING.md](docs/PROFILING.md)
 - [docs/BENCHMARKS.md](docs/BENCHMARKS.md)
 - [docs/BENCHMARK-PLAN.md](docs/BENCHMARK-PLAN.md)
 - [docs/DEPLOYMENT-GUIDE.md](docs/DEPLOYMENT-GUIDE.md)

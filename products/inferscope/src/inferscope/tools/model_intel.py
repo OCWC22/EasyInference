@@ -149,6 +149,11 @@ def estimate_capacity(
             f"{mem.weight_gb:.1f} GB weights/GPU, "
             f"{mem.kv_cache_budget_gb:.1f} GB KV budget, "
             f"~{mem.max_concurrent_sequences} max concurrent @ 4K avg context"
+            + (
+                f", overflow tier={mem.platform_overflow_tier} (+{mem.overflow_memory_gb:.0f} GB advisory)"
+                if mem.platform_overflow_tier != "gpu_only"
+                else ""
+            )
         ),
         "confidence": 0.85,
         "evidence": "memory_model_calculation",

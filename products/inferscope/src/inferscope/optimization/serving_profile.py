@@ -20,7 +20,7 @@ class WorkloadMode(StrEnum):
     LONG_CONTEXT_RAG = "long_context_rag"
 
 
-class BottleneckType(Enum):
+class BottleneckType(StrEnum):
     """Diagnosed performance bottleneck category."""
 
     PREFILL_COMPUTE = "prefill_compute_bound"

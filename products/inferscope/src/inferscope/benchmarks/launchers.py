@@ -101,6 +101,8 @@ def _map_workload_mode(workload_class: str) -> WorkloadMode:
         return WorkloadMode.CODING
     if normalized in {"agent", "tool_agent", "tool_calling_agent"}:
         return WorkloadMode.AGENT
+    if normalized in {"rag", "long_context_rag", "retrieval_augmented_generation"} or "rag" in normalized:
+        return WorkloadMode.LONG_CONTEXT_RAG
     return WorkloadMode.CHAT
 
 
@@ -556,6 +558,9 @@ def build_benchmark_stack_plan(
     selected_model = model or experiment.model or workload_pack.model or ""
     if not selected_model:
         raise ValueError("A model must be provided by the workload, experiment, or override")
+    gpu_profile = get_gpu_profile(gpu)
+    if gpu_profile is None:
+        raise ValueError(f"Unknown GPU: {gpu}")
 
     workload_mode = _map_workload_mode(workload_pack.workload_class)
     ports = _default_ports(experiment)
@@ -594,6 +599,12 @@ def build_benchmark_stack_plan(
     generated_files: list[GeneratedFile] = []
     notes: list[str] = []
     warnings: list[str] = []
+    notes.extend(experiment.topology.notes)
+    notes.extend(experiment.cache.notes)
+    if "grace_coherent" in experiment.cache.tiers and gpu_profile.extra.get("grace_cpu_cores", 0) <= 0:
+        warnings.append(
+            "Experiment models a Grace coherent KV tier, but the selected GPU profile is not a Grace superchip."
+        )
 
     if experiment.engine == "vllm" and experiment.topology.mode == "single_endpoint":
         engine_config, memory_plan = _compile_engine(
@@ -609,7 +620,23 @@ def build_benchmark_stack_plan(
             kind="engine",
             engine="vllm",
             command=_append_command_args(
-                engine_config.command,
+                (
+                    _append_command_args(
+                        engine_config.command,
+                        "--kv-transfer-config",
+                        "'"
+                        + json.dumps(
+                            {
+                                "kv_connector": "OffloadingConnector",
+                                "kv_role": "kv_both",
+                                "kv_connector_extra_config": {"num_cpu_blocks": 2048},
+                            }
+                        )
+                        + "'",
+                    )
+                    if experiment.cache.strategy == "offloading_connector"
+                    else engine_config.command
+                ),
                 "--host",
                 host,
                 "--port",
@@ -619,7 +646,15 @@ def build_benchmark_stack_plan(
             endpoint=request_endpoint,
             metrics_endpoint=metrics_endpoint,
             gpu_ids=gpu_layout["primary"],
-            notes=list(engine_config.notes),
+            notes=list(engine_config.notes)
+            + (
+                [
+                    "OffloadingConnector is injected explicitly for this benchmark plan.",
+                    "Benchmark intent is cold/idle KV offload only; active decode offload remains invalid.",
+                ]
+                if experiment.cache.strategy == "offloading_connector"
+                else []
+            ),
             warnings=list(engine_config.warnings),
         )
         if not memory_plan.fits:

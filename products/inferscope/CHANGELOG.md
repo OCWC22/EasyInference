@@ -5,6 +5,29 @@ All notable changes to InferScope will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+- Shared Hopper/Blackwell platform policy used by the recommendation DAG, validators, and compilers
+- Explicit support-tier metadata for engine recommendations and compiled engine configs
+- New NVIDIA regression coverage for H100, H200, B200, and GB200 recommendation paths
+- New benchmark launcher regression coverage to ensure benchmark stack plans inherit the same H200/Hopper policy as the MCP
+- New long-context benchmark workload and experiment lanes for:
+  - single-endpoint `OffloadingConnector`
+  - disaggregated `LMCache` with Grace-aware overflow modeling
+
+### Changed
+- Engine ranking now derives its top pick from the full recommendation DAG instead of a separate heuristic
+- DeepSeek Hopper defaults now respect model hints only when they remain memory-valid (`H100 -> AWQ fallback / TP=8`, `H200 -> FP8 / TP=8`)
+- Blackwell FP4 recommendations now flow through the main optimizer path
+- Grace coherent overflow is surfaced as an advisory memory tier instead of being conflated with plain HBM fit
+- Benchmark metadata now has an explicit `grace_coherent` cache tier for realistic long-context operator studies
+
+### Fixed
+- vLLM compiler no longer infers `GB200` from `192 GB` memory size
+- TRT-LLM compiler now uses `batched_token_budget` correctly
+- Benchmark launcher workload mapping now recognizes `long_context_rag`
+
 ## [0.1.0] - 2026-03-23
 
 ### Added

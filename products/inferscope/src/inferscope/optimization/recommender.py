@@ -14,6 +14,14 @@ from inferscope.hardware.gpu_profiles import GPUProfile
 from inferscope.logging import get_logger
 from inferscope.models.registry import ModelVariant
 from inferscope.optimization.memory_planner import MemoryPlan, plan_memory
+from inferscope.optimization.platform_policy import (
+    EngineSupportTier,
+    PlatformTraits,
+    resolve_engine_support,
+    resolve_platform_traits,
+    resolve_preferred_precision,
+    resolve_preferred_tp,
+)
 from inferscope.optimization.serving_profile import (
     CacheSpec,
     EngineType,
@@ -41,6 +49,7 @@ class PipelineContext:
     forced_engine: str = "auto"
 
     # Resolved during DAG execution
+    platform_traits: PlatformTraits | None = None
     engine_type: EngineType | None = None
     precision: PrecisionSpec | None = None
     topology: TopologySpec | None = None
@@ -68,22 +77,31 @@ class HardwareNode(DAGNode):
     """Analyzes GPU architecture, memory, and native precisions."""
 
     def process(self, ctx: PipelineContext) -> None:
+        ctx.platform_traits = resolve_platform_traits(ctx.gpu)
         ctx.reasoning_trace.append(
             f"HardwareNode: Detected {ctx.gpu.vendor.upper()} {ctx.gpu.name} "
             f"({ctx.gpu.architecture}) with {ctx.gpu.memory_gb}GB memory."
         )
+        ctx.reasoning_trace.extend(f"HardwareNode: {note}" for note in ctx.platform_traits.notes)
 
         # Engine Selection
-        is_amd = ctx.gpu.vendor == "amd"
+        is_amd = ctx.platform_traits.is_amd
         is_mla_moe = ctx.model.model_class == ModelClass.FRONTIER_MLA_MOE
 
         if ctx.forced_engine != "auto":
             try:
                 ctx.engine_type = EngineType(ctx.forced_engine)
-                ctx.reasoning_trace.append(f"HardwareNode: Engine forced to {ctx.forced_engine}.")
             except ValueError as exc:
                 valid = [e.value for e in EngineType]
                 raise ValueError(f"Unknown engine '{ctx.forced_engine}'. Valid engines: {valid}") from exc
+            support = resolve_engine_support(
+                ctx.engine_type,
+                ctx.gpu,
+                multi_node=ctx.num_gpus > 1,
+            )
+            if support.tier == EngineSupportTier.UNSUPPORTED:
+                raise ValueError(support.reason)
+            ctx.reasoning_trace.append(f"HardwareNode: Engine forced to {ctx.forced_engine}. {support.reason}")
         else:
             if is_amd:
                 if is_mla_moe and ctx.gpu.compute_capability == "gfx950":
@@ -96,8 +114,7 @@ class HardwareNode(DAGNode):
                     ctx.engine_type = EngineType.VLLM
                     ctx.reasoning_trace.append("HardwareNode: Selected vLLM for AMD general workloads.")
             else:
-                is_hopper = ctx.gpu.architecture == "Hopper"
-                if is_hopper:
+                if ctx.platform_traits.is_hopper:
                     if ctx.workload == WorkloadMode.CODING:
                         ctx.engine_type = EngineType.SGLANG
                         ctx.reasoning_trace.append(
@@ -111,7 +128,7 @@ class HardwareNode(DAGNode):
                             "(FlashAttention-3 via wgmma/TMA, zero-overhead prefix caching, "
                             "Hopper-optimized chunked prefill)."
                         )
-                elif ctx.gpu.architecture == "Blackwell":
+                elif ctx.platform_traits.is_blackwell:
                     if ctx.workload == WorkloadMode.CODING:
                         ctx.engine_type = EngineType.SGLANG
                         ctx.reasoning_trace.append(
@@ -132,28 +149,13 @@ class HardwareNode(DAGNode):
                     ctx.engine_type = EngineType.VLLM
                     ctx.reasoning_trace.append("HardwareNode: Selected vLLM for NVIDIA general workloads.")
 
-        # Determine Precision
-        kv_cache = "auto"
-        if ctx.gpu.fp8_support:
-            kv_cache = "fp8_e4m3"
-
-        if ctx.model.params_total_b <= 13 and ctx.gpu.memory_gb >= 40:
-            ctx.precision = PrecisionSpec(weights="bf16", activations="bf16", kv_cache=kv_cache)
-            ctx.reasoning_trace.append("HardwareNode: Small model fits easily; routing to BF16 weights.")
-        elif ctx.gpu.fp8_support:
-            if is_amd and ctx.model.model_type == "moe":
-                ctx.precision = PrecisionSpec(weights="bf16", activations="bf16", kv_cache="fp8_e4m3")
-                ctx.reasoning_trace.append(
-                    "HardwareNode: Downgrading AMD MoE to BF16 (rocprofv3 flagged FP8 decode regression)."
-                )
-            else:
-                ctx.precision = PrecisionSpec(weights="fp8", activations="fp8", kv_cache="fp8_e4m3")
-                ctx.reasoning_trace.append("HardwareNode: Native FP8 support detected; routing to FP8 weights.")
-        elif ctx.model.params_total_b > 30:
-            ctx.precision = PrecisionSpec(weights="awq", activations="fp16", kv_cache="auto")
-            ctx.reasoning_trace.append("HardwareNode: GPU lacks FP8; routing large model to AWQ/INT4.")
-        else:
-            ctx.precision = PrecisionSpec(weights="bf16", activations="bf16", kv_cache="auto")
+        ctx.precision, precision_reason = resolve_preferred_precision(
+            ctx.model,
+            ctx.gpu,
+            ctx.workload,
+            num_gpus=ctx.num_gpus,
+        )
+        ctx.reasoning_trace.append(f"HardwareNode: {precision_reason}")
 
 
 class ModelNode(DAGNode):
@@ -163,6 +165,7 @@ class ModelNode(DAGNode):
         ctx.reasoning_trace.append(
             f"ModelNode: Analyzing {ctx.model.name} ({ctx.model.params_total_b}B total, {ctx.model.model_class.value})."
         )
+        traits = ctx.platform_traits or resolve_platform_traits(ctx.gpu)
 
         weight_gb = ctx.model.weight_gb(ctx.precision.weights)
         per_gpu_usable = ctx.gpu.memory_gb * 0.90
@@ -176,9 +179,16 @@ class ModelNode(DAGNode):
             candidates.append(tp)
         valid_tps = candidates if candidates else [1]
 
-        tp = valid_tps[0]
+        preferred_tp, tp_reason = resolve_preferred_tp(
+            ctx.model,
+            ctx.gpu,
+            ctx.num_gpus,
+            ctx.precision.weights,
+            ctx.workload,
+        )
+        tp = preferred_tp if preferred_tp in valid_tps else valid_tps[0]
         if (
-            ctx.gpu.vendor == "amd"
+            traits.is_amd
             and ctx.workload in (WorkloadMode.CODING, WorkloadMode.AGENT)
             and ctx.model.params_total_b < 40
         ):
@@ -186,6 +196,8 @@ class ModelNode(DAGNode):
                 "ModelNode: Forcing TP=1 for small model on AMD due to RCCL overhead compared to NCCL."
             )
             tp = 1
+        elif preferred_tp in valid_tps and tp_reason:
+            ctx.reasoning_trace.append(f"ModelNode: {tp_reason}")
         else:
             for candidate in valid_tps:
                 if weight_gb / candidate <= per_gpu_usable * 0.8:
@@ -194,13 +206,20 @@ class ModelNode(DAGNode):
                 tp = candidate
 
         ep = 1
-        if ctx.model.model_type == "moe" and ctx.model.experts_total > 64 and ctx.num_gpus >= 4:
+        fp4_ep_path = traits.is_blackwell and ctx.precision.weights == "fp4"
+        if ctx.model.model_type == "moe" and ctx.model.experts_total > 64 and fp4_ep_path and ctx.num_gpus >= tp * 2:
             ep = min(2, ctx.num_gpus // tp)
-            ctx.reasoning_trace.append(f"ModelNode: Mapping Kimi/DeepSeek 384-expert style EP={ep}.")
+            if ep > 1:
+                ctx.reasoning_trace.append(f"ModelNode: Enabling expert parallelism with EP={ep}.")
 
         dp = max(1, ctx.num_gpus // (tp * ep))
-        ctx.topology = TopologySpec(tp=tp, pp=1, dp=dp, ep=ep)
+        enable_eplb = ep > 1 and traits.has_high_speed_interconnect and ctx.engine_type == EngineType.VLLM
+        ctx.topology = TopologySpec(tp=tp, pp=1, dp=dp, ep=ep, enable_eplb=enable_eplb)
         ctx.reasoning_trace.append(f"ModelNode: Resolved routing topology to TP={tp}, EP={ep}, DP={dp}.")
+        if enable_eplb:
+            ctx.reasoning_trace.append(
+                "ModelNode: EPLB enabled for multi-rank MoE load balancing on fast interconnect."
+            )
 
         ctx.speculation = SpeculationSpec()
         if ctx.model.mtp_speculative and ctx.workload in (WorkloadMode.CODING, WorkloadMode.AGENT):
@@ -218,16 +237,17 @@ class WorkloadNode(DAGNode):
     def process(self, ctx: PipelineContext) -> None:
         ctx.reasoning_trace.append(f"WorkloadNode: Injecting {ctx.workload.value.upper()} constraints.")
 
-        is_amd = ctx.gpu.vendor == "amd"
-        is_ampere = ctx.gpu.architecture == "Ampere"
-        is_hopper = ctx.gpu.architecture == "Hopper"
-        is_blackwell = ctx.gpu.architecture == "Blackwell"
-        is_h200 = is_hopper and ctx.gpu.memory_gb >= 140
-        is_hopper_pcie = is_hopper and not ctx.gpu.nvlink_bandwidth_gb_s
-        is_b300 = is_blackwell and ctx.gpu.memory_gb >= 280
-        is_gb200 = is_blackwell and ctx.gpu.extra.get("grace_cpu_cores", 0) > 0
+        traits = ctx.platform_traits or resolve_platform_traits(ctx.gpu)
+        is_amd = traits.is_amd
+        is_ampere = traits.is_ampere
+        is_hopper = traits.is_hopper
+        is_blackwell = traits.is_blackwell
+        is_h200 = traits.is_h200
+        is_hopper_pcie = traits.is_hopper_pcie
+        is_b300 = traits.is_b300
+        is_gb200 = traits.is_gb200
         is_long_context_model = ctx.model.context_length > 32768
-        has_high_speed_interconnect = bool(ctx.gpu.nvlink_bandwidth_gb_s or ctx.gpu.if_bandwidth_gb_s)
+        has_high_speed_interconnect = traits.has_high_speed_interconnect
         multi_gpu = ctx.num_gpus > 1
 
         if is_b300 or (is_hopper and not is_hopper_pcie):
@@ -456,6 +476,17 @@ class WorkloadNode(DAGNode):
                 "model — forcing contiguous prefill."
             )
 
+        if (
+            ctx.model.model_type == "moe"
+            and ctx.topology.ep > 1
+            and ctx.engine_type == EngineType.VLLM
+            and (is_hopper or is_blackwell)
+        ):
+            ctx.scheduler.enable_moe_overlap = True
+            ctx.reasoning_trace.append(
+                "WorkloadNode: Enabling MoE overlap for multi-rank Hopper/Blackwell vLLM deployment."
+            )
+
     @staticmethod
     def _derive_token_budget(memory_bandwidth_tb_s: float) -> int:
         raw = int(memory_bandwidth_tb_s * 5000)
@@ -565,10 +596,30 @@ class CompilerNode(DAGNode):
             fp8_support=ctx.gpu.fp8_support,
             fp4_support=ctx.gpu.fp4_support,
             fp8_format=ctx.gpu.fp8_format,
+            platform_family=(ctx.platform_traits.family.value if ctx.platform_traits else ""),
+            has_grace=bool(ctx.platform_traits and ctx.platform_traits.is_grace),
+            grace_memory_gb=(ctx.platform_traits.grace_memory_gb if ctx.platform_traits else 0.0),
+            grace_memory_bandwidth_gb_s=(
+                ctx.platform_traits.grace_memory_bandwidth_gb_s if ctx.platform_traits else 0.0
+            ),
+            c2c_bandwidth_gb_s=(ctx.platform_traits.c2c_bandwidth_gb_s if ctx.platform_traits else 0.0),
+            has_decompression_engine=bool(ctx.platform_traits and ctx.platform_traits.has_decompression_engine),
+            has_helix_parallelism=bool(ctx.platform_traits and ctx.platform_traits.has_helix_parallelism),
+            has_accelerated_softmax=bool(ctx.platform_traits and ctx.platform_traits.has_accelerated_softmax),
+            platform_features=(ctx.platform_traits.to_dict() if ctx.platform_traits else {}),
         )
 
         compiler = get_compiler(ctx.engine_type.value)
         ctx.engine_config = compiler.compile(ctx.profile, inventory)
+        support = resolve_engine_support(
+            ctx.engine_type,
+            ctx.gpu,
+            multi_node=ctx.topology.split_prefill_decode or ctx.num_gpus > 1,
+        )
+        ctx.engine_config.support_tier = support.tier.value
+        ctx.engine_config.support_reason = support.reason
+        if support.tier == EngineSupportTier.PREVIEW:
+            ctx.engine_config.warnings.append(f"Preview engine: {support.reason}")
 
         ctx.memory_plan = plan_memory(
             model=ctx.model,

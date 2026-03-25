@@ -50,6 +50,7 @@ class ModelVariant:
             "fp8": 1.0,
             "int8": 1.0,
             "fp4": 0.5,
+            "nvfp4": 0.5,
             "int4": 0.5,
             "mxfp4": 0.5,
             "awq": 0.5,

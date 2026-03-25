@@ -13,6 +13,7 @@ InferScope should be the fastest path from an operational question to an actiona
 3. persist an artifact
 4. compare artifacts before and after a change
 5. expose the same flow to MCP clients
+6. keep benchmark launch planning on the same platform-policy path as the recommendation MCP
 
 ## What it should not do
 
@@ -31,6 +32,8 @@ The immediate bridge workloads are:
 
 These are high-leverage because they reflect the kinds of workloads operators actually need to validate when using an MCP or coding-focused deployment.
 
+That complement is intentional: public continuous benchmarking belongs to InferenceX, while InferScope needs to be the fastest path from that market context to a deployment-specific benchmark and profiling loop.
+
 ## Donor benchmark basis
 
 The local `inferscope-bench/` tree contributes workload and replay ideas. Those ideas should be absorbed into InferScope's packaged benchmark subsystem rather than maintained as a separate public product.
@@ -42,3 +45,7 @@ The local `inferscope-bench/` tree contributes workload and replay ideas. Those 
 3. preserve stable `WorkloadPack` and `BenchmarkArtifact` contracts
 4. make CLI and MCP benchmark surfaces symmetric
 5. keep benchmark artifacts easy to review and compare
+6. extend the benchmark layer where public references are thin:
+   - realistic long-context KV-offload lanes
+   - LMCache disaggregated studies
+   - Grace-coherent overflow experiments

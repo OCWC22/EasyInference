@@ -10,6 +10,12 @@ from dataclasses import dataclass, field
 from inferscope.hardware.gpu_profiles import GPUProfile
 from inferscope.models.registry import ModelVariant
 from inferscope.optimization.memory_planner import plan_memory
+from inferscope.optimization.platform_policy import (
+    EngineSupportTier,
+    resolve_engine_support,
+    resolve_preferred_tp,
+)
+from inferscope.optimization.serving_profile import WorkloadMode
 
 
 @dataclass
@@ -47,6 +53,11 @@ def validate_config(
     """
     result = ValidationResult()
 
+    tp_min = model.serving.get("tp_min")
+    if isinstance(tp_min, int) and tp < tp_min:
+        result.valid = False
+        result.errors.append(f"TP={tp} is below the model minimum tp_min={tp_min}.")
+
     # --- TP divisibility ---
     if model.kv_heads > 0 and tp > 1 and model.kv_heads % tp != 0:
         result.valid = False
@@ -58,8 +69,9 @@ def validate_config(
     # --- Quantization compatibility ---
     if quantization == "auto":
         quantization = "fp8" if gpu.fp8_support else "bf16"
+    normalized_precision = "fp4" if quantization in ("nvfp4", "mxfp4") else quantization
 
-    if quantization in ("fp8", "fp8_e4m3") and not gpu.fp8_support:
+    if normalized_precision in ("fp8", "fp8_e4m3") and not gpu.fp8_support:
         # Ampere supports FP8 via W8A16 Marlin (weight-only dequant) — not native, but functional
         if gpu.architecture == "Ampere":
             result.warnings.append(
@@ -75,7 +87,7 @@ def validate_config(
                 f"Use INT8/AWQ/GPTQ instead."
             )
 
-    if quantization in ("nvfp4", "fp4") and not gpu.fp4_support:
+    if quantization in ("nvfp4", "fp4", "mxfp4") and not gpu.fp4_support:
         result.valid = False
         result.errors.append(
             f"FP4 quantization requires Blackwell (NVFP4) or CDNA4 (MXFP4). "
@@ -102,7 +114,7 @@ def validate_config(
         )
 
     # --- Memory fit ---
-    precision = quantization if quantization not in ("auto",) else "fp16"
+    precision = normalized_precision if normalized_precision not in ("auto",) else "fp16"
     mem = plan_memory(model=model, gpu=gpu, num_gpus=tp, tp=tp, precision=precision)
     if not mem.fits:
         result.valid = False
@@ -117,8 +129,19 @@ def validate_config(
             f"{mem.kv_cache_budget_gb:.1f} GB KV cache budget, "
             f"~{mem.max_concurrent_sequences} max concurrent sequences"
         )
+        if mem.platform_overflow_tier != "gpu_only":
+            result.info.append(
+                f"Platform overflow advisory: {mem.platform_overflow_tier} (+{mem.overflow_memory_gb:.0f} GB)."
+            )
 
     # --- Engine-specific checks ---
+    support = resolve_engine_support(engine, gpu, multi_node=tp > 1)
+    if support.tier == EngineSupportTier.UNSUPPORTED:
+        result.valid = False
+        result.errors.append(support.reason)
+    elif support.tier == EngineSupportTier.PREVIEW:
+        result.warnings.append(f"Preview engine: {support.reason}")
+
     if engine == "atom" and gpu.vendor != "amd":
         result.valid = False
         result.errors.append("ATOM engine only works on AMD GPUs (MI300X/MI325X/MI355X)")
@@ -143,5 +166,15 @@ def validate_config(
     # Ampere FP8 misconception
     if gpu.architecture == "Ampere" and quantization == "fp8":
         result.info.append("FP8 on Ampere uses W8A16 Marlin (weight-only dequant), not native FP8 compute")
+
+    preferred_tp, preferred_reason = resolve_preferred_tp(
+        model,
+        gpu,
+        num_gpus=max(tp, 1),
+        precision=normalized_precision,
+        workload=WorkloadMode.CHAT,
+    )
+    if preferred_tp is not None and preferred_tp != tp and preferred_reason:
+        result.warnings.append(f"Platform/model hint prefers TP={preferred_tp}. {preferred_reason}")
 
     return result

@@ -21,6 +21,12 @@ class TRTLLMCompiler(ConfigCompiler):
 
     def compile(self, profile: ServingProfile, inventory: DeploymentInventory) -> EngineConfig:
         cfg = EngineConfig(engine="trtllm")
+        cfg.support_tier = "preview"
+        cfg.support_reason = (
+            "TensorRT-LLM is exposed as a preview planning target in InferScope; "
+            "validate manually before production use."
+        )
+        cfg.warnings.append(f"Preview engine: {cfg.support_reason}")
         cfg.cli_flags["model_dir"] = profile.model
 
         # --- Parallelism ---
@@ -32,7 +38,7 @@ class TRTLLMCompiler(ConfigCompiler):
         # --- Memory and Cache ---
         cfg.cli_flags["kv_cache_type"] = "paged"
         cfg.cli_flags["max_batch_size"] = profile.scheduler.max_num_seqs
-        cfg.cli_flags["max_num_tokens"] = profile.scheduler.max_num_batched_tokens
+        cfg.cli_flags["max_num_tokens"] = profile.scheduler.batched_token_budget
 
         # --- Disaggregated Serving / KV Cache Transfer ---
         if profile.topology.split_prefill_decode:
@@ -79,5 +85,11 @@ class TRTLLMAdapter(EngineAdapter):
     async def get_metrics(self, endpoint: str) -> dict[str, Any]:
         return {}
 
-    async def get_config(self, endpoint: str) -> dict[str, Any]:
+    async def get_config(
+        self,
+        endpoint: str,
+        *,
+        allow_private: bool = True,
+        auth=None,
+    ) -> dict[str, Any]:
         return {}

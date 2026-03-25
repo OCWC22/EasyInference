@@ -9,6 +9,7 @@ from __future__ import annotations
 from inferscope.hardware.gpu_profiles import get_gpu_profile
 from inferscope.models.registry import get_model_variant, list_models
 from inferscope.optimization.memory_planner import plan_memory
+from inferscope.optimization.platform_policy import resolve_platform_traits
 from inferscope.optimization.serving_profile import WorkloadMode
 
 
@@ -115,6 +116,7 @@ def recommend_kv_strategy(
         return {"error": f"Unknown workload: '{workload}'", "confidence": 0.0}
 
     is_mla = variant.attention_type == "MLA"
+    traits = resolve_platform_traits(gpu_profile)
 
     # Calculate KV budget (with PagedAttention block fragmentation)
     kv_dtype = "fp8" if gpu_profile.fp8_support else "fp16"
@@ -157,6 +159,12 @@ def recommend_kv_strategy(
     else:
         strategy["tiers"] = ["G1_gpu_hbm", "G2_cpu_dram", "G3_local_ssd"]
         strategy["notes"].append(f"Large KV requirement ({total_kv_gb:.1f} GB) — multi-tier offloading recommended")
+
+    if traits.is_grace:
+        strategy["notes"].append(
+            f"{gpu_profile.name} exposes Grace coherent overflow ({traits.grace_memory_gb:.0f} GB @ "
+            f"{traits.grace_memory_bandwidth_gb_s:.0f} GB/s advisory) before falling back to conventional CPU offload."
+        )
 
     # Connector recommendation
     if len(strategy["tiers"]) == 1:
@@ -207,6 +215,7 @@ def recommend_kv_strategy(
             "total_gb": round(total_kv_gb, 2),
             "gpu_kv_budget_gb": round(gpu_kv_budget_gb, 2),
             "fits_in_gpu": total_kv_gb <= gpu_kv_budget_gb,
+            "platform_overflow_tier": mem.platform_overflow_tier,
         },
         "model": variant.name,
         "gpu": gpu_profile.name,
@@ -252,6 +261,7 @@ def recommend_disaggregation(
         "warnings": [],
         "configuration": {},
     }
+    traits = resolve_platform_traits(gpu_profile)
 
     # Decision logic from spec
     short_prompts = avg_prompt_tokens < 4096
@@ -288,9 +298,9 @@ def recommend_disaggregation(
         )
 
         # Connector recommendation
-        is_blackwell = gpu_profile.architecture == "Blackwell"
-        is_gb200 = is_blackwell and gpu_profile.extra.get("grace_cpu_cores", 0) > 0
-        has_nvlink5 = gpu_profile.nvlink_version >= 5
+        is_blackwell = traits.is_blackwell
+        is_gb200 = traits.is_gb200
+        has_nvlink5 = traits.has_nvlink5
 
         if gpu_profile.vendor == "nvidia":
             if has_rdma:

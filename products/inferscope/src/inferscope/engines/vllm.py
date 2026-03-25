@@ -7,6 +7,7 @@ from typing import Any
 
 import httpx
 
+from inferscope.endpoint_auth import EndpointAuthConfig, build_auth_headers
 from inferscope.engines.base import (
     ConfigCompiler,
     DeploymentInventory,
@@ -111,11 +112,13 @@ class VLLMCompiler(ConfigCompiler):
             )
 
         # --- Blackwell-specific optimizations (B200/B300/GB200) ---
-        is_blackwell = inventory.gpu_arch in ("sm_100", "sm_103")
-        is_gb200 = is_blackwell and inventory.gpu_memory_gb >= 190 and inventory.gpu_memory_gb < 200
+        is_blackwell = inventory.platform_family.startswith("blackwell") or inventory.gpu_arch in ("sm_100", "sm_103")
+        is_b300 = inventory.platform_family == "blackwell_ultra"
+        is_gb200 = inventory.platform_family == "blackwell_grace"
+        is_gb300 = inventory.platform_family == "blackwell_ultra_grace"
 
         if is_blackwell:
-            if inventory.gpu_memory_gb >= 280:
+            if is_b300:
                 cfg.notes.append(
                     f"B300 Ultra {inventory.gpu_memory_gb:.0f}GB — fits most models on TP=1-2, "
                     "accelerated softmax in hardware, inference-optimized"
@@ -123,7 +126,13 @@ class VLLMCompiler(ConfigCompiler):
             if is_gb200:
                 cfg.notes.append(
                     "GB200 Grace Blackwell: KV cache overflow to Grace LPDDR5X (480GB) "
-                    "via NVLink-C2C @ 900 GB/s — ~7x faster than PCIe Gen5 offloading"
+                    f"via NVLink-C2C @ {inventory.c2c_bandwidth_gb_s:.0f} GB/s — "
+                    "~7x faster than PCIe Gen5 offloading"
+                )
+            if is_gb300:
+                cfg.notes.append(
+                    "GB300 Grace Blackwell Ultra: combines B300-class compute with Grace coherent overflow "
+                    "for long-context and disaggregated deployments."
                 )
             if inventory.fp4_support:
                 cfg.notes.append("NVFP4 native: --quantization nvfp4 for 2x throughput vs FP8 at <1% accuracy loss")
@@ -266,9 +275,9 @@ class VLLMCompiler(ConfigCompiler):
                     "Blackwell nvCOMP decompression engine accelerates I/O — "
                     "can reduce KV cache transfer volume between prefill/decode nodes"
                 )
-                if is_gb200:
+                if is_gb200 or is_gb300:
                     cfg.notes.append(
-                        "GB200: prefill node can stage KV in Grace LPDDR5X (480GB) "
+                        "Grace Blackwell: prefill node can stage KV in Grace LPDDR5X (480GB) "
                         "via NVLink-C2C before async transfer — "
                         "eliminates HBM pressure during KV staging"
                     )
@@ -375,12 +384,18 @@ class VLLMAdapter(EngineAdapter):
             pass
         return metrics
 
-    async def get_config(self, endpoint: str) -> dict[str, Any]:
+    async def get_config(
+        self,
+        endpoint: str,
+        *,
+        allow_private: bool = True,
+        auth: EndpointAuthConfig | None = None,
+    ) -> dict[str, Any]:
         """Get vLLM model info from /v1/models."""
         try:
-            url = self._validate_endpoint(endpoint)
+            url = self._validate_endpoint(endpoint, allow_private=allow_private)
             async with httpx.AsyncClient(timeout=10.0) as client:
-                resp = await client.get(f"{url}/v1/models")
+                resp = await client.get(f"{url}/v1/models", headers=build_auth_headers(auth))
                 return resp.json()
         except Exception:  # noqa: S110
             return {}

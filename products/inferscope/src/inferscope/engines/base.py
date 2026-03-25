@@ -6,6 +6,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from typing import Any
 
+from inferscope.endpoint_auth import EndpointAuthConfig
 from inferscope.optimization.serving_profile import ServingProfile
 
 
@@ -19,6 +20,8 @@ class EngineConfig:
     command: str = ""
     warnings: list[str] = field(default_factory=list)
     notes: list[str] = field(default_factory=list)
+    support_tier: str = "supported"
+    support_reason: str = ""
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -28,6 +31,8 @@ class EngineConfig:
             "command": self.command,
             "warnings": self.warnings,
             "notes": self.notes,
+            "support_tier": self.support_tier,
+            "support_reason": self.support_reason,
         }
 
 
@@ -49,6 +54,15 @@ class DeploymentInventory:
     has_rdma: bool = False
     rdma_type: str = ""  # UCX | libfabric | EFA | ""
     has_encoder_gpu: bool = False  # Dedicated multimodal encoder GPUs available
+    platform_family: str = ""
+    has_grace: bool = False
+    grace_memory_gb: float = 0.0
+    grace_memory_bandwidth_gb_s: float = 0.0
+    c2c_bandwidth_gb_s: float = 0.0
+    has_decompression_engine: bool = False
+    has_helix_parallelism: bool = False
+    has_accelerated_softmax: bool = False
+    platform_features: dict[str, Any] = field(default_factory=dict)
 
 
 class ConfigCompiler(ABC):
@@ -72,12 +86,11 @@ class EngineAdapter(ABC):
     All endpoint URLs are validated before HTTP requests to prevent SSRF.
     """
 
-    def _validate_endpoint(self, endpoint: str) -> str:
+    def _validate_endpoint(self, endpoint: str, *, allow_private: bool = True) -> str:
         """Validate endpoint URL before making HTTP requests."""
         from inferscope.security import validate_endpoint
 
-        # Allow private IPs for engine adapters (they connect to local/cluster inference servers)
-        return validate_endpoint(endpoint, allow_private=True)
+        return validate_endpoint(endpoint, allow_private=allow_private)
 
     @abstractmethod
     async def detect_engine(self, endpoint: str) -> bool:
@@ -88,7 +101,13 @@ class EngineAdapter(ABC):
         """Scrape Prometheus metrics from the engine."""
 
     @abstractmethod
-    async def get_config(self, endpoint: str) -> dict[str, Any]:
+    async def get_config(
+        self,
+        endpoint: str,
+        *,
+        allow_private: bool = True,
+        auth: EndpointAuthConfig | None = None,
+    ) -> dict[str, Any]:
         """Retrieve current running configuration."""
 
     @abstractmethod
