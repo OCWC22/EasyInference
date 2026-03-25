@@ -7,9 +7,11 @@ InferScope is a hardware-aware operator product with two public surfaces:
 
 Both surfaces expose the same benchmark-aware optimization and runtime profiling core.
 
-## NVIDIA recommendation boundary
+## Platform recommendation boundary
 
-InferScope now uses a shared platform-policy layer to keep NVIDIA recommendation behavior consistent across:
+InferScope supports NVIDIA (primary validated path) and AMD (day-one support for planning and benchmark gating).
+
+InferScope uses a shared platform-policy layer to keep recommendation behavior consistent across:
 
 - the recommendation DAG
 - engine selection ranking
@@ -22,8 +24,9 @@ That layer makes the following distinctions explicit instead of inferring them i
 
 - **H100 vs H200**
 - **B200/B300 vs GB200/GB300**
+- **MI300X vs MI355X** (AMD CDNA3 vs CDNA4)
 - supported auto-selected engines vs preview planning targets
-- HBM fit vs Grace coherent overflow advisory
+- HBM fit vs Grace coherent overflow advisory (NVIDIA Grace systems)
 
 ## Boundary model
 
@@ -57,11 +60,28 @@ src/inferscope/
 
 ## Dependency direction
 
-- optimization does not depend on benchmark orchestration
-- telemetry owns shared runtime snapshot models and capture helpers
-- profiling depends on telemetry, optimization checks, and engine adapters
-- benchmarks depend on telemetry capture and artifact models, not the other way around
-- CLI and MCP surfaces compose the same profiling and benchmark subsystems
+```
+hardware ─┐
+models ───┤
+           ├──→ optimization ──→ engines
+           │          │
+           │          ▼
+           ├──→ telemetry ──→ profiling
+           │          │
+           │          ▼
+           └──→ benchmarks ──→ tools
+                      │
+                      ▼
+               cli*.py / server*.py
+```
+
+Rules:
+
+- `optimization` does NOT depend on `benchmarks`
+- `telemetry` owns shared runtime snapshot models and capture helpers
+- `profiling` depends on `telemetry`, optimization checks, and engine adapters
+- `benchmarks` depend on `telemetry` capture and artifact models, not the other way around
+- CLI and MCP surfaces compose the same profiling and benchmark subsystems — they are leaf nodes
 
 ## Runtime profiling subsystem
 
@@ -93,6 +113,8 @@ It owns:
 - OpenAI-compatible replay
 - benchmark artifact persistence
 - procedural materialization for selected built-ins
+- GPU / model / ISA-aware support assessment
+- InferenceX-style serving metrics captured into artifact runtime metadata
 
 The key bridge API is `materialize_workload(...)`.
 
@@ -114,6 +136,13 @@ That lets InferScope describe operator studies like:
 - single-endpoint cold-session offload with `OffloadingConnector`
 - disaggregated prefill/decode with `LMCacheConnectorV1`
 - Grace-aware long-context overflow on GH200 / GB200 / GB300 systems
+
+The benchmark runtime now sits between packaged workload materialization and artifact persistence:
+
+- it preserves session ordering
+- it can schedule arrivals instead of blasting all requests immediately
+- it records TTFT / TPOT / ITL / throughput / goodput style metrics
+- it feeds those observed runtime metrics back to the MCP through saved artifacts and live tool responses
 
 ## MCP bridge workloads
 

@@ -72,8 +72,13 @@ inferscope profile-runtime http://localhost:8000 \
 
 v1 is intentionally Prometheus-first.
 
-- it does **not** launch `nsys` or `rocprofv3`
+- it does **not** launch `nsys` (NVIDIA) or `rocprofv3` (AMD)
 - it does **not** persist runtime profiles to disk by default
 - runtime identity enrichment is best-effort, not guaranteed
 
 Future trace and kernel work belongs under `src/inferscope/profiling/`.
+
+## GPU platform notes
+
+- NVIDIA Hopper/Blackwell: primary validated path. Prometheus metrics from vLLM and SGLang are fully normalized.
+- AMD MI300X / MI355X: day-one supported. vLLM on ROCm exposes compatible Prometheus metrics. AMD DME telemetry (port 5000) for GPU-level metrics.

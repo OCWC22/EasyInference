@@ -13,7 +13,7 @@ EasyInference is designed to be **complementary** to [InferenceX](https://infere
 - **ISB-1** is the reproducible benchmark standard for local validation, methodology, publication, and scenario-specific workloads.
 - **InferScope** is the operator surface that exposes recommendation, diagnostics, profiling, and benchmark tooling through a CLI and MCP.
 
-As of **March 25, 2026**, the InferScope NVIDIA recommendation path is explicitly hardened around the same hardware families InferenceX publicly tracks today: **H100, H200, B200, GB200, and GB300**. EasyInference does not try to replace that public leaderboard; it tries to make those platform choices actionable for operators.
+As of **March 25, 2026**, the InferScope recommendation path is explicitly hardened around the same hardware families InferenceX publicly tracks today: **H100, H200, B200, GB200, and GB300** on NVIDIA, with day-one **AMD MI300X and MI355X** support for planning and benchmark gating. EasyInference does not try to replace that public leaderboard; it tries to make those platform choices actionable for operators.
 
 The extension path is explicit:
 
@@ -64,7 +64,7 @@ Start here:
 ### InferScope
 
 Use `products/inferscope/` if you need to:
-- recommend serving configs for vLLM, SGLang, or ATOM, with preview planning for TRT-LLM and Dynamo
+- recommend serving configs for vLLM, SGLang, or ATOM on NVIDIA (and vLLM on AMD), with preview planning for TRT-LLM and Dynamo
 - expose optimization and diagnostics through MCP
 - replay packaged benchmark workloads against a real endpoint
 - procedurally expand **tool-agent** and **coding-long-context** workloads from the benchmark bridge
@@ -75,13 +75,31 @@ Start here:
 - [InferScope architecture](products/inferscope/ARCHITECTURE.md)
 - [InferScope benchmark docs](products/inferscope/docs/BENCHMARKS.md)
 
+## Prerequisites
+
+- **Python 3.11+** (InferScope) or **Python 3.10+** (ISB-1)
+- **[uv](https://docs.astral.sh/uv/)** — used for InferScope dependency management and virtual environments
+- **pip** — used for ISB-1 installation
+- **Git** — for cloning and contribution workflows
+- **Make** — for monorepo-level validation targets
+- **NVIDIA GPU + CUDA driver** — required for live benchmark execution and profiling (not required for planning, recommendation, or unit tests)
+- **AMD ROCm** — required for MI300X / MI355X targets (day-one support, NVIDIA is the primary validation path)
+
+> **Note:** All InferScope unit tests and planning commands run without GPU hardware. You only need a GPU when executing benchmarks against a live serving endpoint or running live profiling.
+
 ## Quick start from the monorepo root
 
-### Benchmark
+```bash
+git clone https://github.com/OCWC22/EasyInference.git
+cd EasyInference
+```
+
+### Benchmark (ISB-1)
 
 ```bash
-pip install -e "./products/isb1[dev,quality]"
-make isb1-validate
+cd products/isb1
+pip install -e ".[dev,quality]"
+make validate
 ```
 
 ### InferScope

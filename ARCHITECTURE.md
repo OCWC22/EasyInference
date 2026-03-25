@@ -15,7 +15,18 @@ EasyInference is designed to be **complementary** to [InferenceX](https://infere
 - **ISB-1** is the reproducible benchmark standard inside this repo for controlled validation, publication, and operator review.
 - **InferScope** is the high-leverage operator product: a self-contained MCP and CLI for tuning, diagnostics, planning, and benchmark replay.
 
-The local `inferscope-bench/` tree is treated as a **donor foundation** for workload ideas and replay patterns. It is not a third product and should not become a public dependency.
+The local `inferscope-bench/` tree is treated as a **donor foundation** for workload ideas and replay patterns. It is not a third product, should not become a public dependency, and should not be modified for feature work.
+
+## GPU platform coverage
+
+| Vendor | Supported GPUs | ISA | Status |
+|--------|---------------|-----|--------|
+| NVIDIA Hopper | H100, H200, GH200 | sm_90a | Production (primary validated path) |
+| NVIDIA Blackwell | B200, B300, GB200, GB300 | sm_100, sm_103 | Production (primary validated path) |
+| AMD CDNA3 | MI300X | gfx942 | Day-one support |
+| AMD CDNA4 | MI355X | gfx950 | Day-one support |
+
+NVIDIA Hopper/Blackwell is the primary validation path. AMD is supported for planning, benchmark gating, and support assessment from day one.
 
 ## Product boundaries
 
@@ -43,6 +54,23 @@ InferScope owns the operator product:
 - `src/inferscope/profiling/` — future profiler/kernel boundary
 
 InferScope depends inward on its benchmark package. The benchmark package may depend inward on the optimizer. The optimizer must not depend on benchmark orchestration.
+
+### Dependency flow (InferScope)
+
+```
+hardware ─┐
+models ───┤
+           ├──→ optimization ──→ engines
+           │          │
+           │          ▼
+           ├──→ telemetry ──→ profiling
+           │          │
+           │          ▼
+           └──→ benchmarks ──→ tools
+                      │
+                      ▼
+               cli*.py / server*.py
+```
 
 ## Benchmark-to-MCP bridge
 

@@ -28,6 +28,59 @@ InferScope extends beyond the public InferenceX-style matrix by shipping operato
 - **LMCache-backed disaggregated serving**
 - **Grace-coherent overflow modeling**
 
+## Serving runtime
+
+InferScope now uses a packaged serving runtime instead of a minimal replay loop.
+
+That runtime pulls in the useful mechanics from the local InferenceX-derived donor client and adapts them to InferScope's packaged workloads:
+
+- scheduled arrivals (`immediate`, `poisson`, `gamma`)
+- warmup requests
+- session-aware replay
+- per-request TTFT
+- TPOT-style decode latency
+- ITL from streamed output events
+- request/output throughput
+- optional goodput thresholds
+- tool-call parse success for MCP-style workloads
+
+The resulting artifact still keeps the existing `BenchmarkArtifact` contract, but richer runtime metrics are written under:
+
+- `run_plan.execution`
+- `run_plan.support`
+- `run_plan.observed_runtime`
+
+This keeps older artifact readers usable while giving the MCP enough signal to optimize real deployments.
+
+## GPU / model / ISA support gating
+
+Benchmark planning and execution are now support-aware.
+
+The CLI and MCP benchmark tools can validate:
+
+- GPU SKU (NVIDIA: H100, H200, B200, GB200, etc.; AMD: MI300X, MI355X)
+- GPU ISA / compute capability (`sm_90a`, `sm_100`, `sm_103` for NVIDIA; `gfx942`, `gfx950` for AMD)
+- platform family (`hopper`, `hopper_grace`, `blackwell_grace`, `cdna3`, `cdna4`, etc.)
+- model class
+- engine support tier
+- topology compatibility
+- cache / transport compatibility
+
+Support states:
+
+- `supported`
+- `degraded`
+- `unsupported`
+- `unknown`
+
+Examples:
+
+- Grace-coherent lanes reject non-Grace GPUs
+- `OffloadingConnector` lanes require single-endpoint vLLM
+- `LMCache` lanes require split topology
+- `NIXL` lanes degrade when neither RDMA nor a high-speed interconnect is available
+- preview engines such as TRT-LLM and Dynamo surface as degraded rather than silently passing
+
 ## Built-in benchmark assets
 
 InferScope ships packaged resources under:
@@ -47,6 +100,14 @@ inferscope benchmark-matrix --workload-class tool_agent --engine sglang
 
 # inspect a concrete run plan
 inferscope benchmark-plan tool-agent http://localhost:8000
+
+# inspect a support-aware plan for a specific GPU / model / engine
+inferscope benchmark-plan long-context-kv-offload-rag http://localhost:8000 \
+  --experiment vllm-single-endpoint-long-context-rag-baseline \
+  --model Qwen3.5-72B \
+  --gpu gb200 \
+  --num-gpus 4 \
+  --engine vllm
 
 # replay a workload against an endpoint
 inferscope benchmark coding-long-context http://localhost:8000
@@ -177,6 +238,25 @@ inferscope benchmark coding-long-context http://localhost:8000 \
 
 These commands still resolve to a standard `WorkloadPack` and write a normal `BenchmarkArtifact`.
 
+## MCP surfaces
+
+The benchmark MCP is now meant to be directly usable for real benchmark orchestration, not just catalog lookup.
+
+Important surfaces:
+
+- `tool_resolve_benchmark_plan`
+- `tool_run_benchmark`
+- `tool_plan_benchmark_strategy`
+- `tool_generate_benchmark_stack_plan`
+
+These now return or embed:
+
+- support status
+- GPU ISA
+- engine support tier
+- benchmark execution settings
+- observed runtime metrics after execution
+
 ## Relationship to ISB-1
 
 InferScope built-ins should map back to the stable ISB-1 families rather than inventing a second benchmark taxonomy.
@@ -188,6 +268,22 @@ Current mapping:
 - `long-context-kv-offload-rag` → ISB-1 `rag`
 
 This lets the MCP surface move quickly without destabilizing the benchmark standard.
+
+## Troubleshooting
+
+Common issues when running benchmarks:
+
+| Problem | Cause | Fix |
+|---------|-------|-----|
+| `Connection refused` on benchmark run | Endpoint not running or wrong URL | Verify the serving endpoint is up: `curl http://localhost:8000/v1/models` |
+| `Model not found` in plan resolution | Model name doesn't match registry | Use `inferscope benchmark-plan <workload> <endpoint> --model <name>` with an exact registry name, or check `inferscope recommend --list-models` |
+| `unsupported` status in support payload | GPU/topology/engine combination is gated | Check the `issues` array in the support response — each issue has a `code` and `reason` explaining the gate |
+| `degraded` status for NIXL transport | No RDMA / high-speed interconnect detected | Expected on commodity networks — benchmark still runs but results may not reflect production performance |
+| `preview_engine` degraded warning | TRT-LLM or Dynamo selected | These are preview planning targets — switch to `vllm` or `sglang` for production benchmarks |
+| Prometheus metrics empty | Endpoint doesn't expose `/metrics` | Verify engine metrics are enabled (vLLM: enabled by default, SGLang: `--enable-metrics`) |
+| `tool_parse_success_rate: 0.0` | Model not producing valid JSON tool calls | Check model supports structured output; try a larger model or adjust `--synthetic-output-tokens` |
+| Permission denied writing artifacts | `~/.inferscope/benchmarks/` not writable | Set `INFERSCOPE_CACHE_DIR` to a writable path, or `mkdir -p ~/.inferscope/benchmarks` |
+| AMD GPU not recognized | GPU name not in registry | Use `mi300x` or `mi355x` as the `--gpu` value; AMD is day-one supported for planning and gating |
 
 ## Legacy compatibility
 

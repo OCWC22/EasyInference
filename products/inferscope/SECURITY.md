@@ -47,6 +47,6 @@ InferScope operates in two modes with different trust boundaries:
 ## Known Limitations
 
 - The HTTP transport (`--transport streamable-http`) exposes an HTTP server. Use a reverse proxy with authentication in production.
-- GPU telemetry endpoints (DCGM port 9400, AMD DME port 5000) are assumed to be on a trusted network.
+- GPU telemetry endpoints (NVIDIA DCGM port 9400, AMD DME port 5000) are assumed to be on a trusted network. Both NVIDIA and AMD GPU targets are day-one supported.
 - Runtime identity enrichment via `/v1/models` is best-effort and may lag the exact Prometheus snapshot in time.
 - A future empirical profile store may contain deployment fingerprints — treat it as sensitive if persistence is added later.

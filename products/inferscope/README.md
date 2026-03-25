@@ -12,21 +12,25 @@ EasyInference has three distinct layers of concern:
 
 If the goal is benchmarking and profiling through an MCP, this is the product that matters.
 
-## NVIDIA platform stance
+## Platform stance
 
 As of **March 25, 2026**, InferScope's production recommendation path is validated around:
 
-- **H100**
-- **H200**
-- **B200**
-- **GB200**
+**NVIDIA (primary validation path):**
+- **H100**, **H200**, **B200**, **GB200**
+
+**AMD (day-one support):**
+- **MI300X** (gfx942 / CDNA3)
+- **MI355X** (gfx950 / CDNA4)
 
 Key policy decisions:
 
 - **vLLM** and **SGLang** are the supported NVIDIA auto-selection paths
-- **TRT-LLM** and **Dynamo** remain **preview planning targets**
+- **vLLM** is the supported AMD auto-selection path
+- **TRT-LLM** and **Dynamo** remain **preview planning targets** (NVIDIA only)
 - Blackwell is treated explicitly as **B200/B300 vs GB200/GB300**, not inferred from raw memory size
 - Grace coherent overflow is surfaced as an advisory capacity tier, not silently treated as normal HBM fit
+- AMD GPUs are supported for planning, benchmark gating, and support assessment; NVIDIA remains the primary validated path
 
 This is intentionally complementary to InferenceX: InferenceX measures the public frontier continuously; InferScope turns those platform assumptions into operator recommendations, validation, profiling, and benchmark workflows.
 
@@ -125,6 +129,12 @@ InferScope now carries three distinct long-context operator lanes:
 
 These lanes are the main way InferScope extends beyond InferenceX today: not by cloning the public leaderboard, but by giving operators a reproducible way to study realistic KV-tiering behavior.
 
+Benchmark planning and replay are now also GPU/model/ISA-aware:
+
+- benchmark MCP and CLI surfaces can validate concrete NVIDIA GPUs (**H100/H200/GH200/B200/GB200/GB300**) and AMD GPUs (**MI300X/MI355X**)
+- support payloads surface the resolved ISA (NVIDIA: `sm_90a`, `sm_100`, `sm_103`; AMD: `gfx942`, `gfx950`)
+- unsupported cache/topology combinations fail early instead of producing misleading plans
+
 ## Procedural benchmark materialization
 
 InferScope can expand certain built-in workloads procedurally at runtime.
@@ -156,11 +166,20 @@ inferscope benchmark coding-long-context http://localhost:8000 \
 
 The resulting benchmark plan still resolves to the same stable `WorkloadPack` and `BenchmarkArtifact` contracts.
 
+## Prerequisites
+
+- **Python 3.11+**
+- **[uv](https://docs.astral.sh/uv/)** — dependency management and virtual environment
+- **Git**
+- **NVIDIA GPU + CUDA** or **AMD GPU + ROCm** — only required for live benchmarks/profiling, not for planning or unit tests
+
 ## Quick start
 
 ```bash
+git clone https://github.com/OCWC22/EasyInference.git
 cd EasyInference/products/inferscope
 uv sync --dev
+cp .env.example .env  # optional — see Configuration below
 
 # recommendation and validation
 inferscope recommend DeepSeek-R1 h100 --num-gpus 8 --workload coding
@@ -174,12 +193,28 @@ inferscope audit http://localhost:8000 --gpu-arch sm_90a
 inferscope benchmark-workloads
 inferscope benchmark-matrix --focus-area kv_offload --gpu-family blackwell_grace
 inferscope benchmark-strategy Qwen3.5-72B gb200 --workload long_context_rag --num-gpus 4
-inferscope benchmark-plan tool-agent http://localhost:8000 --synthetic-requests 4
+inferscope benchmark-plan tool-agent http://localhost:8000 --synthetic-requests 4 --gpu h100 --engine sglang
 inferscope benchmark coding-long-context http://localhost:8000 --synthetic-requests 2
 
 # MCP server
 inferscope serve
 ```
+
+## Configuration
+
+InferScope reads optional environment variables from `.env` (gitignored). Copy the example:
+
+```bash
+cp .env.example .env
+```
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `INFERSCOPE_DEBUG` | `0` | Enable verbose/debug logging |
+| `INFERSCOPE_CACHE_DIR` | `~/.inferscope` | Cache directory for empirical profiles and benchmark artifacts |
+| `INFERSCOPE_DEFAULT_GPU_UTIL` | `0.92` | Default `gpu_memory_utilization` target for memory planning |
+
+These are optional — InferScope works with sensible defaults out of the box.
 
 ## Runtime storage
 

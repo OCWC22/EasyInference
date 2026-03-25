@@ -13,9 +13,10 @@ Use this product when your change affects:
 ## Development setup
 
 ```bash
-git clone <repository-url>
+git clone https://github.com/OCWC22/EasyInference.git
 cd EasyInference/products/inferscope
 uv sync --dev
+cp .env.example .env  # optional
 ```
 
 ## Required local checks
@@ -53,9 +54,43 @@ uv run inferscope benchmark-plan tool-agent http://localhost:8000 --synthetic-re
 
 The `tool-agent` and `coding-long-context` built-ins are the main MCP bridge workloads. Keep them mapped to stable ISB-1 families rather than creating a second benchmark taxonomy.
 
+## Test conventions
+
+Tests live in `tests/` and run with `uv run pytest tests/ -v --tb=short`.
+
+**Key patterns:**
+
+- `conftest.py` adds `src/` to `sys.path` so no editable install is required.
+- Use `pytest.mark.asyncio` for all async test functions.
+- Mock HTTP endpoints with `httpx.MockTransport` + `httpx.AsyncClient`, not `unittest.mock.patch`. Example from `test_benchmark_runtime.py`:
+
+```python
+def handler(request: httpx.Request) -> httpx.Response:
+    return _sse_response({"choices": [{"delta": {"content": "ok"}}]})
+
+client = httpx.AsyncClient(transport=httpx.MockTransport(handler), timeout=30.0)
+```
+
+- Use `pytest.mark.integration` for broader cross-module tests.
+- Use `pytest.mark.live_engine` for tests that require a running inference endpoint.
+- Never import from `inferscope-bench/` — it is a donor harness and not on the Python path.
+- Test file naming: `test_<module>_<area>.py` (e.g., `test_benchmark_support.py`).
+- For benchmark tests, use `load_workload()` / `load_experiment()` to load packaged assets.
+- Use `build_run_plan()` to construct run plans for replay tests.
+- SSE streaming responses can be mocked with a `DelayedSSE(httpx.AsyncByteStream)` helper — see `test_benchmark_runtime.py`.
+
+**Fixture and marker summary:**
+
+| Marker | When to use |
+|--------|------------|
+| `@pytest.mark.asyncio` | Any `async def test_*` function |
+| `@pytest.mark.integration` | Tests spanning multiple subsystems |
+| `@pytest.mark.live_engine` | Tests requiring a real running serving endpoint |
+
 ## Pull request expectations
 
 1. keep changes scoped
 2. update docs when CLI or MCP behavior changes
 3. add tests when benchmark plan resolution, replay contracts, or artifact structure changes
 4. call out rollout implications in the PR description
+5. run `uv run pytest tests/ -v --tb=short` and `uv run ruff check src/ tests/` before pushing

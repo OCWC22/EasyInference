@@ -10,7 +10,7 @@ Its primary deployment value is not model hosting by itself; it is the ability t
 
 Use InferScope locally to:
 
-- select an engine and serving profile
+- select an engine and serving profile (vLLM/SGLang on NVIDIA, vLLM on AMD)
 - validate a config before launch
 - profile a local or remote endpoint through Prometheus metrics
 - benchmark a local or remote OpenAI-compatible endpoint
@@ -56,10 +56,16 @@ Artifacts default to `~/.inferscope/benchmarks/`. Keep this path writable and tr
 
 Runtime profiles are returned directly to the CLI or MCP caller in v1. They are not written to disk by default.
 
+## GPU platform support
+
+- **NVIDIA Hopper/Blackwell** (H100, H200, B200, GB200): primary validated path, full recommendation + profiling + benchmark support
+- **AMD MI300X / MI355X**: day-one support for planning, benchmark gating, and support assessment; profiling support follows NVIDIA parity
+- GPU telemetry: DCGM (port 9400) for NVIDIA, AMD DME (port 5000) for AMD — both assumed on a trusted network
+
 ## Profiling boundary
 
 `src/inferscope/profiling/` is the isolated seam for runtime profiling today and profiler/kernel work later.
 
 - v1 ships Prometheus-based runtime profiling
-- future work can add trace execution helpers and kernel-facing integrations there
+- future work can add trace execution helpers and kernel-facing integrations there (`nsys` for NVIDIA, `rocprofv3` for AMD)
 - benchmark orchestration should keep consuming shared telemetry models rather than reimplementing profiling logic

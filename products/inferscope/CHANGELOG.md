@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+Validation: [03-runtime-profiling-v1](validations/03-2026-03-25-runtime-profiling-v1.md), [04-hopper-blackwell-hardening](validations/04-2026-03-25-hopper-blackwell-hardening.md)
+
 ### Added
 - Shared Hopper/Blackwell platform policy used by the recommendation DAG, validators, and compilers
 - Explicit support-tier metadata for engine recommendations and compiled engine configs
@@ -14,6 +16,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - New benchmark launcher regression coverage to ensure benchmark stack plans inherit the same H200/Hopper policy as the MCP
 - Structured benchmark matrix catalog across packaged workloads and experiment specs, exposed through both CLI and MCP
 - Benchmark strategy layer that maps model + GPU + workload intent to the right packaged benchmark suite and optional live profiling bridge
+- Day-one AMD MI300X (gfx942) and MI355X (gfx950) support for planning, benchmark gating, and support assessment
+- AGENTS.md at monorepo root for coding agent onboarding
+- Comprehensive SDLC documentation: prerequisites, configuration, test conventions, troubleshooting, and dependency flow diagrams
 - New long-context benchmark workload and experiment lanes for:
   - single-endpoint `OffloadingConnector`
   - disaggregated `LMCache` with Grace-aware overflow modeling

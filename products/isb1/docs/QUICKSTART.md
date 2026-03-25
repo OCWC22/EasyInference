@@ -12,7 +12,7 @@ This guide gets you from install to a first reproducible benchmark run.
 ## Install
 
 ```bash
-git clone <repository-url>
+git clone https://github.com/OCWC22/EasyInference.git
 cd EasyInference/products/isb1
 pip install -e ".[dev,quality]"
 ```
