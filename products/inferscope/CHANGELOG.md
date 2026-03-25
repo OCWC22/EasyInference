@@ -13,9 +13,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - New NVIDIA regression coverage for H100, H200, B200, and GB200 recommendation paths
 - New benchmark launcher regression coverage to ensure benchmark stack plans inherit the same H200/Hopper policy as the MCP
 - Structured benchmark matrix catalog across packaged workloads and experiment specs, exposed through both CLI and MCP
+- Benchmark strategy layer that maps model + GPU + workload intent to the right packaged benchmark suite and optional live profiling bridge
 - New long-context benchmark workload and experiment lanes for:
   - single-endpoint `OffloadingConnector`
   - disaggregated `LMCache` with Grace-aware overflow modeling
+  - single-endpoint long-context RAG baseline
+  - disaggregated LMCache-backed long-context RAG lane for non-Grace systems
 
 ### Changed
 - Engine ranking now derives its top pick from the full recommendation DAG instead of a separate heuristic

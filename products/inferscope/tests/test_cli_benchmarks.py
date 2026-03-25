@@ -9,6 +9,38 @@ from inferscope.cli import app
 runner = CliRunner()
 
 
+def test_cli_benchmark_strategy_command_exists_and_runs(monkeypatch) -> None:
+    async def fake_plan_strategy(*args, **kwargs):
+        del args, kwargs
+        return {
+            "summary": "Benchmark strategy ready",
+            "confidence": 0.9,
+            "benchmark_strategy": {
+                "suite": [
+                    {"experiment": "vllm-single-endpoint-long-context-rag-baseline"},
+                    {"experiment": "vllm-single-endpoint-offloading-connector"},
+                ]
+            },
+        }
+
+    monkeypatch.setattr("inferscope.cli_benchmarks.plan_benchmark_strategy_with_runtime", fake_plan_strategy)
+
+    result = runner.invoke(
+        app,
+        [
+            "benchmark-strategy",
+            "Qwen3.5-72B",
+            "gb200",
+            "--workload",
+            "long_context_rag",
+        ],
+    )
+
+    assert result.exit_code == 0, result.stdout
+    assert "Benchmark strategy ready" in result.stdout
+    assert "vllm-single-endpoint-offloading-connector" in result.stdout
+
+
 def test_cli_benchmark_matrix_command_filters_long_context_offload_lane() -> None:
     result = runner.invoke(
         app,

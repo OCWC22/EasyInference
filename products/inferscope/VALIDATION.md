@@ -34,6 +34,7 @@ As of **March 25, 2026**, InferScope should be considered valid when the followi
 - benchmark launcher coverage showing benchmark plans inherit the same H200/B200/GB200 policy as the MCP
 - benchmark launcher coverage for explicit **OffloadingConnector** and **LMCache + Grace** long-context lanes
 - benchmark catalog coverage for packaged descriptor metadata and filtered matrix generation across CLI, MCP, and Python entrypoints
+- benchmark strategy coverage for benchmark-suite planning and runtime-bridge prioritization
 
 ## Notes
 

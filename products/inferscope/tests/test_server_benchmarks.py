@@ -74,3 +74,26 @@ async def test_tool_list_benchmark_experiments_exposes_descriptors() -> None:
     assert payload["evidence"] == "packaged_experiment_catalog"
     assert router["workload_class"] == "tool_agent"
     assert "router" in router["focus_areas"]
+
+
+@pytest.mark.asyncio
+async def test_tool_plan_benchmark_strategy_returns_suite() -> None:
+    mcp = FastMCP("test-benchmarks")
+    register_benchmark_tools(mcp)
+
+    result = await mcp.call_tool(
+        "tool_plan_benchmark_strategy",
+        {
+            "model": "Qwen3.5-72B",
+            "gpu": "gb200",
+            "workload": "long_context_rag",
+            "num_gpus": 4,
+            "avg_prompt_tokens": 32768,
+            "has_rdma": True,
+        },
+    )
+    payload = result.structured_content
+
+    assert payload["evidence"] == "benchmark_strategy_planner"
+    assert payload["benchmark_strategy"]["primary_workload"]["name"] == "long-context-kv-offload-rag"
+    assert payload["benchmark_strategy"]["suite"][0]["experiment"] == "vllm-single-endpoint-long-context-rag-baseline"

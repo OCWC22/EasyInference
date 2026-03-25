@@ -215,7 +215,7 @@ def quantization_cmd(
 
 
 register_profiling_commands(app, print_result=_print_result, resolve_metrics_auth=_resolve_metrics_auth)
-register_benchmark_commands(app, print_result=_print_result)
+register_benchmark_commands(app, print_result=_print_result, resolve_metrics_auth=_resolve_metrics_auth)
 
 
 @app.command()

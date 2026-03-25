@@ -104,6 +104,17 @@ Primary surfaces:
 - CLI: `inferscope benchmark-matrix`
 - MCP: `tool_get_benchmark_matrix`
 
+InferScope also exposes a benchmark-strategy layer that turns a concrete deployment target into:
+
+- the right primary workload
+- the right baseline / offload / disaggregated benchmark lanes
+- the right live profiling bridge for follow-up tuning
+
+Primary surfaces:
+
+- CLI: `inferscope benchmark-strategy`
+- MCP: `tool_plan_benchmark_strategy`
+
 ## Benchmark architecture lanes
 
 InferScope now carries three distinct long-context operator lanes:
@@ -162,6 +173,7 @@ inferscope audit http://localhost:8000 --gpu-arch sm_90a
 # benchmark catalog and replay
 inferscope benchmark-workloads
 inferscope benchmark-matrix --focus-area kv_offload --gpu-family blackwell_grace
+inferscope benchmark-strategy Qwen3.5-72B gb200 --workload long_context_rag --num-gpus 4
 inferscope benchmark-plan tool-agent http://localhost:8000 --synthetic-requests 4
 inferscope benchmark coding-long-context http://localhost:8000 --synthetic-requests 2
 

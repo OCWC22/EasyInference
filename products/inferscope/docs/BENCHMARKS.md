@@ -98,6 +98,45 @@ That returns:
 - filtered experiment descriptors
 - suggested workload/experiment pairings
 
+## Benchmark strategy layer
+
+InferScope now builds directly on top of the packaged benchmark catalog to plan the right operator workflow.
+
+The benchmark-strategy surface answers:
+
+- which workload should be primary for this model + GPU + workload mode?
+- which benchmark lanes should be compared first?
+- when should the operator run baseline vs offload vs disaggregated studies?
+- how should a live runtime profile reorder that suite?
+
+Available surfaces:
+
+- CLI: `inferscope benchmark-strategy`
+- MCP: `tool_plan_benchmark_strategy`
+
+Example:
+
+```bash
+inferscope benchmark-strategy Qwen3.5-72B gb200 \
+  --workload long_context_rag \
+  --num-gpus 4 \
+  --avg-prompt-tokens 32768 \
+  --endpoint http://localhost:8000
+```
+
+This bridges three layers:
+
+1. optimizer recommendation
+2. packaged benchmark suite selection
+3. runtime profiling and tuning preview
+
+For long-context RAG on our benchmark, the intended progression is now:
+
+1. `vllm-single-endpoint-long-context-rag-baseline`
+2. `vllm-single-endpoint-offloading-connector`
+3. `vllm-disagg-prefill-lmcache-rag`
+4. `vllm-disagg-prefill-lmcache-grace` on Grace systems
+
 ## Procedural built-ins
 
 Some built-ins can be procedurally expanded at runtime.

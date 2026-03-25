@@ -44,6 +44,7 @@ from inferscope.benchmarks.models import (
 from inferscope.benchmarks.openai_replay import build_default_artifact_path, run_openai_replay
 from inferscope.benchmarks.procedural import ProceduralWorkloadOptions
 from inferscope.benchmarks.prometheus_capture import capture_endpoint_snapshot, capture_metrics_targets
+from inferscope.benchmarks.strategy import plan_benchmark_strategy, plan_benchmark_strategy_with_runtime
 
 __all__ = [
     "BenchmarkArtifact",
@@ -68,6 +69,8 @@ __all__ = [
     "materialize_benchmark_stack_plan",
     "build_default_artifact_path",
     "build_benchmark_matrix",
+    "plan_benchmark_strategy",
+    "plan_benchmark_strategy_with_runtime",
     "build_run_plan",
     "capture_endpoint_snapshot",
     "capture_metrics_targets",

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import json
 from collections.abc import Callable
 from pathlib import Path
 from typing import Annotated, Any
@@ -25,9 +26,22 @@ from inferscope.benchmarks import (
     materialize_benchmark_stack_plan,
     materialize_workload,
     parse_metrics_target_overrides,
+    plan_benchmark_strategy_with_runtime,
     run_openai_replay,
 )
 from inferscope.endpoint_auth import parse_header_values
+
+
+def _parse_json_option(raw: str, *, option_name: str) -> dict[str, Any] | None:
+    if not raw.strip():
+        return None
+    try:
+        value = json.loads(raw)
+    except json.JSONDecodeError as exc:
+        raise typer.BadParameter(f"{option_name} must be valid JSON") from exc
+    if not isinstance(value, dict):
+        raise typer.BadParameter(f"{option_name} must be a JSON object")
+    return {str(key): val for key, val in value.items()}
 
 
 def _build_procedural_options(
@@ -123,6 +137,7 @@ def register_benchmark_commands(
     app: typer.Typer,
     *,
     print_result: Callable[[dict[str, Any]], None],
+    resolve_metrics_auth: Callable[..., Any] | None = None,
 ) -> None:
     """Register benchmark and evaluation commands on the main CLI app."""
 
@@ -176,6 +191,114 @@ def register_benchmark_commands(
                 "matrix": matrix,
             }
         )
+
+    @app.command(name="benchmark-strategy")
+    def benchmark_strategy_cmd(
+        model: Annotated[str, typer.Argument(help="Model name")],
+        gpu: Annotated[str, typer.Argument(help="GPU type")],
+        workload: Annotated[str, typer.Option(help="Workload: coding, chat, agent, long_context_rag")] = "chat",
+        num_gpus: Annotated[int, typer.Option(help="Number of GPUs", min=1)] = 1,
+        engine: Annotated[str, typer.Option(help="Engine target or auto")] = "auto",
+        max_context: Annotated[int, typer.Option(help="Target max context length", min=1024)] = 32768,
+        concurrent_sessions: Annotated[int, typer.Option(help="Concurrent sessions to model", min=1)] = 100,
+        avg_prompt_tokens: Annotated[int, typer.Option(help="Average prompt tokens", min=1)] = 4096,
+        request_rate_per_sec: Annotated[float, typer.Option(help="Requests per second", min=0.0)] = 10.0,
+        has_rdma: Annotated[bool, typer.Option(help="RDMA available between nodes")] = False,
+        host: Annotated[str, typer.Option(help="Host/IP for generated stack plans")] = "127.0.0.1",
+        endpoint: Annotated[str, typer.Option(help="Optional live endpoint to profile and bridge into the plan")] = "",
+        current_engine: Annotated[
+            str, typer.Option(help="Current live engine if different from the planned target")
+        ] = "",
+        current_model_name: Annotated[str, typer.Option(help="Current live model name if known")] = "",
+        current_model_type: Annotated[str, typer.Option(help="Current live model type: dense or moe")] = "",
+        current_attention_type: Annotated[
+            str, typer.Option(help="Current live attention type: GQA, MLA, MHA, hybrid")
+        ] = "",
+        current_experts_total: Annotated[int, typer.Option(help="Current live expert count for MoE models", min=0)] = 0,
+        current_tp: Annotated[int, typer.Option(help="Current live tensor parallelism degree", min=0)] = 0,
+        current_ep: Annotated[int, typer.Option(help="Current live expert parallelism degree", min=0)] = 0,
+        current_quantization: Annotated[str, typer.Option(help="Current live quantization")] = "",
+        current_kv_cache_dtype: Annotated[str, typer.Option(help="Current live KV cache dtype")] = "",
+        current_gpu_memory_utilization: Annotated[
+            float,
+            typer.Option(help="Current live GPU memory utilization if known", min=0.0, max=1.0),
+        ] = 0.0,
+        current_split_prefill_decode: Annotated[
+            bool | None,
+            typer.Option(help="Current live deployment already uses split prefill/decode"),
+        ] = None,
+        current_scheduler: Annotated[
+            str,
+            typer.Option(help="Optional scheduler JSON object for runtime bridge"),
+        ] = "",
+        current_cache: Annotated[
+            str,
+            typer.Option(help="Optional cache JSON object for runtime bridge"),
+        ] = "",
+        provider: Annotated[
+            str,
+            typer.Option(help="Managed provider preset for authenticated metrics endpoints"),
+        ] = "",
+        metrics_api_key: Annotated[
+            str,
+            typer.Option(help="API key for scraping authenticated metrics endpoints"),
+        ] = "",
+        metrics_auth_scheme: Annotated[
+            str,
+            typer.Option(help="Metrics auth scheme: bearer, api-key, x-api-key, raw"),
+        ] = "",
+        metrics_auth_header_name: Annotated[
+            str,
+            typer.Option(help="Override metrics auth header name"),
+        ] = "",
+        metrics_header: Annotated[
+            list[str] | None,
+            typer.Option(help="Additional metrics headers as Header=Value. Repeat for multiple headers."),
+        ] = None,
+    ):
+        """Plan the benchmark suite and optionally bridge it to a live runtime profile."""
+        result = asyncio.run(
+            plan_benchmark_strategy_with_runtime(
+                model,
+                gpu,
+                workload=workload,
+                num_gpus=num_gpus,
+                engine=engine,
+                max_context=max_context,
+                concurrent_sessions=concurrent_sessions,
+                avg_prompt_tokens=avg_prompt_tokens,
+                request_rate_per_sec=request_rate_per_sec,
+                has_rdma=has_rdma,
+                host=host,
+                endpoint=endpoint,
+                current_engine=current_engine,
+                current_model_name=current_model_name,
+                current_model_type=current_model_type,
+                current_attention_type=current_attention_type,
+                current_experts_total=current_experts_total,
+                current_tp=current_tp,
+                current_ep=current_ep,
+                current_quantization=current_quantization,
+                current_kv_cache_dtype=current_kv_cache_dtype,
+                current_gpu_memory_utilization=current_gpu_memory_utilization,
+                current_split_prefill_decode=current_split_prefill_decode,
+                current_scheduler=_parse_json_option(current_scheduler, option_name="current scheduler"),
+                current_cache=_parse_json_option(current_cache, option_name="current cache"),
+                allow_private=True,
+                metrics_auth=(
+                    resolve_metrics_auth(
+                        provider=provider,
+                        metrics_api_key=metrics_api_key,
+                        metrics_auth_scheme=metrics_auth_scheme,
+                        metrics_auth_header_name=metrics_auth_header_name,
+                        metrics_header=metrics_header,
+                    )
+                    if resolve_metrics_auth is not None and endpoint
+                    else None
+                ),
+            )
+        )
+        print_result(result)
 
     @app.command(name="benchmark-stack-plan")
     def benchmark_stack_plan_cmd(

@@ -22,6 +22,7 @@ def _profile_error(endpoint: str, error: str) -> dict[str, Any]:
 async def profile_runtime(
     endpoint: str,
     *,
+    engine: str = "",
     gpu_arch: str = "",
     gpu_name: str = "",
     model_name: str = "",
@@ -47,6 +48,7 @@ async def profile_runtime(
 ) -> dict[str, Any]:
     """Build the unified runtime profile payload."""
     hints = RuntimeContextHints(
+        engine=engine,
         gpu_arch=gpu_arch,
         gpu_name=gpu_name,
         model_name=model_name,

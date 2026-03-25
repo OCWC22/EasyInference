@@ -22,6 +22,7 @@ from inferscope.benchmarks import (
     load_experiment,
     materialize_benchmark_stack_plan,
     materialize_workload,
+    plan_benchmark_strategy_with_runtime,
     run_openai_replay,
 )
 from inferscope.config import settings
@@ -193,6 +194,71 @@ def register_benchmark_tools(mcp: FastMCP) -> None:
             "confidence": 1.0,
             "evidence": "benchmark_matrix_catalog",
         }
+
+    @mcp.tool()
+    async def tool_plan_benchmark_strategy(
+        model: str,
+        gpu: str,
+        workload: str = "chat",
+        num_gpus: int = 1,
+        engine: str = "auto",
+        max_context: int = 32768,
+        concurrent_sessions: int = 100,
+        avg_prompt_tokens: int = 4096,
+        request_rate_per_sec: float = 10.0,
+        has_rdma: bool = False,
+        host: str = "127.0.0.1",
+        endpoint: str = "",
+        current_engine: str = "",
+        current_model_name: str = "",
+        current_model_type: str = "",
+        current_attention_type: str = "",
+        current_experts_total: int = 0,
+        current_tp: int = 0,
+        current_ep: int = 0,
+        current_quantization: str = "",
+        current_kv_cache_dtype: str = "",
+        current_gpu_memory_utilization: float = 0.0,
+        current_split_prefill_decode: bool | None = None,
+        current_scheduler: dict[str, Any] | None = None,
+        current_cache: dict[str, Any] | None = None,
+        provider: str = "",
+        metrics_auth: dict | None = None,
+    ) -> dict[str, Any]:
+        """Plan the right benchmark suite and optionally bridge it to a live runtime profile."""
+        result = await plan_benchmark_strategy_with_runtime(
+            model,
+            gpu,
+            workload=workload,
+            num_gpus=num_gpus,
+            engine=engine,
+            max_context=max_context,
+            concurrent_sessions=concurrent_sessions,
+            avg_prompt_tokens=avg_prompt_tokens,
+            request_rate_per_sec=request_rate_per_sec,
+            has_rdma=has_rdma,
+            host=host,
+            endpoint=endpoint,
+            current_engine=current_engine,
+            current_model_name=current_model_name,
+            current_model_type=current_model_type,
+            current_attention_type=current_attention_type,
+            current_experts_total=current_experts_total,
+            current_tp=current_tp,
+            current_ep=current_ep,
+            current_quantization=current_quantization,
+            current_kv_cache_dtype=current_kv_cache_dtype,
+            current_gpu_memory_utilization=current_gpu_memory_utilization,
+            current_split_prefill_decode=current_split_prefill_decode,
+            current_scheduler=current_scheduler,
+            current_cache=current_cache,
+            allow_private=False,
+            metrics_auth=resolve_auth_payload(metrics_auth, provider=provider),
+            include_identity=True,
+        )
+        result["confidence"] = min(0.96, float(result.get("confidence", 0.85)))
+        result["evidence"] = "benchmark_strategy_runtime_bridge" if endpoint else "benchmark_strategy_planner"
+        return result
 
     @mcp.tool()
     async def tool_generate_benchmark_stack_plan(
