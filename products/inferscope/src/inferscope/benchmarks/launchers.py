@@ -12,6 +12,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from inferscope.benchmarks.catalog import load_experiment, load_workload
 from inferscope.benchmarks.experiments import BenchmarkExperimentSpec, BenchmarkRunPlan, build_run_plan
+from inferscope.benchmarks.support import assess_benchmark_support
 from inferscope.engines.base import EngineConfig
 from inferscope.hardware.gpu_profiles import get_gpu_profile
 from inferscope.models.registry import get_model_variant
@@ -61,6 +62,7 @@ class BenchmarkStackPlan(BaseModel):
     num_gpus: int
     host: str
     run_plan: dict
+    support: dict | None = None
     benchmark_command: str
     components: list[LaunchComponent]
     generated_files: list[GeneratedFile] = Field(default_factory=list)
@@ -247,6 +249,12 @@ def _build_benchmark_command(
         "--model",
         run_plan.model,
     ]
+    if run_plan.support and run_plan.support.gpu:
+        cmd_parts.extend(["--gpu", run_plan.support.gpu])
+    if run_plan.support and run_plan.support.num_gpus:
+        cmd_parts.extend(["--num-gpus", str(run_plan.support.num_gpus)])
+    if run_plan.engine:
+        cmd_parts.extend(["--engine", run_plan.engine])
     primary_target = next((target for target in run_plan.metrics_targets if target.role == "primary"), None)
     if primary_target is not None:
         cmd_parts.extend(["--metrics-endpoint", primary_target.endpoint])
@@ -254,6 +262,17 @@ def _build_benchmark_command(
         if target.role == "primary":
             continue
         cmd_parts.extend(["--metrics-target", f"{target.name}={target.endpoint}"])
+    if run_plan.execution.request_rate_rps is not None:
+        cmd_parts.extend(["--request-rate", str(run_plan.execution.request_rate_rps)])
+    if run_plan.execution.arrival_model != "immediate":
+        cmd_parts.extend(["--arrival-model", run_plan.execution.arrival_model])
+    if run_plan.execution.arrival_shape is not None:
+        cmd_parts.extend(["--arrival-shape", str(run_plan.execution.arrival_shape)])
+    if run_plan.execution.warmup_requests:
+        cmd_parts.extend(["--warmup-requests", str(run_plan.execution.warmup_requests)])
+    goodput_slo = run_plan.execution.goodput_slo.model_dump(mode="json", exclude_none=True)
+    if goodput_slo:
+        cmd_parts.extend(["--goodput-slo", json.dumps(goodput_slo, separators=(",", ":"))])
     return " ".join(cmd_parts)
 
 
@@ -352,17 +371,40 @@ def _render_stack_readme(stack_plan: BenchmarkStackPlan, component_scripts: list
         f"- GPU: `{stack_plan.gpu}` x `{stack_plan.num_gpus}`",
         f"- Host: `{stack_plan.host}`",
         "",
-        "## Files",
-        "",
-        "- `stack-plan.json`: full generated plan",
-        "- `manifest.json`: materialized file manifest",
-        "- `scripts/start-all.sh`: launch all components in background",
-        "- `scripts/stop-all.sh`: stop all started components",
-        "- `scripts/run-benchmark.sh`: run the benchmark replay command",
-        "",
-        "## Components",
-        "",
     ]
+    if stack_plan.support:
+        lines.extend(
+            [
+                "## Support",
+                "",
+                f"- Status: `{stack_plan.support.get('status', 'unknown')}`",
+                f"- GPU ISA: `{stack_plan.support.get('gpu_isa', 'unknown')}`",
+                f"- Platform family: `{stack_plan.support.get('platform_family', 'unknown')}`",
+                f"- Engine tier: `{stack_plan.support.get('engine_support_tier', 'unknown')}`",
+                "",
+            ]
+        )
+        issues = stack_plan.support.get("issues", [])
+        if issues:
+            lines.append("Support issues:")
+            for issue in issues:
+                if isinstance(issue, dict):
+                    lines.append(f"- [{issue.get('severity', 'info')}] {issue.get('message', '')}")
+            lines.append("")
+    lines.extend(
+        [
+            "## Files",
+            "",
+            "- `stack-plan.json`: full generated plan",
+            "- `manifest.json`: materialized file manifest",
+            "- `scripts/start-all.sh`: launch all components in background",
+            "- `scripts/stop-all.sh`: stop all started components",
+            "- `scripts/run-benchmark.sh`: run the benchmark replay command",
+            "",
+            "## Components",
+            "",
+        ]
+    )
     for component, script_path in component_scripts:
         lines.extend(
             [
@@ -594,6 +636,27 @@ def build_benchmark_stack_plan(
         metrics_endpoint=metrics_endpoint,
         metrics_target_overrides=metrics_target_overrides,
     )
+    support = assess_benchmark_support(
+        model_name=selected_model,
+        gpu_name=gpu,
+        num_gpus=num_gpus,
+        engine_name=experiment.engine,
+        workload=workload_pack,
+        experiment=experiment,
+        prompt_tokens=max(
+            (
+                int(request.metadata.get("approx_context_tokens"))
+                for request in workload_pack.requests
+                if isinstance(request.metadata.get("approx_context_tokens"), int)
+            ),
+            default=0,
+        )
+        or None,
+    )
+    run_plan.support = support
+    if support.status == "unsupported":
+        joined = "; ".join(issue.message for issue in support.issues if issue.severity == "error") or "unsupported"
+        raise ValueError(f"Unsupported benchmark stack plan for {gpu}/{selected_model}: {joined}")
 
     components: list[LaunchComponent] = []
     generated_files: list[GeneratedFile] = []
@@ -605,6 +668,8 @@ def build_benchmark_stack_plan(
         warnings.append(
             "Experiment models a Grace coherent KV tier, but the selected GPU profile is not a Grace superchip."
         )
+    if support.status == "degraded":
+        warnings.extend(issue.message for issue in support.issues if issue.severity == "warning")
 
     if experiment.engine == "vllm" and experiment.topology.mode == "single_endpoint":
         engine_config, memory_plan = _compile_engine(
@@ -1071,6 +1136,7 @@ def build_benchmark_stack_plan(
         num_gpus=num_gpus,
         host=host,
         run_plan=run_plan.model_dump(mode="json"),
+        support=support.model_dump(mode="json"),
         benchmark_command=benchmark_command,
         components=components,
         generated_files=generated_files,

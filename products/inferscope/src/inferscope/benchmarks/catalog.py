@@ -336,6 +336,24 @@ def _run_plan_field(artifact: BenchmarkArtifact, field: str, default: Any) -> An
     return artifact.run_plan.get(field, default)
 
 
+def _observed_runtime(artifact: BenchmarkArtifact) -> dict[str, Any]:
+    observed = _run_plan_field(artifact, "observed_runtime", {})
+    return observed if isinstance(observed, dict) else {}
+
+
+def _runtime_metric(artifact: BenchmarkArtifact, *path: str) -> float | None:
+    current: Any = _observed_runtime(artifact)
+    for part in path:
+        if not isinstance(current, dict):
+            return None
+        current = current.get(part)
+    if isinstance(current, bool):
+        return None
+    if isinstance(current, (int, float)):
+        return float(current)
+    return None
+
+
 def _topology_mode(artifact: BenchmarkArtifact) -> str:
     topology = _run_plan_field(artifact, "topology", {})
     if isinstance(topology, dict):
@@ -421,11 +439,47 @@ def compare_benchmark_artifacts(
             "succeeded": candidate_summary.succeeded - baseline_summary.succeeded,
             "failed": candidate_summary.failed - baseline_summary.failed,
             "total_tokens": candidate_summary.total_tokens - baseline_summary.total_tokens,
+            "request_throughput_rps": _delta(
+                _runtime_metric(candidate, "request_throughput_rps"),
+                _runtime_metric(baseline, "request_throughput_rps"),
+            ),
+            "output_throughput_tps": _delta(
+                _runtime_metric(candidate, "output_throughput_tps"),
+                _runtime_metric(baseline, "output_throughput_tps"),
+            ),
+            "goodput_rps": _delta(
+                _runtime_metric(candidate, "goodput_rps"),
+                _runtime_metric(baseline, "goodput_rps"),
+            ),
+            "tpot_p95_ms": _delta(
+                _runtime_metric(candidate, "tpot_ms", "p95"),
+                _runtime_metric(baseline, "tpot_ms", "p95"),
+            ),
+            "itl_p95_ms": _delta(
+                _runtime_metric(candidate, "itl_ms", "p95"),
+                _runtime_metric(baseline, "itl_ms", "p95"),
+            ),
+            "tool_parse_success_rate": _delta(
+                _runtime_metric(candidate, "tool_parse_success_rate"),
+                _runtime_metric(baseline, "tool_parse_success_rate"),
+            ),
         },
         "ratios": {
             "latency_p95": _ratio(candidate_summary.latency_p95_ms, baseline_summary.latency_p95_ms),
             "ttft_p95": _ratio(candidate_summary.ttft_p95_ms, baseline_summary.ttft_p95_ms),
             "wall_time": _ratio(candidate_summary.wall_time_ms, baseline_summary.wall_time_ms),
+            "request_throughput": _ratio(
+                _runtime_metric(candidate, "request_throughput_rps"),
+                _runtime_metric(baseline, "request_throughput_rps"),
+            ),
+            "output_throughput": _ratio(
+                _runtime_metric(candidate, "output_throughput_tps"),
+                _runtime_metric(baseline, "output_throughput_tps"),
+            ),
+            "goodput": _ratio(
+                _runtime_metric(candidate, "goodput_rps"),
+                _runtime_metric(baseline, "goodput_rps"),
+            ),
         },
     }
 

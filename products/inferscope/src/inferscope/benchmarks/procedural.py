@@ -256,6 +256,7 @@ def _materialize_tool_agent(
                 tool_choice="auto",
                 metadata={
                     "bridge_source": "mcp_tool_call",
+                    "approx_context_tokens": max(options.input_tokens or 0, _approx_tokens(context_text)),
                     "synthetic_seed": options.seed,
                     "synthetic_index": len(requests),
                 },
@@ -288,6 +289,7 @@ def _materialize_tool_agent(
                 tool_choice="auto",
                 metadata={
                     "bridge_source": "mcp_tool_call",
+                    "approx_context_tokens": max(options.input_tokens or 0, _approx_tokens(context_text)),
                     "synthetic_seed": options.seed,
                     "synthetic_index": len(requests),
                 },
@@ -329,6 +331,7 @@ def _materialize_coding_long_context(
 
     task_order = list(_CODING_TASKS)
     rng.shuffle(task_order)
+    approx_context_tokens = max(options.input_tokens or 0, _approx_tokens(context_text))
 
     requests: list[WorkloadRequest] = []
     for session_index in range(math.ceil(request_count / 2)):
@@ -355,6 +358,7 @@ def _materialize_coding_long_context(
                 ],
                 metadata={
                     "bridge_source": "long_context_code",
+                    "approx_context_tokens": approx_context_tokens,
                     "synthetic_seed": options.seed,
                     "synthetic_index": len(requests),
                 },
@@ -380,6 +384,7 @@ def _materialize_coding_long_context(
                 ],
                 metadata={
                     "bridge_source": "long_context_code",
+                    "approx_context_tokens": approx_context_tokens,
                     "synthetic_seed": options.seed,
                     "synthetic_index": len(requests),
                 },

@@ -8,8 +8,11 @@ from inferscope.benchmarks.catalog import (
     build_benchmark_matrix,
     describe_builtin_experiments,
     describe_builtin_workloads,
+    load_experiment,
+    load_workload,
 )
 from inferscope.benchmarks.launchers import build_benchmark_stack_plan
+from inferscope.benchmarks.support import assess_benchmark_support
 from inferscope.hardware.gpu_profiles import get_gpu_profile
 from inferscope.models.registry import get_model_variant
 from inferscope.optimization.platform_policy import resolve_platform_traits
@@ -385,7 +388,31 @@ def plan_benchmark_strategy(
         has_rdma=has_rdma,
     )
 
+    overall_support = assess_benchmark_support(
+        model_name=model,
+        gpu_name=gpu,
+        num_gpus=num_gpus,
+        engine_name=selected_engine,
+        workload=load_workload(primary_workload),
+        prompt_tokens=avg_prompt_tokens,
+        has_rdma=has_rdma,
+    )
+    required_unsupported_lanes: list[str] = []
     for lane in suite_lanes:
+        experiment_spec = load_experiment(lane["experiment"])
+        lane_support = assess_benchmark_support(
+            model_name=model,
+            gpu_name=gpu,
+            num_gpus=max(num_gpus, 2) if lane["phase"] == "disaggregated" else num_gpus,
+            engine_name=lane["engine"],
+            workload=load_workload(lane["workload"]),
+            experiment=experiment_spec,
+            prompt_tokens=avg_prompt_tokens,
+            has_rdma=has_rdma,
+        )
+        lane["support"] = lane_support.model_dump(mode="json")
+        if lane["required"] and lane_support.status == "unsupported":
+            required_unsupported_lanes.append(lane["experiment"])
         if include_stack_plans and (lane["phase"] != "disaggregated" or num_gpus >= 2):
             try:
                 lane["stack_plan"] = build_benchmark_stack_plan(
@@ -397,11 +424,18 @@ def plan_benchmark_strategy(
                 ).model_dump(mode="json")
             except Exception as exc:  # noqa: BLE001
                 lane["stack_plan_error"] = str(exc)
+                if lane["required"] and lane["experiment"] not in required_unsupported_lanes:
+                    required_unsupported_lanes.append(lane["experiment"])
+
+    ready = overall_support.status != "unsupported" and not required_unsupported_lanes
 
     return {
         "benchmark_strategy": {
             "workload_mode": workload_mode.value,
             "selected_engine": selected_engine,
+            "support": overall_support.model_dump(mode="json"),
+            "ready": ready,
+            "required_unsupported_lanes": required_unsupported_lanes,
             "recommendation": recommendation,
             "primary_workload": primary_descriptor,
             "supplemental_workloads": supplemental_descriptors,
@@ -425,6 +459,7 @@ def plan_benchmark_strategy(
                     f"Selected engine {selected_engine} on {gpu_profile.name} "
                     f"using model class {model_variant.model_class.value}."
                 ),
+                (f"GPU ISA is {gpu_profile.compute_capability}; support gating is benchmark-lane specific."),
                 f"Primary focus area for this scenario is {focus_area}.",
             ],
         },
@@ -432,7 +467,7 @@ def plan_benchmark_strategy(
             f"Planned {len(suite_lanes)} benchmark lane(s) for {model_variant.name} on "
             f"{gpu_profile.name} ({workload_mode.value})"
         ),
-        "confidence": 0.88,
+        "confidence": 0.88 if ready else 0.72,
         "evidence": "benchmark_strategy_planner",
     }
 

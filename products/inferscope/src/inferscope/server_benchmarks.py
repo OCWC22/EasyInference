@@ -8,7 +8,10 @@ from typing import Any, cast
 from fastmcp import FastMCP
 
 from inferscope.benchmarks import (
+    BenchmarkExecutionProfile,
+    BenchmarkGoodputSLO,
     ProceduralWorkloadOptions,
+    assess_benchmark_support,
     build_benchmark_matrix,
     build_benchmark_stack_plan,
     build_default_artifact_path,
@@ -68,15 +71,41 @@ def _build_procedural_options(
     )
 
 
+def _build_execution_profile(
+    *,
+    request_rate: float = 0.0,
+    arrival_model: str = "immediate",
+    arrival_shape: float = 0.0,
+    warmup_requests: int = 0,
+    goodput_slo: dict[str, Any] | None = None,
+) -> BenchmarkExecutionProfile:
+    return BenchmarkExecutionProfile(
+        request_rate_rps=(request_rate or None),
+        arrival_model=("immediate" if not request_rate else arrival_model),
+        arrival_shape=(arrival_shape or None),
+        warmup_requests=warmup_requests,
+        goodput_slo=BenchmarkGoodputSLO.model_validate(goodput_slo or {}),
+    )
+
+
 def _resolve_benchmark_plan(
     workload: str,
     endpoint: str,
     *,
     experiment: str = "",
     model: str = "",
+    gpu: str = "",
+    num_gpus: int = 0,
+    engine: str = "",
     metrics_endpoint: str = "",
     concurrency: int = 0,
     metrics_target_overrides: dict[str, str] | None = None,
+    request_rate: float = 0.0,
+    arrival_model: str = "immediate",
+    arrival_shape: float = 0.0,
+    warmup_requests: int = 0,
+    goodput_slo: dict[str, Any] | None = None,
+    strict_support: bool = True,
     synthetic_requests: int = 0,
     synthetic_input_tokens: int = 0,
     synthetic_output_tokens: int = 0,
@@ -107,6 +136,7 @@ def _resolve_benchmark_plan(
                 None,
                 None,
                 None,
+                None,
             )
 
         workload_reference = experiment_spec.workload if experiment_spec else workload
@@ -115,6 +145,46 @@ def _resolve_benchmark_plan(
             if experiment_spec
             else input_workload_pack
         )
+        execution = _build_execution_profile(
+            request_rate=request_rate,
+            arrival_model=arrival_model,
+            arrival_shape=arrival_shape,
+            warmup_requests=warmup_requests,
+            goodput_slo=goodput_slo,
+        )
+        selected_model_name = model or (experiment_spec.model if experiment_spec else None) or workload_pack.model or ""
+        support = assess_benchmark_support(
+            model_name=selected_model_name,
+            gpu_name=gpu,
+            num_gpus=(num_gpus or None),
+            engine_name=(engine or (experiment_spec.engine if experiment_spec else "")),
+            workload=workload_pack,
+            experiment=experiment_spec,
+            prompt_tokens=max(
+                (
+                    int(request.metadata.get("approx_context_tokens"))
+                    for request in workload_pack.requests
+                    if isinstance(request.metadata.get("approx_context_tokens"), int)
+                ),
+                default=0,
+            )
+            or None,
+        )
+        if strict_support and support.status == "unsupported":
+            error_messages = [issue.message for issue in support.issues if issue.severity == "error"]
+            return (
+                {
+                    "error": "; ".join(error_messages) or "Unsupported benchmark configuration",
+                    "support": support.model_dump(mode="json"),
+                    "summary": "❌ Unsupported benchmark configuration",
+                    "confidence": 1.0,
+                    "evidence": "benchmark_support_assessment",
+                },
+                None,
+                None,
+                None,
+                None,
+            )
         run_plan = build_run_plan(
             workload_pack,
             endpoint,
@@ -124,6 +194,8 @@ def _resolve_benchmark_plan(
             concurrency=(concurrency or None),
             metrics_endpoint=(metrics_endpoint or None),
             metrics_target_overrides=metrics_target_overrides or {},
+            execution=execution,
+            support=support,
         )
     except Exception as exc:  # noqa: BLE001
         return (
@@ -136,9 +208,10 @@ def _resolve_benchmark_plan(
             None,
             None,
             None,
+            None,
         )
 
-    return None, workload_reference, workload_pack, run_plan
+    return None, workload_reference, workload_pack, run_plan, run_plan.support
 
 
 def register_benchmark_tools(mcp: FastMCP) -> None:
@@ -303,6 +376,7 @@ def register_benchmark_tools(mcp: FastMCP) -> None:
         return {
             "summary": f"Generated launch plan for {stack_plan.experiment}",
             "stack_plan": stack_plan.model_dump(mode="json"),
+            "support": stack_plan.support,
             "benchmark_command": stack_plan.benchmark_command,
             "confidence": 0.9,
             "evidence": "benchmark_stack_plan",
@@ -359,6 +433,7 @@ def register_benchmark_tools(mcp: FastMCP) -> None:
         return {
             "summary": f"Materialized runnable stack for {stack_plan.experiment}",
             "materialized": materialized.model_dump(mode="json"),
+            "support": stack_plan.support,
             "benchmark_command": stack_plan.benchmark_command,
             "confidence": 0.95,
             "evidence": "benchmark_stack_materialization",
@@ -370,9 +445,18 @@ def register_benchmark_tools(mcp: FastMCP) -> None:
         endpoint: str,
         experiment: str = "",
         model: str = "",
+        gpu: str = "",
+        num_gpus: int = 0,
+        engine: str = "",
         metrics_endpoint: str = "",
         concurrency: int = 0,
         metrics_target_overrides: dict[str, str] | None = None,
+        request_rate: float = 0.0,
+        arrival_model: str = "immediate",
+        arrival_shape: float = 0.0,
+        warmup_requests: int = 0,
+        goodput_slo: dict[str, Any] | None = None,
+        strict_support: bool = True,
         synthetic_requests: int = 0,
         synthetic_input_tokens: int = 0,
         synthetic_output_tokens: int = 0,
@@ -380,14 +464,23 @@ def register_benchmark_tools(mcp: FastMCP) -> None:
         context_file: str = "",
     ) -> dict[str, Any]:
         """Resolve a workload reference and optional experiment reference into a concrete run plan."""
-        error, workload_reference, _, run_plan = _resolve_benchmark_plan(
+        error, workload_reference, _, run_plan, support = _resolve_benchmark_plan(
             workload,
             endpoint,
             experiment=experiment,
             model=model,
+            gpu=gpu,
+            num_gpus=num_gpus,
+            engine=engine,
             metrics_endpoint=metrics_endpoint,
             concurrency=concurrency,
             metrics_target_overrides=metrics_target_overrides,
+            request_rate=request_rate,
+            arrival_model=arrival_model,
+            arrival_shape=arrival_shape,
+            warmup_requests=warmup_requests,
+            goodput_slo=goodput_slo,
+            strict_support=strict_support,
             synthetic_requests=synthetic_requests,
             synthetic_input_tokens=synthetic_input_tokens,
             synthetic_output_tokens=synthetic_output_tokens,
@@ -399,6 +492,7 @@ def register_benchmark_tools(mcp: FastMCP) -> None:
         return {
             "summary": f"Resolved benchmark plan for {workload_reference}",
             "run_plan": cast(dict[str, Any], run_plan.model_dump(mode="json")),
+            "support": cast(dict[str, Any], support.model_dump(mode="json")) if support is not None else None,
             "confidence": 0.95,
             "evidence": "benchmark_plan_resolution",
         }
@@ -409,11 +503,20 @@ def register_benchmark_tools(mcp: FastMCP) -> None:
         endpoint: str,
         experiment: str = "",
         model: str = "",
+        gpu: str = "",
+        num_gpus: int = 0,
+        engine: str = "",
         metrics_endpoint: str = "",
         concurrency: int = 0,
         capture_metrics: bool = True,
         save_artifact: bool = True,
         metrics_target_overrides: dict[str, str] | None = None,
+        request_rate: float = 0.0,
+        arrival_model: str = "immediate",
+        arrival_shape: float = 0.0,
+        warmup_requests: int = 0,
+        goodput_slo: dict[str, Any] | None = None,
+        strict_support: bool = True,
         synthetic_requests: int = 0,
         synthetic_input_tokens: int = 0,
         synthetic_output_tokens: int = 0,
@@ -425,14 +528,23 @@ def register_benchmark_tools(mcp: FastMCP) -> None:
         metrics_auth: dict | None = None,
     ) -> dict[str, Any]:
         """Replay a workload reference against an OpenAI-compatible endpoint."""
-        error, workload_reference, workload_pack, run_plan = _resolve_benchmark_plan(
+        error, workload_reference, workload_pack, run_plan, support = _resolve_benchmark_plan(
             workload,
             endpoint,
             experiment=experiment,
             model=model,
+            gpu=gpu,
+            num_gpus=num_gpus,
+            engine=engine,
             metrics_endpoint=metrics_endpoint,
             concurrency=concurrency,
             metrics_target_overrides=metrics_target_overrides,
+            request_rate=request_rate,
+            arrival_model=arrival_model,
+            arrival_shape=arrival_shape,
+            warmup_requests=warmup_requests,
+            goodput_slo=goodput_slo,
+            strict_support=strict_support,
             synthetic_requests=synthetic_requests,
             synthetic_input_tokens=synthetic_input_tokens,
             synthetic_output_tokens=synthetic_output_tokens,
@@ -485,6 +597,10 @@ def register_benchmark_tools(mcp: FastMCP) -> None:
             "artifact_path": artifact_path,
             "benchmark_id": artifact.benchmark_id,
             "run_plan": cast(dict[str, Any], run_plan.model_dump(mode="json")),
+            "support": cast(dict[str, Any], support.model_dump(mode="json")) if support is not None else None,
+            "observed_runtime": (
+                cast(dict[str, Any], artifact.run_plan.get("observed_runtime", {})) if artifact.run_plan else {}
+            ),
             "benchmark_summary": cast(dict[str, Any], artifact.summary.model_dump(mode="json")),
             "confidence": 0.85,
             "evidence": "live_benchmark_replay",
@@ -507,6 +623,9 @@ def register_benchmark_tools(mcp: FastMCP) -> None:
         return {
             "summary": f"Loaded benchmark artifact {artifact.default_filename}",
             "artifact": cast(dict[str, Any], artifact.model_dump(mode="json")),
+            "observed_runtime": (
+                cast(dict[str, Any], artifact.run_plan.get("observed_runtime", {})) if artifact.run_plan else {}
+            ),
             "confidence": 1.0,
             "evidence": "saved_benchmark_artifact",
         }

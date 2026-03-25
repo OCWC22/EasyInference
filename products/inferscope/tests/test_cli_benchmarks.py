@@ -66,3 +66,44 @@ def test_cli_benchmark_workloads_lists_descriptor_metadata() -> None:
     assert result.exit_code == 0, result.stdout
     assert "benchmark_role" in result.stdout
     assert "tool-agent" in result.stdout
+
+
+def test_cli_benchmark_plan_includes_support_and_gpu_isa() -> None:
+    result = runner.invoke(
+        app,
+        [
+            "benchmark-plan",
+            "long-context-kv-offload-rag",
+            "http://localhost:8000",
+            "--experiment",
+            "vllm-single-endpoint-long-context-rag-baseline",
+            "--model",
+            "Qwen3.5-72B",
+            "--gpu",
+            "gb200",
+            "--num-gpus",
+            "4",
+            "--engine",
+            "vllm",
+        ],
+    )
+
+    assert result.exit_code == 0, result.stdout
+    assert '"support"' in result.stdout
+    assert '"gpu_isa": "sm_100"' in result.stdout
+
+
+def test_cli_benchmark_stack_plan_rejects_unsupported_grace_lane_on_h100() -> None:
+    result = runner.invoke(
+        app,
+        [
+            "benchmark-stack-plan",
+            "vllm-disagg-prefill-lmcache-grace",
+            "h100",
+            "--num-gpus",
+            "4",
+        ],
+    )
+
+    assert result.exit_code != 0
+    assert "Grace-coherent cache tiers require" in (result.stdout + result.stderr)

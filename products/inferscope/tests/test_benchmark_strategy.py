@@ -28,6 +28,9 @@ def test_plan_benchmark_strategy_selects_long_context_rag_suite_on_grace() -> No
         "vllm-disagg-prefill-lmcache-grace",
     ]
     assert result["benchmark_strategy"]["suite"][2]["required"] is True
+    assert result["benchmark_strategy"]["ready"] is True
+    assert result["benchmark_strategy"]["support"]["gpu_isa"] == "sm_100"
+    assert result["benchmark_strategy"]["suite"][2]["support"]["status"] == "supported"
 
 
 @pytest.mark.asyncio

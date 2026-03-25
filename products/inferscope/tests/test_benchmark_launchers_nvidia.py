@@ -48,3 +48,18 @@ def test_build_benchmark_stack_plan_generates_lmcache_bundle_for_grace_lane() ->
     generated_paths = {generated.path for generated in plan.generated_files}
     assert generated_paths == {"lmcache-prefiller-config.yaml", "lmcache-decoder-config.yaml"}
     assert not plan.warnings
+    assert plan.support is not None
+    assert plan.support["gpu_isa"] == "sm_100"
+
+
+def test_build_benchmark_stack_plan_rejects_grace_lane_on_non_grace_gpu() -> None:
+    try:
+        build_benchmark_stack_plan(
+            "vllm-disagg-prefill-lmcache-grace",
+            "h100",
+            4,
+        )
+    except ValueError as exc:
+        assert "Grace-coherent cache tiers require" in str(exc)
+    else:
+        raise AssertionError("Expected Grace-only benchmark lane to be rejected on H100")

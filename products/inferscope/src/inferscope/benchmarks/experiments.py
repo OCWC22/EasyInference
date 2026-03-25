@@ -10,6 +10,7 @@ import yaml  # type: ignore[import-untyped]
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from inferscope.benchmarks.models import WorkloadPack
+from inferscope.benchmarks.support import BenchmarkSupportProfile
 
 MetricTargetRole = Literal["primary", "router", "prefill", "decode", "cache", "other"]
 TopologyMode = Literal["single_endpoint", "prefill_decode_split", "router_prefill_decode"]
@@ -78,6 +79,37 @@ class BenchmarkCacheMetadata(BaseModel):
     notes: list[str] = Field(default_factory=list)
 
 
+class BenchmarkGoodputSLO(BaseModel):
+    """Optional SLO thresholds used to derive goodput during replay."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    ttft_p95_ms: float | dict[str, float] | None = None
+    tpot_p95_ms: float | None = None
+
+
+class BenchmarkExecutionProfile(BaseModel):
+    """Execution mechanics for a benchmark run."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    backend: Literal["auto", "openai-chat", "openai-completions", "trtllm-generate-stream"] = "auto"
+    request_rate_rps: float | None = None
+    arrival_model: Literal["immediate", "poisson", "gamma"] = "immediate"
+    arrival_shape: float | None = None
+    warmup_requests: int = Field(default=0, ge=0, le=10_000)
+    request_timeout_seconds: int = Field(default=600, ge=1, le=86_400)
+    total_timeout_seconds: int = Field(default=7_200, ge=1, le=86_400)
+    capture_outputs: bool = False
+    goodput_slo: BenchmarkGoodputSLO = Field(default_factory=BenchmarkGoodputSLO)
+
+    @model_validator(mode="after")
+    def validate_execution_profile(self) -> BenchmarkExecutionProfile:
+        if self.arrival_model == "gamma" and self.arrival_shape is not None and self.arrival_shape <= 0:
+            raise ValueError("arrival_shape must be > 0 for gamma arrival")
+        return self
+
+
 class BenchmarkExperimentSpec(BaseModel):
     """Reusable benchmark experiment template."""
 
@@ -135,6 +167,8 @@ class BenchmarkRunPlan(BaseModel):
     engine: str | None = None
     topology: BenchmarkTopologyMetadata = Field(default_factory=BenchmarkTopologyMetadata)
     cache: BenchmarkCacheMetadata = Field(default_factory=BenchmarkCacheMetadata)
+    execution: BenchmarkExecutionProfile = Field(default_factory=BenchmarkExecutionProfile)
+    support: BenchmarkSupportProfile | None = None
     metrics_targets: list[ResolvedMetricCaptureTarget] = Field(default_factory=list)
     tags: list[str] = Field(default_factory=list)
 
@@ -251,6 +285,8 @@ def build_run_plan(
     cache_connector: str | None = None,
     session_affinity: bool | None = None,
     metrics_targets: list[ResolvedMetricCaptureTarget] | None = None,
+    execution: BenchmarkExecutionProfile | None = None,
+    support: BenchmarkSupportProfile | None = None,
 ) -> BenchmarkRunPlan:
     """Resolve workload, experiment defaults, and runtime overrides into one run plan."""
     selected_model = model or (experiment.model if experiment else None) or workload.model
@@ -319,6 +355,8 @@ def build_run_plan(
         engine=engine,
         topology=topology,
         cache=cache,
+        execution=execution or BenchmarkExecutionProfile(),
+        support=support,
         metrics_targets=resolved_targets,
         tags=list(experiment.tags) if experiment else [],
     )

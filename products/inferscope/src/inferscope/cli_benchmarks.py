@@ -11,7 +11,10 @@ from typing import Annotated, Any
 import typer
 
 from inferscope.benchmarks import (
+    BenchmarkExecutionProfile,
+    BenchmarkGoodputSLO,
     ProceduralWorkloadOptions,
+    assess_benchmark_support,
     build_benchmark_matrix,
     build_benchmark_stack_plan,
     build_default_artifact_path,
@@ -71,12 +74,32 @@ def _build_procedural_options(
     )
 
 
+def _build_execution_profile(
+    *,
+    request_rate: float | None = None,
+    arrival_model: str = "immediate",
+    arrival_shape: float | None = None,
+    warmup_requests: int = 0,
+    goodput_slo: dict[str, Any] | None = None,
+) -> BenchmarkExecutionProfile:
+    return BenchmarkExecutionProfile(
+        request_rate_rps=request_rate,
+        arrival_model=("immediate" if request_rate in (None, 0.0) else arrival_model),
+        arrival_shape=arrival_shape,
+        warmup_requests=warmup_requests,
+        goodput_slo=BenchmarkGoodputSLO.model_validate(goodput_slo or {}),
+    )
+
+
 def _resolve_benchmark_plan(
     workload: str,
     endpoint: str,
     *,
     experiment: str = "",
     model: str = "",
+    gpu: str = "",
+    num_gpus: int | None = None,
+    engine: str = "",
     concurrency: int | None = None,
     metrics_endpoint: str | None = None,
     metrics_target: list[str] | None = None,
@@ -87,6 +110,12 @@ def _resolve_benchmark_plan(
     cache_tier: list[str] | None = None,
     cache_connector: str = "",
     session_affinity: bool | None = None,
+    request_rate: float | None = None,
+    arrival_model: str = "immediate",
+    arrival_shape: float | None = None,
+    warmup_requests: int = 0,
+    goodput_slo: dict[str, Any] | None = None,
+    strict_support: bool = True,
     synthetic_requests: int | None = None,
     synthetic_input_tokens: int | None = None,
     synthetic_output_tokens: int | None = None,
@@ -113,6 +142,33 @@ def _resolve_benchmark_plan(
         materialize_workload(workload_reference, options=procedural_options) if experiment_spec else input_workload_pack
     )
     metrics_target_overrides = parse_metrics_target_overrides(metrics_target)
+    execution = _build_execution_profile(
+        request_rate=request_rate,
+        arrival_model=arrival_model,
+        arrival_shape=arrival_shape,
+        warmup_requests=warmup_requests,
+        goodput_slo=goodput_slo,
+    )
+    support = assess_benchmark_support(
+        model_name=(model or (experiment_spec.model if experiment_spec else None) or workload_pack.model or ""),
+        gpu_name=gpu,
+        num_gpus=num_gpus,
+        engine_name=(engine or (experiment_spec.engine if experiment_spec else "")),
+        workload=workload_pack,
+        experiment=experiment_spec,
+        prompt_tokens=max(
+            (
+                int(request.metadata.get("approx_context_tokens"))
+                for request in workload_pack.requests
+                if isinstance(request.metadata.get("approx_context_tokens"), int)
+            ),
+            default=0,
+        )
+        or None,
+    )
+    if strict_support and support.status == "unsupported":
+        messages = [issue.message for issue in support.issues if issue.severity == "error"]
+        raise ValueError("; ".join(messages) or "Unsupported benchmark configuration")
     run_plan = build_run_plan(
         workload_pack,
         endpoint,
@@ -129,8 +185,10 @@ def _resolve_benchmark_plan(
         cache_tiers=(cache_tier or None),
         cache_connector=(cache_connector or None),
         session_affinity=session_affinity,
+        execution=execution,
+        support=support,
     )
-    return workload_reference, workload_pack, run_plan
+    return workload_reference, workload_pack, run_plan, support
 
 
 def register_benchmark_commands(
@@ -334,6 +392,7 @@ def register_benchmark_commands(
             {
                 "summary": f"Generated launch plan for {stack_plan.experiment}",
                 "stack_plan": stack_plan.model_dump(mode="json"),
+                "support": stack_plan.support,
                 "benchmark_command": stack_plan.benchmark_command,
             }
         )
@@ -375,6 +434,7 @@ def register_benchmark_commands(
             {
                 "summary": f"Materialized runnable stack for {stack_plan.experiment}",
                 "materialized": materialized.model_dump(mode="json"),
+                "support": stack_plan.support,
                 "benchmark_command": stack_plan.benchmark_command,
             }
         )
@@ -385,6 +445,9 @@ def register_benchmark_commands(
         endpoint: Annotated[str, typer.Argument(help="OpenAI-compatible request endpoint base URL")],
         experiment: Annotated[str, typer.Option(help="Optional built-in or file-backed experiment spec")] = "",
         model: Annotated[str, typer.Option(help="Override model name from the workload/experiment")] = "",
+        gpu: Annotated[str, typer.Option(help="Concrete GPU SKU for support validation")] = "",
+        num_gpus: Annotated[int | None, typer.Option(help="Concrete GPU count for support validation", min=1)] = None,
+        engine: Annotated[str, typer.Option(help="Override engine for support validation")] = "",
         concurrency: Annotated[int | None, typer.Option(help="Override concurrency", min=1)] = None,
         metrics_endpoint: Annotated[str | None, typer.Option(help="Optional default Prometheus base URL")] = None,
         metrics_target: Annotated[
@@ -400,6 +463,21 @@ def register_benchmark_commands(
         cache_tier: Annotated[list[str] | None, typer.Option(help="Override cache tiers")] = None,
         cache_connector: Annotated[str, typer.Option(help="Override cache connector name")] = "",
         session_affinity: Annotated[bool | None, typer.Option(help="Override session affinity")] = None,
+        request_rate: Annotated[float | None, typer.Option(help="Request rate for scheduled replay", min=0.0)] = None,
+        arrival_model: Annotated[str, typer.Option(help="Arrival model: immediate, poisson, gamma")] = "immediate",
+        arrival_shape: Annotated[float | None, typer.Option(help="Gamma arrival shape", min=0.0001)] = None,
+        warmup_requests: Annotated[int, typer.Option(help="Warmup requests before measurement", min=0)] = 0,
+        goodput_slo: Annotated[
+            str,
+            typer.Option(help="Optional JSON object for goodput thresholds"),
+        ] = "",
+        strict_support: Annotated[
+            bool,
+            typer.Option(
+                "--strict-support/--no-strict-support",
+                help="Fail plan resolution on unsupported GPU/model/engine combinations",
+            ),
+        ] = True,
         synthetic_requests: Annotated[
             int | None,
             typer.Option(
@@ -432,11 +510,14 @@ def register_benchmark_commands(
     ):
         """Resolve workload + experiment + runtime overrides into a concrete benchmark run plan."""
         try:
-            workload_reference, _, run_plan = _resolve_benchmark_plan(
+            workload_reference, _, run_plan, support = _resolve_benchmark_plan(
                 workload,
                 endpoint,
                 experiment=experiment,
                 model=model,
+                gpu=gpu,
+                num_gpus=num_gpus,
+                engine=engine,
                 concurrency=concurrency,
                 metrics_endpoint=metrics_endpoint,
                 metrics_target=metrics_target,
@@ -447,6 +528,12 @@ def register_benchmark_commands(
                 cache_tier=cache_tier,
                 cache_connector=cache_connector,
                 session_affinity=session_affinity,
+                request_rate=request_rate,
+                arrival_model=arrival_model,
+                arrival_shape=arrival_shape,
+                warmup_requests=warmup_requests,
+                goodput_slo=_parse_json_option(goodput_slo, option_name="goodput_slo"),
+                strict_support=strict_support,
                 synthetic_requests=synthetic_requests,
                 synthetic_input_tokens=synthetic_input_tokens,
                 synthetic_output_tokens=synthetic_output_tokens,
@@ -460,6 +547,7 @@ def register_benchmark_commands(
             {
                 "summary": f"Resolved benchmark plan for {workload_reference}",
                 "run_plan": run_plan.model_dump(mode="json"),
+                "support": support.model_dump(mode="json"),
             }
         )
 
@@ -469,6 +557,9 @@ def register_benchmark_commands(
         endpoint: Annotated[str, typer.Argument(help="OpenAI-compatible request endpoint base URL")],
         experiment: Annotated[str, typer.Option(help="Optional built-in or file-backed experiment spec")] = "",
         model: Annotated[str, typer.Option(help="Override model name from the workload/experiment")] = "",
+        gpu: Annotated[str, typer.Option(help="Concrete GPU SKU for support validation")] = "",
+        num_gpus: Annotated[int | None, typer.Option(help="Concrete GPU count for support validation", min=1)] = None,
+        engine: Annotated[str, typer.Option(help="Override engine for support validation")] = "",
         output: Annotated[Path | None, typer.Option(help="Where to write the benchmark artifact JSON")] = None,
         concurrency: Annotated[int | None, typer.Option(help="Override concurrency", min=1)] = None,
         metrics_endpoint: Annotated[str | None, typer.Option(help="Optional default Prometheus base URL")] = None,
@@ -485,6 +576,21 @@ def register_benchmark_commands(
         cache_tier: Annotated[list[str] | None, typer.Option(help="Override cache tiers")] = None,
         cache_connector: Annotated[str, typer.Option(help="Override cache connector name")] = "",
         session_affinity: Annotated[bool | None, typer.Option(help="Override session affinity")] = None,
+        request_rate: Annotated[float | None, typer.Option(help="Request rate for scheduled replay", min=0.0)] = None,
+        arrival_model: Annotated[str, typer.Option(help="Arrival model: immediate, poisson, gamma")] = "immediate",
+        arrival_shape: Annotated[float | None, typer.Option(help="Gamma arrival shape", min=0.0001)] = None,
+        warmup_requests: Annotated[int, typer.Option(help="Warmup requests before measurement", min=0)] = 0,
+        goodput_slo: Annotated[
+            str,
+            typer.Option(help="Optional JSON object for goodput thresholds"),
+        ] = "",
+        strict_support: Annotated[
+            bool,
+            typer.Option(
+                "--strict-support/--no-strict-support",
+                help="Fail benchmark execution on unsupported GPU/model/engine combinations",
+            ),
+        ] = True,
         synthetic_requests: Annotated[
             int | None,
             typer.Option(
@@ -554,11 +660,14 @@ def register_benchmark_commands(
     ):
         """Replay a workload pack against an OpenAI-compatible endpoint and save an artifact."""
         try:
-            workload_reference, workload_pack, run_plan = _resolve_benchmark_plan(
+            workload_reference, workload_pack, run_plan, support = _resolve_benchmark_plan(
                 workload,
                 endpoint,
                 experiment=experiment,
                 model=model,
+                gpu=gpu,
+                num_gpus=num_gpus,
+                engine=engine,
                 concurrency=concurrency,
                 metrics_endpoint=metrics_endpoint,
                 metrics_target=metrics_target,
@@ -569,6 +678,12 @@ def register_benchmark_commands(
                 cache_tier=cache_tier,
                 cache_connector=cache_connector,
                 session_affinity=session_affinity,
+                request_rate=request_rate,
+                arrival_model=arrival_model,
+                arrival_shape=arrival_shape,
+                warmup_requests=warmup_requests,
+                goodput_slo=_parse_json_option(goodput_slo, option_name="goodput_slo"),
+                strict_support=strict_support,
                 synthetic_requests=synthetic_requests,
                 synthetic_input_tokens=synthetic_input_tokens,
                 synthetic_output_tokens=synthetic_output_tokens,
@@ -620,6 +735,8 @@ def register_benchmark_commands(
                 ),
                 "artifact_path": str(saved_path),
                 "run_plan": run_plan.model_dump(mode="json"),
+                "support": support.model_dump(mode="json"),
+                "observed_runtime": (artifact.run_plan or {}).get("observed_runtime", {}),
                 "benchmark": artifact.model_dump(mode="json"),
             }
         )
