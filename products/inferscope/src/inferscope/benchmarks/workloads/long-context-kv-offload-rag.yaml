@@ -2,6 +2,10 @@ version: "1"
 name: long-context-kv-offload-rag
 description: Realistic multi-turn long-context RAG workload intended to exercise KV spill, cold-session reuse, and offload-aware serving.
 workload_class: long_context_rag
+benchmark_role: topology_probe
+target_gpu_families: [hopper, hopper_grace, blackwell, blackwell_ultra, blackwell_grace, blackwell_ultra_grace, cdna3, cdna4]
+target_model_classes: [dense_gqa, qwen35_hybrid, frontier_mla_moe]
+focus_areas: [long_context, kv_offload, session_reuse, rag]
 model: Qwen3.5-72B
 concurrency: 1
 stream: true

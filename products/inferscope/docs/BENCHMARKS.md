@@ -43,6 +43,7 @@ These built-ins are available from both the CLI and MCP server.
 # discover built-ins
 inferscope benchmark-workloads
 inferscope benchmark-experiments
+inferscope benchmark-matrix --workload-class tool_agent --engine sglang
 
 # inspect a concrete run plan
 inferscope benchmark-plan tool-agent http://localhost:8000
@@ -60,6 +61,42 @@ inferscope benchmark-stack-plan vllm-disagg-prefill-lmcache-grace gb200 --num-gp
 ```
 
 The stack-plan path is important: it uses the same recommendation DAG that powers the MCP. That keeps the benchmark launch plan aligned with the engine/profile decision the operator sees elsewhere.
+
+## Matrix catalog
+
+InferScope now ships a structured benchmark matrix catalog over its packaged assets.
+
+The catalog is intended to answer questions like:
+
+- which workloads target **Blackwell Grace** long-context overflow studies?
+- which packaged lanes are focused on **tool-calling** and **SGLang**?
+- which experiments are **reference** lanes versus **topology probes**?
+
+The matrix is built from metadata carried directly on packaged workloads and experiment specs:
+
+- `benchmark_role`
+- `target_gpu_families`
+- `target_model_classes`
+- `focus_areas`
+
+Available surfaces:
+
+- CLI: `inferscope benchmark-matrix`
+- MCP: `tool_get_benchmark_matrix`
+
+Example:
+
+```bash
+inferscope benchmark-matrix \
+  --gpu-family blackwell_grace \
+  --focus-area kv_offload
+```
+
+That returns:
+
+- filtered workload descriptors
+- filtered experiment descriptors
+- suggested workload/experiment pairings
 
 ## Procedural built-ins
 

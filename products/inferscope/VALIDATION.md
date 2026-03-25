@@ -33,6 +33,7 @@ As of **March 25, 2026**, InferScope should be considered valid when the followi
 - compiler regression coverage for explicit **B200 vs GB200** separation
 - benchmark launcher coverage showing benchmark plans inherit the same H200/B200/GB200 policy as the MCP
 - benchmark launcher coverage for explicit **OffloadingConnector** and **LMCache + Grace** long-context lanes
+- benchmark catalog coverage for packaged descriptor metadata and filtered matrix generation across CLI, MCP, and Python entrypoints
 
 ## Notes
 

@@ -3,6 +3,10 @@ name: vllm-disagg-prefill-lmcache
 description: vLLM prefill/decode split benchmark with LMCache-style remote KV reuse.
 engine: vllm
 workload: coding-long-context
+benchmark_role: topology_probe
+target_gpu_families: [hopper, hopper_grace, blackwell, blackwell_ultra, blackwell_grace, blackwell_ultra_grace]
+target_model_classes: [qwen35_hybrid, frontier_mla_moe, compact_agentic_moe]
+focus_areas: [disaggregation, lmcache, prefix_cache, long_context]
 topology:
   mode: prefill_decode_split
   session_routing: sticky

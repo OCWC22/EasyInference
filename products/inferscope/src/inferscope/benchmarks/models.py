@@ -93,6 +93,10 @@ class WorkloadPack(BaseModel):
     name: str
     description: str = ""
     workload_class: str
+    benchmark_role: str = "operator_extension"
+    target_gpu_families: list[str] = Field(default_factory=list)
+    target_model_classes: list[str] = Field(default_factory=list)
+    focus_areas: list[str] = Field(default_factory=list)
     model: str | None = None
     endpoint_path: str = "/v1/chat/completions"
     concurrency: int = Field(default=1, ge=1, le=1024)

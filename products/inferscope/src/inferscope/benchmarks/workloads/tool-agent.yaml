@@ -2,6 +2,10 @@ version: "1"
 name: tool-agent
 description: Multi-turn tool-calling agent workload for MCP-style planning, code search, and patch execution.
 workload_class: tool_agent
+benchmark_role: reference
+target_gpu_families: [hopper, hopper_grace, blackwell, blackwell_ultra, blackwell_grace, blackwell_ultra_grace, cdna3, cdna4]
+target_model_classes: [frontier_mla_moe, compact_agentic_moe, qwen35_hybrid]
+focus_areas: [mcp, tool_calling, session_reuse]
 model: DeepSeek-R1
 concurrency: 2
 stream: true

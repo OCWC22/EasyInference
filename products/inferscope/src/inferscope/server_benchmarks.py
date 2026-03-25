@@ -9,10 +9,13 @@ from fastmcp import FastMCP
 
 from inferscope.benchmarks import (
     ProceduralWorkloadOptions,
+    build_benchmark_matrix,
     build_benchmark_stack_plan,
     build_default_artifact_path,
     build_run_plan,
     compare_benchmark_artifacts,
+    describe_builtin_experiments,
+    describe_builtin_workloads,
     list_builtin_experiments,
     list_builtin_workloads,
     load_benchmark_artifact,
@@ -147,6 +150,7 @@ def register_benchmark_tools(mcp: FastMCP) -> None:
         return {
             "summary": f"{len(workloads)} built-in workload pack(s) available",
             "workloads": workloads,
+            "descriptors": describe_builtin_workloads(),
             "procedural_workloads": ["tool-agent", "coding-long-context"],
             "confidence": 1.0,
             "evidence": "packaged_workload_catalog",
@@ -159,8 +163,35 @@ def register_benchmark_tools(mcp: FastMCP) -> None:
         return {
             "summary": f"{len(experiments)} built-in benchmark experiment(s) available",
             "experiments": experiments,
+            "descriptors": describe_builtin_experiments(),
             "confidence": 1.0,
             "evidence": "packaged_experiment_catalog",
+        }
+
+    @mcp.tool()
+    async def tool_get_benchmark_matrix(
+        gpu_family: str = "",
+        model_class: str = "",
+        workload_class: str = "",
+        focus_area: str = "",
+        engine: str = "",
+    ) -> dict[str, Any]:
+        """Return the structured benchmark matrix filtered by GPU/model/workload intent."""
+        matrix = build_benchmark_matrix(
+            gpu_family=gpu_family,
+            model_class=model_class,
+            workload_class=workload_class,
+            focus_area=focus_area,
+            engine=engine,
+        )
+        return {
+            "summary": (
+                f"{len(matrix['workloads'])} workload(s), {len(matrix['experiments'])} experiment(s), "
+                f"{len(matrix['suggested_pairs'])} suggested pairing(s)"
+            ),
+            "matrix": matrix,
+            "confidence": 1.0,
+            "evidence": "benchmark_matrix_catalog",
         }
 
     @mcp.tool()

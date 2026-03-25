@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Explicit support-tier metadata for engine recommendations and compiled engine configs
 - New NVIDIA regression coverage for H100, H200, B200, and GB200 recommendation paths
 - New benchmark launcher regression coverage to ensure benchmark stack plans inherit the same H200/Hopper policy as the MCP
+- Structured benchmark matrix catalog across packaged workloads and experiment specs, exposed through both CLI and MCP
 - New long-context benchmark workload and experiment lanes for:
   - single-endpoint `OffloadingConnector`
   - disaggregated `LMCache` with Grace-aware overflow modeling
@@ -22,11 +23,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Blackwell FP4 recommendations now flow through the main optimizer path
 - Grace coherent overflow is surfaced as an advisory memory tier instead of being conflated with plain HBM fit
 - Benchmark metadata now has an explicit `grace_coherent` cache tier for realistic long-context operator studies
+- Packaged benchmark workloads and experiments now carry explicit role/GPU/model/focus metadata for matrix filtering and catalog discovery
 
 ### Fixed
 - vLLM compiler no longer infers `GB200` from `192 GB` memory size
 - TRT-LLM compiler now uses `batched_token_budget` correctly
 - Benchmark launcher workload mapping now recognizes `long_context_rag`
+- Benchmark catalog loading now accepts the existing `nixl` experiment lane and resolves experiment workload classes correctly
 
 ## [0.1.0] - 2026-03-23
 

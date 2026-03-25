@@ -2,12 +2,17 @@ version: "1"
 name: neo-cloud-mixed
 description: Mixed-tenant managed inference workload with bursty traffic and varied sessions.
 workload_class: neo_cloud
+benchmark_role: operator_extension
+target_gpu_families: [ampere, hopper, hopper_grace, blackwell, blackwell_ultra, blackwell_grace, blackwell_ultra_grace, cdna3, cdna4]
+target_model_classes: [dense_gqa, qwen35_hybrid, compact_agentic_moe, frontier_mla_moe]
+focus_areas: [multi_tenant, burstiness, session_isolation]
 model: Qwen3.5-32B
 concurrency: 4
 stream: true
 tags:
   - neocloud
   - mixed-tenant
+  - session-isolation
 requests:
   - name: chat-tenant-a
     session_id: tenant-a-session-1

@@ -3,6 +3,10 @@ name: sglang-single-endpoint-hicache
 description: Single-endpoint SGLang benchmark with HiCache tiers enabled.
 engine: sglang
 workload: tool-agent
+benchmark_role: operator_extension
+target_gpu_families: [hopper, hopper_grace, blackwell, blackwell_ultra, blackwell_grace, blackwell_ultra_grace, cdna3, cdna4]
+target_model_classes: [frontier_mla_moe, compact_agentic_moe, qwen35_hybrid]
+focus_areas: [tool_calling, hicache, session_reuse]
 topology:
   mode: single_endpoint
   session_routing: sticky

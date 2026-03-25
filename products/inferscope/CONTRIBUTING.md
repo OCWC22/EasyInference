@@ -47,6 +47,7 @@ If you modify the benchmark bridge, verify at minimum:
 ```bash
 uv run inferscope benchmark-workloads
 uv run inferscope benchmark-experiments
+uv run inferscope benchmark-matrix --workload-class tool_agent --engine sglang
 uv run inferscope benchmark-plan tool-agent http://localhost:8000 --synthetic-requests 2 || true
 ```
 

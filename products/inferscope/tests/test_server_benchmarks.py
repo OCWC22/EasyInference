@@ -1,6 +1,11 @@
 """Tests for MCP-side benchmark resolution helpers."""
 
-from inferscope.server_benchmarks import _resolve_benchmark_plan
+from __future__ import annotations
+
+import pytest
+from fastmcp import FastMCP
+
+from inferscope.server_benchmarks import _resolve_benchmark_plan, register_benchmark_tools
 
 
 def test_resolve_benchmark_plan_supports_procedural_workloads() -> None:
@@ -31,3 +36,41 @@ def test_resolve_benchmark_plan_rejects_context_file_for_mcp() -> None:
     assert workload_reference is None
     assert workload_pack is None
     assert run_plan is None
+
+
+@pytest.mark.asyncio
+async def test_tool_get_benchmark_matrix_returns_filtered_catalog() -> None:
+    mcp = FastMCP("test-benchmarks")
+    register_benchmark_tools(mcp)
+
+    result = await mcp.call_tool(
+        "tool_get_benchmark_matrix",
+        {
+            "gpu_family": "blackwell-grace",
+            "model_class": "qwen35-hybrid",
+            "focus_area": "kv_offload",
+        },
+    )
+    payload = result.structured_content
+
+    assert payload["evidence"] == "benchmark_matrix_catalog"
+    assert {descriptor["name"] for descriptor in payload["matrix"]["workloads"]} == {"long-context-kv-offload-rag"}
+    assert "vllm-disagg-prefill-lmcache-grace" in {
+        descriptor["name"] for descriptor in payload["matrix"]["experiments"]
+    }
+
+
+@pytest.mark.asyncio
+async def test_tool_list_benchmark_experiments_exposes_descriptors() -> None:
+    mcp = FastMCP("test-benchmarks")
+    register_benchmark_tools(mcp)
+
+    result = await mcp.call_tool("tool_list_benchmark_experiments")
+    payload = result.structured_content
+    router = next(
+        descriptor for descriptor in payload["descriptors"] if descriptor["name"] == "sglang-router-prefill-decode"
+    )
+
+    assert payload["evidence"] == "packaged_experiment_catalog"
+    assert router["workload_class"] == "tool_agent"
+    assert "router" in router["focus_areas"]

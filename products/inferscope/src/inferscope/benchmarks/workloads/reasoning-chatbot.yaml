@@ -2,6 +2,10 @@ version: "1"
 name: reasoning-chatbot
 description: Cursor-style chat assistant requiring deep reasoning (Chain-of-Thought) for complex architecture questions.
 workload_class: chat
+benchmark_role: reference
+target_gpu_families: [ampere, hopper, hopper_grace, blackwell, blackwell_ultra, blackwell_grace, blackwell_ultra_grace, cdna3, cdna4]
+target_model_classes: [dense_gqa, frontier_mla_moe, qwen35_hybrid]
+focus_areas: [chat, reasoning, latency]
 model: Llama-3-70B-Chat
 concurrency: 2
 stream: true

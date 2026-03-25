@@ -2,12 +2,17 @@ version: "1"
 name: legal-review
 description: Repeated long-document legal review and extraction workload.
 workload_class: legal_review
+benchmark_role: reference
+target_gpu_families: [ampere, hopper, hopper_grace, blackwell, blackwell_ultra, blackwell_grace, blackwell_ultra_grace, cdna3, cdna4]
+target_model_classes: [dense_gqa, qwen35_hybrid, frontier_mla_moe]
+focus_areas: [rag, long_context, compliance]
 model: Llama-3-70B
 concurrency: 1
 stream: true
 tags:
   - legal
   - long-doc
+  - compliance
 requests:
   - name: contract-risk-pass
     session_id: legal-session-1

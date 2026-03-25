@@ -1,7 +1,10 @@
 """Packaged evaluation subsystem for live workload replay, stack planning, and artifact capture."""
 
 from inferscope.benchmarks.catalog import (
+    build_benchmark_matrix,
     compare_benchmark_artifacts,
+    describe_builtin_experiments,
+    describe_builtin_workloads,
     list_builtin_experiments,
     list_builtin_workloads,
     load_benchmark_artifact,
@@ -64,10 +67,13 @@ __all__ = [
     "build_benchmark_stack_plan",
     "materialize_benchmark_stack_plan",
     "build_default_artifact_path",
+    "build_benchmark_matrix",
     "build_run_plan",
     "capture_endpoint_snapshot",
     "capture_metrics_targets",
     "compare_benchmark_artifacts",
+    "describe_builtin_experiments",
+    "describe_builtin_workloads",
     "list_builtin_experiments",
     "list_builtin_workloads",
     "load_benchmark_artifact",

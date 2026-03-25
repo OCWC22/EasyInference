@@ -3,6 +3,10 @@ name: vllm-single-endpoint-offloading-connector
 description: Single-endpoint vLLM benchmark with explicit OffloadingConnector KV spill for realistic cold-session overflow tests.
 engine: vllm
 workload: long-context-kv-offload-rag
+benchmark_role: topology_probe
+target_gpu_families: [hopper, hopper_grace, blackwell, blackwell_ultra, blackwell_grace, blackwell_ultra_grace]
+target_model_classes: [dense_gqa, qwen35_hybrid, frontier_mla_moe]
+focus_areas: [kv_offload, long_context, cold_session, host_overflow]
 topology:
   mode: single_endpoint
   session_routing: sticky

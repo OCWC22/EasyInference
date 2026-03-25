@@ -2,6 +2,10 @@ version: "1"
 name: enterprise-coding-agent
 description: 8-turn tool-calling coding agent workload over a large codebase context for prefix caching.
 workload_class: coding
+benchmark_role: reference
+target_gpu_families: [hopper, hopper_grace, blackwell, blackwell_ultra, blackwell_grace, blackwell_ultra_grace, cdna3, cdna4]
+target_model_classes: [compact_agentic_moe, frontier_mla_moe, qwen35_hybrid]
+focus_areas: [coding_agent, long_context, prefix_cache, tool_calling]
 model: DeepSeek-Coder-V3
 concurrency: 4
 stream: true
@@ -9,6 +13,7 @@ tags:
   - agent
   - coding
   - long-context
+  - prefix-cache
 requests:
   - name: turn-1-plan
     session_id: enterprise-coding-session

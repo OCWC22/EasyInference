@@ -3,6 +3,10 @@ name: vllm-disagg-prefill-nixl
 description: vLLM prefill/decode split with NIXL KV transfer (RDMA/NVLink).
 engine: vllm
 workload: coding-long-context
+benchmark_role: topology_probe
+target_gpu_families: [hopper, blackwell, blackwell_ultra, blackwell_grace, blackwell_ultra_grace]
+target_model_classes: [qwen35_hybrid, frontier_mla_moe, compact_agentic_moe]
+focus_areas: [disaggregation, kv_transfer, rdma, long_context]
 topology:
   mode: prefill_decode_split
   session_routing: sticky

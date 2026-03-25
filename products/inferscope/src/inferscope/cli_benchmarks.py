@@ -11,10 +11,13 @@ import typer
 
 from inferscope.benchmarks import (
     ProceduralWorkloadOptions,
+    build_benchmark_matrix,
     build_benchmark_stack_plan,
     build_default_artifact_path,
     build_run_plan,
     compare_benchmark_artifacts,
+    describe_builtin_experiments,
+    describe_builtin_workloads,
     list_builtin_experiments,
     list_builtin_workloads,
     load_benchmark_artifact,
@@ -131,6 +134,7 @@ def register_benchmark_commands(
             {
                 "summary": f"{len(workloads)} built-in workload pack(s) available",
                 "workloads": workloads,
+                "descriptors": describe_builtin_workloads(),
                 "procedural_workloads": ["tool-agent", "coding-long-context"],
             }
         )
@@ -143,6 +147,33 @@ def register_benchmark_commands(
             {
                 "summary": f"{len(experiments)} built-in benchmark experiment(s) available",
                 "experiments": experiments,
+                "descriptors": describe_builtin_experiments(),
+            }
+        )
+
+    @app.command(name="benchmark-matrix")
+    def benchmark_matrix_cmd(
+        gpu_family: Annotated[str, typer.Option(help="Filter by target GPU family")] = "",
+        model_class: Annotated[str, typer.Option(help="Filter by target model class")] = "",
+        workload_class: Annotated[str, typer.Option(help="Filter by workload class")] = "",
+        focus_area: Annotated[str, typer.Option(help="Filter by focus area")] = "",
+        engine: Annotated[str, typer.Option(help="Filter by engine")] = "",
+    ):
+        """Show the benchmark matrix organized by GPU/model/workload intent."""
+        matrix = build_benchmark_matrix(
+            gpu_family=gpu_family,
+            model_class=model_class,
+            workload_class=workload_class,
+            focus_area=focus_area,
+            engine=engine,
+        )
+        print_result(
+            {
+                "summary": (
+                    f"{len(matrix['workloads'])} workload(s), {len(matrix['experiments'])} experiment(s), "
+                    f"{len(matrix['suggested_pairs'])} suggested pairing(s)"
+                ),
+                "matrix": matrix,
             }
         )
 

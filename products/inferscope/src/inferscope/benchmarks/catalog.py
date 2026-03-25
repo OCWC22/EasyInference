@@ -25,6 +25,19 @@ _LEGACY_RESOURCE_PREFIXES: dict[str, tuple[str, ...]] = {
         "src/inferscope/benchmarks/experiment_specs/",
     ),
 }
+_MODEL_CLASS_ALIASES: dict[str, str] = {
+    "dense": "dense_gqa",
+    "dense_gqa": "dense_gqa",
+    "reasoning": "frontier_mla_moe",
+    "moe": "frontier_mla_moe",
+    "frontier_mla_moe": "frontier_mla_moe",
+    "coder": "compact_agentic_moe",
+    "compact_agentic_moe": "compact_agentic_moe",
+    "qwen": "qwen35_hybrid",
+    "qwen35": "qwen35_hybrid",
+    "qwen35_hybrid": "qwen35_hybrid",
+    "classical_moe": "classical_moe",
+}
 
 
 def _find_packaged_resource(package: str, builtin_name: str) -> Path | None:
@@ -42,6 +55,15 @@ def _normalize_reference(reference: str | Path) -> str:
     if normalized.startswith("./"):
         return normalized[2:]
     return normalized
+
+
+def _normalize_identifier(value: str) -> str:
+    return value.strip().lower().replace("-", "_").replace(" ", "_")
+
+
+def _normalize_model_class(value: str) -> str:
+    normalized = _normalize_identifier(value)
+    return _MODEL_CLASS_ALIASES.get(normalized, normalized)
 
 
 def _legacy_builtin_name(reference: str | Path, *, kind: str) -> str | None:
@@ -133,6 +155,158 @@ def load_experiment(reference: str | Path) -> BenchmarkExperimentSpec:
 def list_builtin_experiments() -> list[str]:
     """List packaged built-in benchmark experiment specs."""
     return _list_packaged_resources("inferscope.benchmarks.experiment_specs")
+
+
+def describe_builtin_workloads() -> list[dict[str, Any]]:
+    """Return structured descriptors for all packaged workloads."""
+    descriptors: list[dict[str, Any]] = []
+    for name in list_builtin_workloads():
+        pack = load_workload(name)
+        descriptors.append(
+            {
+                "name": pack.name,
+                "description": pack.description,
+                "workload_class": pack.workload_class,
+                "benchmark_role": pack.benchmark_role,
+                "model": pack.model,
+                "target_gpu_families": pack.target_gpu_families,
+                "target_model_classes": pack.target_model_classes,
+                "focus_areas": pack.focus_areas,
+                "tags": pack.tags,
+                "procedural": pack.name in {"tool-agent", "coding-long-context"},
+            }
+        )
+    return descriptors
+
+
+def describe_builtin_experiments() -> list[dict[str, Any]]:
+    """Return structured descriptors for all packaged experiment specs."""
+    descriptors: list[dict[str, Any]] = []
+    for name in list_builtin_experiments():
+        spec = load_experiment(name)
+        workload = load_workload(spec.workload)
+        descriptors.append(
+            {
+                "name": spec.name,
+                "description": spec.description,
+                "engine": spec.engine,
+                "workload": spec.workload,
+                "workload_class": workload.workload_class,
+                "benchmark_role": spec.benchmark_role,
+                "target_gpu_families": spec.target_gpu_families,
+                "target_model_classes": spec.target_model_classes,
+                "focus_areas": spec.focus_areas,
+                "topology_mode": spec.topology.mode,
+                "cache_strategy": spec.cache.strategy,
+                "cache_tiers": spec.cache.tiers,
+                "tags": spec.tags,
+            }
+        )
+    return descriptors
+
+
+def build_benchmark_matrix(
+    *,
+    gpu_family: str = "",
+    model_class: str = "",
+    workload_class: str = "",
+    focus_area: str = "",
+    engine: str = "",
+) -> dict[str, Any]:
+    """Return filtered benchmark workload/experiment descriptors and suggested pairings."""
+
+    normalized_gpu = _normalize_identifier(gpu_family)
+    normalized_model = _normalize_model_class(model_class)
+    normalized_workload = _normalize_identifier(workload_class)
+    normalized_focus = _normalize_identifier(focus_area)
+    normalized_engine = _normalize_identifier(engine)
+
+    workloads = [
+        descriptor
+        for descriptor in describe_builtin_workloads()
+        if _matches_matrix_filters(
+            descriptor,
+            gpu_family=normalized_gpu,
+            model_class=normalized_model,
+            workload_class=normalized_workload,
+            focus_area=normalized_focus,
+        )
+    ]
+    experiments = [
+        descriptor
+        for descriptor in describe_builtin_experiments()
+        if _matches_matrix_filters(
+            descriptor,
+            gpu_family=normalized_gpu,
+            model_class=normalized_model,
+            workload_class=normalized_workload,
+            focus_area=normalized_focus,
+            engine=normalized_engine,
+        )
+    ]
+    if normalized_engine:
+        workload_names_from_experiments = {
+            _normalize_identifier(str(descriptor["workload"])) for descriptor in experiments
+        }
+        workloads = [
+            descriptor
+            for descriptor in workloads
+            if _normalize_identifier(str(descriptor["name"])) in workload_names_from_experiments
+        ]
+
+    workload_names = {descriptor["name"] for descriptor in workloads}
+    suggested_pairs = [
+        {
+            "experiment": descriptor["name"],
+            "workload": descriptor["workload"],
+            "engine": descriptor["engine"],
+            "topology_mode": descriptor["topology_mode"],
+            "cache_strategy": descriptor["cache_strategy"],
+            "focus_areas": descriptor["focus_areas"],
+        }
+        for descriptor in experiments
+        if descriptor["workload"] in workload_names
+    ]
+
+    return {
+        "filters": {
+            "gpu_family": normalized_gpu,
+            "model_class": normalized_model,
+            "workload_class": normalized_workload,
+            "focus_area": normalized_focus,
+            "engine": normalized_engine,
+        },
+        "workloads": workloads,
+        "experiments": experiments,
+        "suggested_pairs": suggested_pairs,
+    }
+
+
+def _matches_matrix_filters(
+    descriptor: dict[str, Any],
+    *,
+    gpu_family: str = "",
+    model_class: str = "",
+    workload_class: str = "",
+    focus_area: str = "",
+    engine: str = "",
+) -> bool:
+    normalized_gpu_values = [_normalize_identifier(str(value)) for value in descriptor.get("target_gpu_families", [])]
+    if gpu_family and gpu_family not in normalized_gpu_values:
+        return False
+    normalized_model_values = [
+        _normalize_model_class(str(value)) for value in descriptor.get("target_model_classes", [])
+    ]
+    if model_class and model_class not in normalized_model_values:
+        return False
+    resolved_workload_class = _normalize_identifier(str(descriptor.get("workload_class", "")))
+    resolved_workload_name = _normalize_identifier(str(descriptor.get("workload", descriptor.get("name", ""))))
+    if workload_class and workload_class not in {resolved_workload_class, resolved_workload_name}:
+        return False
+    normalized_focus_values = [_normalize_identifier(str(value)) for value in descriptor.get("focus_areas", [])]
+    if focus_area and focus_area not in normalized_focus_values:
+        return False
+    return not engine or engine == _normalize_identifier(str(descriptor.get("engine", "")))
 
 
 def load_benchmark_artifact(path: str | Path) -> BenchmarkArtifact:

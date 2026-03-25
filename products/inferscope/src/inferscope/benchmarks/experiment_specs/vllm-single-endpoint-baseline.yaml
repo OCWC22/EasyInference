@@ -3,6 +3,10 @@ name: vllm-single-endpoint-baseline
 description: Baseline colocated vLLM deployment with one request and metrics endpoint.
 engine: vllm
 workload: coding-long-context
+benchmark_role: reference
+target_gpu_families: [hopper, hopper_grace, blackwell, blackwell_ultra, blackwell_grace, blackwell_ultra_grace, cdna3, cdna4]
+target_model_classes: [qwen35_hybrid, frontier_mla_moe, compact_agentic_moe]
+focus_areas: [baseline, prefix_cache, long_context]
 topology:
   mode: single_endpoint
   session_routing: sticky

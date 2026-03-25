@@ -14,7 +14,7 @@ from inferscope.benchmarks.models import WorkloadPack
 MetricTargetRole = Literal["primary", "router", "prefill", "decode", "cache", "other"]
 TopologyMode = Literal["single_endpoint", "prefill_decode_split", "router_prefill_decode"]
 SessionRoutingMode = Literal["unknown", "none", "sticky", "hash"]
-CacheStrategy = Literal["unknown", "none", "prefix_only", "lmcache", "hicache", "offloading_connector"]
+CacheStrategy = Literal["unknown", "none", "prefix_only", "lmcache", "hicache", "offloading_connector", "nixl"]
 CacheTier = Literal["gpu_hbm", "grace_coherent", "cpu_dram", "local_ssd", "remote_cache"]
 
 
@@ -88,6 +88,10 @@ class BenchmarkExperimentSpec(BaseModel):
     description: str = ""
     engine: Literal["vllm", "sglang", "trtllm", "dynamo", "atom"]
     workload: str
+    benchmark_role: str = "operator_extension"
+    target_gpu_families: list[str] = Field(default_factory=list)
+    target_model_classes: list[str] = Field(default_factory=list)
+    focus_areas: list[str] = Field(default_factory=list)
     model: str | None = None
     concurrency: int | None = Field(default=None, ge=1, le=1024)
     topology: BenchmarkTopologyMetadata = Field(default_factory=BenchmarkTopologyMetadata)

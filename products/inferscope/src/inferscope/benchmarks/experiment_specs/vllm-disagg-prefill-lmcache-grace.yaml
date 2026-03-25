@@ -3,6 +3,10 @@ name: vllm-disagg-prefill-lmcache-grace
 description: vLLM prefill/decode split benchmark with LMCache and a Grace-aware KV overflow tier for realistic long-context serving studies.
 engine: vllm
 workload: long-context-kv-offload-rag
+benchmark_role: topology_probe
+target_gpu_families: [hopper_grace, blackwell_grace, blackwell_ultra_grace]
+target_model_classes: [dense_gqa, qwen35_hybrid, frontier_mla_moe]
+focus_areas: [grace_overflow, lmcache, kv_offload, long_context]
 topology:
   mode: prefill_decode_split
   session_routing: sticky
