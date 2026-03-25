@@ -255,8 +255,10 @@ def build_run_plan(
 
     if concurrency is not None and concurrency < 1:
         raise ValueError("concurrency must be >= 1")
-    effective_concurrency = concurrency if concurrency is not None else (
-        (experiment.concurrency if experiment else None) or workload.concurrency
+    effective_concurrency = (
+        concurrency
+        if concurrency is not None
+        else ((experiment.concurrency if experiment else None) or workload.concurrency)
     )
     if effective_concurrency < 1:
         raise ValueError("concurrency must be >= 1")
@@ -275,9 +277,7 @@ def build_run_plan(
     topology = BenchmarkTopologyMetadata.model_validate(topology_payload)
 
     cache_payload = (
-        experiment.cache.model_dump(mode="python")
-        if experiment
-        else BenchmarkCacheMetadata().model_dump(mode="python")
+        experiment.cache.model_dump(mode="python") if experiment else BenchmarkCacheMetadata().model_dump(mode="python")
     )
     if cache_strategy is not None:
         cache_payload["strategy"] = cache_strategy

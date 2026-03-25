@@ -1,75 +1,46 @@
-# ISB-1 Quick Start Guide
+# ISB-1 Quick Start
 
-Get from zero to your first benchmark result in 5 minutes.
-
----
+This guide gets you from install to a first reproducible benchmark run.
 
 ## Prerequisites
 
-Before you begin, ensure you have:
+- Python 3.10+
+- NVIDIA GPU(s) supported by the configs you intend to run
+- CUDA and driver stack compatible with your vLLM install
+- access to the model weights you plan to serve
 
-- **Python 3.10+** installed
-- **NVIDIA GPU** with CUDA 12.x and a compatible driver
-- **vLLM** installed and able to serve models
-- **HuggingFace access** for gated models (set `HF_TOKEN` environment variable)
-- At least one supported GPU: H100 SXM, H200 SXM, B200, or B300
-
----
-
-## Step 1: Install
+## Install
 
 ```bash
 git clone <repository-url>
 cd EasyInference/products/isb1
-
-# Install the benchmark package with development and quality extras
 pip install -e ".[dev,quality]"
 ```
 
-Verify the CLI is available:
+Confirm the CLI is available:
 
 ```bash
 isb1 --help
 ```
 
----
-
-## Step 2: Setup
-
-Run the automated setup to install telemetry tooling, download datasets, and generate workload traces:
-
-```bash
-make setup
-```
-
-This executes:
-1. `scripts/setup_node.sh` -- system-level prerequisites
-2. `scripts/install_telemetry.sh` -- GPU telemetry collectors
-3. `scripts/download_datasets.sh` -- ShareGPT and evaluation datasets
-4. `scripts/generate_mode_a_configs.py` -- auto-generate Mode A engine configs
-5. `scripts/generate_traces.py` -- generate deterministic workload trace files
-
----
-
-## Step 3: Validate Configuration
-
-Before running a benchmark, validate that your configuration is correct and your hardware can support the requested matrix:
+## Validate the benchmark configs
 
 ```bash
 isb1 validate --sweep configs/sweep/core.yaml
+isb1 validate --all-yaml --config-root configs
 ```
 
-This checks:
-- All referenced GPU, model, and workload configs exist and parse correctly.
-- Models fit in GPU memory at the requested quantization.
-- GPUs support the requested quantization formats.
-- Minimum GPU count requirements are met.
+This checks the benchmark matrix, config integrity, and rough memory-fit constraints.
 
----
+## Preview the execution plan
 
-## Step 4: Run a Single Cell
+```bash
+isb1 plan --config configs/sweep/core.yaml
+```
 
-Start with a single cell to verify everything works:
+Use this before long runs. It lets you inspect the matrix without launching anything.
+
+## Run a single cell
 
 ```bash
 isb1 run-cell \
@@ -81,71 +52,47 @@ isb1 run-cell \
   --output results/
 ```
 
-This will:
-1. Start a vLLM server with Llama-3.3-70B at fp8 quantization.
-2. Run the warmup phase (100 requests, 60 seconds minimum).
-3. Execute the chat workload rate sweep (1 to 256 req/s).
-4. Collect GPU telemetry and engine metrics.
-5. Save raw results to `results/raw/`.
+What happens during a cell run:
 
-Expect 15-30 minutes for a single cell depending on workload and hardware.
+1. configs are loaded and validated
+2. a deterministic request pool is materialized from the workload config
+3. `trace.jsonl` is written into the run directory
+4. the serving stack is launched
+5. the internal replay client executes the configured rate sweep
+6. manifests, raw results, and lockfiles are written to disk
 
----
-
-## Step 5: Analyze Results
-
-Aggregate raw results into metrics:
+## Run the core sweep
 
 ```bash
-isb1 analyze --results-dir results/ --output analysis.json
-```
-
-This computes all ISB-1 metrics: TTFT, TPOT, ITL, throughput, goodput, SLO attainment, and more, then writes a consolidated JSON report.
-
----
-
-## Step 6: View Results
-
-Generate a leaderboard:
-
-```bash
-isb1 leaderboard --analysis analysis.json
-```
-
-Generate a report artifact:
-
-```bash
-isb1 report --analysis analysis.json --output report.html
-```
-
-Runtime benchmark data is written under `results/`. Consolidated analysis is written to `analysis.json`, and the HTML report is written to `report.html` unless you choose another path.
-
----
-
-## Running the Full Core Suite
-
-Once you have verified a single cell works, run the full core benchmark:
-
-```bash
-# Preview the execution plan
-isb1 plan --config configs/sweep/core.yaml
-
-# Run all cells
 isb1 run --config configs/sweep/core.yaml --output results/
+```
 
-# Analyze and generate reports
+Add `--dry-run` if you want the orchestrator plan without execution.
+
+## Aggregate results
+
+```bash
 isb1 analyze --results-dir results/ --output analysis.json
 isb1 claims --results-dir results/
 isb1 leaderboard --analysis analysis.json
 isb1 report --analysis analysis.json --output report.html
 ```
 
-The core suite covers 3 GPUs, 3 models, 4 workloads, and 2 modes. Expect 24-72 hours of total runtime depending on hardware.
+## What to inspect after a run
 
----
+Look at:
 
-## Next Steps
+- the saved `trace.jsonl`
+- raw per-rate result JSON files
+- `manifest.json`
+- the generated lockfile
+- aggregated analysis output
 
-- Read the full [Methodology](METHODOLOGY.md) to understand workload definitions, metric calculations, and statistical methods.
-- Read the [Architecture](ARCHITECTURE.md) for a technical deep-dive into the codebase.
-- To submit an operator config for Mode C evaluation, see [Contributing](CONTRIBUTING.md).
+Those files are the minimum reproducibility surface for a benchmark claim or an internal rollout review.
+
+## Where to go next
+
+- [METHODOLOGY.md](METHODOLOGY.md) — benchmark contract and metrics
+- [ARCHITECTURE.md](ARCHITECTURE.md) — code structure and lifecycle
+- [ECOSYSTEM.md](ECOSYSTEM.md) — relationship to InferenceX and InferScope
+- [CONTRIBUTING.md](CONTRIBUTING.md) — submissions and code changes

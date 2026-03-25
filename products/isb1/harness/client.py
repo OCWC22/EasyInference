@@ -1,224 +1,144 @@
-"""BenchmarkClient — wraps vLLM benchmark_serving.py for ISB-1 runs."""
+"""BenchmarkClient — internal replay facade for ISB-1 runs."""
 
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
-import subprocess
-import sys
+import math
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
+
+from harness.replay_client import run_rate
+from workloads.base import Request
 
 logger = logging.getLogger(__name__)
 
-_DEFAULT_BACKEND = "openai-chat"
-_DEFAULT_ENDPOINT = "/v1/chat/completions"
-_DEFAULT_PERCENTILE_METRICS = "ttft,tpot,itl,e2el"
+_DEFAULT_SESSION_HEADER = "X-Session-ID"
 
 
 class BenchmarkClient:
-    """Execute vLLM's ``benchmark_serving.py`` and collect results.
-
-    Parameters
-    ----------
-    base_url : str
-        Base URL of the vLLM server (e.g. ``http://localhost:8000``).
-    model : str
-        Model name as registered in the server (usually the HF model id).
-    result_dir : str | Path
-        Directory where JSON results are written.
-    backend : str
-        Backend identifier for benchmark_serving.py.
-    dataset_name : str | None
-        Name of the built-in dataset (e.g. ``"sharegpt"``).
-    dataset_path : str | Path | None
-        Path to a dataset file when not using a built-in name.
-    seed : int
-        Random seed for reproducibility.
-    extra_args : list[str] | None
-        Extra CLI args forwarded to benchmark_serving.py.
-    """
+    """Execute ISB-1 request traces against an OpenAI-compatible endpoint."""
 
     def __init__(
         self,
         base_url: str,
         model: str,
         result_dir: str | Path,
-        backend: str = _DEFAULT_BACKEND,
-        dataset_name: Optional[str] = None,
-        dataset_path: Optional[str | Path] = None,
+        *,
+        requests: list[Request],
+        arrival_model: str,
+        arrival_shape: float | None,
+        goodput_slo: dict[str, Any] | None,
         seed: int = 42,
-        extra_args: list[str] | None = None,
+        session_header_name: str = _DEFAULT_SESSION_HEADER,
     ) -> None:
+        if not requests:
+            raise ValueError("BenchmarkClient requires at least one request in the pool")
         self.base_url = base_url.rstrip("/")
         self.model = model
         self.result_dir = Path(result_dir)
-        self.backend = backend
-        self.dataset_name = dataset_name
-        self.dataset_path = dataset_path
+        self.requests = list(requests)
+        self.arrival_model = arrival_model
+        self.arrival_shape = arrival_shape
+        self.goodput_slo = goodput_slo
         self.seed = seed
-        self.extra_args = extra_args or []
+        self.session_header_name = session_header_name
 
-    # ── Single-rate run ──────────────────────────────────────────────────
+    def _request_count_for_rate(
+        self,
+        request_rate: float,
+        request_pool_size: int,
+        measurement_duration_seconds: float,
+    ) -> int:
+        if not math.isfinite(request_rate) or request_rate <= 0 or measurement_duration_seconds <= 0:
+            return max(1, request_pool_size)
+        return max(request_pool_size, math.ceil(request_rate * measurement_duration_seconds))
 
     def run(
         self,
         request_rate: float,
-        num_prompts: int,
+        request_pool_size: int,
         *,
-        goodput: Optional[str] = None,
+        measurement_duration_seconds: float,
+        rate_index: int,
         timeout: int = 7200,
     ) -> Path:
-        """Run ``benchmark_serving.py`` at a single request rate.
-
-        Parameters
-        ----------
-        request_rate : float
-            Requests per second.  Use ``float("inf")`` for closed-loop.
-        num_prompts : int
-            Total number of prompts to send.
-        goodput : str | None
-            Goodput definition string (e.g. ``"ttft:2000,tpot:100"``).
-        timeout : int
-            Subprocess timeout in seconds.
-
-        Returns
-        -------
-        Path
-            Path to the JSON results file written by benchmark_serving.py.
-
-        Raises
-        ------
-        RuntimeError
-            If the benchmark process exits with a non-zero return code.
-        """
+        """Run one rate point and write a raw JSON result file."""
         self.result_dir.mkdir(parents=True, exist_ok=True)
-
-        cmd = [
-            sys.executable,
-            "-m",
-            "vllm.entrypoints.openai.api_server",  # fallback: use benchmark_serving
-        ]
-        # Use the benchmark_serving script directly
-        cmd = [
-            sys.executable,
-            "-m",
-            "vllm.benchmarks.benchmark_serving",
-            "--backend",
-            self.backend,
-            "--base-url",
-            self.base_url,
-            "--model",
-            self.model,
-            "--request-rate",
-            str(request_rate),
-            "--num-prompts",
-            str(num_prompts),
-            "--seed",
-            str(self.seed),
-            "--save-result",
-            "--result-dir",
-            str(self.result_dir),
-            "--percentile-metrics",
-            _DEFAULT_PERCENTILE_METRICS,
-        ]
-
-        if self.dataset_name:
-            cmd.extend(["--dataset-name", self.dataset_name])
-        if self.dataset_path:
-            cmd.extend(["--dataset-path", str(self.dataset_path)])
-        if goodput:
-            cmd.extend(["--goodput", goodput])
-
-        cmd.extend(self.extra_args)
-
+        expanded_request_count = self._request_count_for_rate(
+            request_rate,
+            request_pool_size,
+            measurement_duration_seconds,
+        )
         logger.info(
-            "Running benchmark: rate=%.1f num_prompts=%d", request_rate, num_prompts
+            "Running internal replay benchmark: rate=%s req/s request_pool=%d expanded=%d duration=%.1fs",
+            request_rate,
+            request_pool_size,
+            expanded_request_count,
+            measurement_duration_seconds,
         )
-        logger.debug("Command: %s", " ".join(cmd))
-
-        result = subprocess.run(
-            cmd,
-            capture_output=True,
-            text=True,
-            timeout=timeout,
-            cwd=str(self.result_dir.parent),
-        )
-
-        if result.returncode != 0:
-            logger.error("benchmark_serving stderr:\n%s", result.stderr)
-            raise RuntimeError(
-                f"benchmark_serving exited with code {result.returncode}:\n"
-                f"{result.stderr[-2000:]}"
+        result = asyncio.run(
+            run_rate(
+                base_url=self.base_url,
+                model=self.model,
+                request_pool=self.requests,
+                request_count=expanded_request_count,
+                request_rate=request_rate,
+                arrival_model=self.arrival_model,
+                arrival_shape=self.arrival_shape,
+                seed=self.seed + rate_index,
+                request_timeout_seconds=min(timeout, 600),
+                total_timeout_seconds=timeout,
+                session_header_name=self.session_header_name,
+                goodput_slo=self.goodput_slo,
             )
-
-        # Locate the most recent result file
-        result_path = self._find_latest_result()
+        )
+        rate_label = "closed-loop" if not math.isfinite(request_rate) else f"{request_rate:g}rps"
+        result_path = self.result_dir / f"{rate_index:03d}-{rate_label}.json"
+        result_path.write_text(json.dumps(result.to_dict(), indent=2) + "\n", encoding="utf-8")
         logger.info("Benchmark results written to %s", result_path)
+        if result.completed < 1:
+            raise RuntimeError(
+                f"Benchmark replay at rate {rate_label} completed zero requests; see {result_path}"
+            )
         return result_path
-
-    # ── Sweep across rates ───────────────────────────────────────────────
 
     def run_sweep(
         self,
         rate_sweep: list[float],
-        num_prompts: int,
+        request_pool_size: int,
         *,
-        goodput: Optional[str] = None,
+        measurement_duration_seconds: float,
         timeout: int = 7200,
     ) -> list[Path]:
-        """Run the benchmark at each rate in *rate_sweep* sequentially.
-
-        Returns a list of result file paths, one per rate.
-        """
+        """Run the benchmark at each configured rate sequentially."""
         results: list[Path] = []
-        for rate in rate_sweep:
-            logger.info("Sweep rate %.1f req/s", rate)
+        for rate_index, rate in enumerate(rate_sweep):
             path = self.run(
                 request_rate=rate,
-                num_prompts=num_prompts,
-                goodput=goodput,
+                request_pool_size=request_pool_size,
+                measurement_duration_seconds=measurement_duration_seconds,
+                rate_index=rate_index,
                 timeout=timeout,
             )
             results.append(path)
         return results
 
-    # ── Result parsing ───────────────────────────────────────────────────
-
     @staticmethod
     def parse_results(result_path: str | Path) -> dict[str, Any]:
-        """Parse a benchmark_serving JSON results file.
-
-        Returns the parsed dict.  Handles both single-object and list formats.
-        """
+        """Parse a raw benchmark JSON result file."""
         path = Path(result_path)
         text = path.read_text(encoding="utf-8").strip()
-
-        # benchmark_serving may write JSONL or a single JSON object
         if text.startswith("["):
             data = json.loads(text)
             return data[-1] if data else {}
         if text.startswith("{"):
             return json.loads(text)
-
-        # JSONL fallback: return last line
-        lines = [l for l in text.splitlines() if l.strip()]
+        lines = [line for line in text.splitlines() if line.strip()]
         if lines:
             return json.loads(lines[-1])
         return {}
-
-    # ── Internal helpers ─────────────────────────────────────────────────
-
-    def _find_latest_result(self) -> Path:
-        """Return the most recently modified JSON file in result_dir."""
-        json_files = sorted(
-            self.result_dir.glob("*.json"), key=lambda p: p.stat().st_mtime
-        )
-        if not json_files:
-            raise FileNotFoundError(
-                f"No JSON result files found in {self.result_dir}"
-            )
-        return json_files[-1]
 
     def __repr__(self) -> str:
         return (

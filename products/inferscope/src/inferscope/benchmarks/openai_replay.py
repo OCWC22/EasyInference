@@ -368,9 +368,7 @@ def _metrics_capture_status(
     if not enabled:
         return 0, 0, True
     total = len(before) if before else len(after)
-    targets_with_errors = {
-        snapshot.target_name for snapshot in before + after if snapshot.error
-    }
+    targets_with_errors = {snapshot.target_name for snapshot in before + after if snapshot.error}
     return total, len(targets_with_errors), not targets_with_errors
 
 
@@ -401,13 +399,17 @@ async def run_openai_replay(
     validated_endpoint = validate_endpoint(endpoint, allow_private=allow_private)
     validated_metrics_endpoint = validate_endpoint(metrics_endpoint or validated_endpoint, allow_private=allow_private)
 
-    resolved_plan = run_plan.model_copy(deep=True) if run_plan else build_run_plan(
-        workload,
-        validated_endpoint,
-        workload_ref=workload_ref or workload.name,
-        model=model,
-        concurrency=concurrency,
-        metrics_endpoint=validated_metrics_endpoint,
+    resolved_plan = (
+        run_plan.model_copy(deep=True)
+        if run_plan
+        else build_run_plan(
+            workload,
+            validated_endpoint,
+            workload_ref=workload_ref or workload.name,
+            model=model,
+            concurrency=concurrency,
+            metrics_endpoint=validated_metrics_endpoint,
+        )
     )
     if run_plan is not None:
         resolved_plan.request_endpoint = validated_endpoint
@@ -550,9 +552,7 @@ async def run_openai_replay(
         workload_class=workload.workload_class,
         endpoint=validated_endpoint,
         metrics_endpoint=(
-            primary_after.endpoint
-            if primary_after
-            else primary_before.endpoint if primary_before else None
+            primary_after.endpoint if primary_after else primary_before.endpoint if primary_before else None
         ),
         model=resolved_plan.model,
         concurrency=resolved_plan.concurrency,

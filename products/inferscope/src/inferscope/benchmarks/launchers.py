@@ -163,8 +163,8 @@ def _lmcache_config_files(host: str) -> list[GeneratedFile]:
             'transfer_channel: "nixl"\n'
             'pd_role: "sender"\n'
             f'pd_proxy_host: "{host}"\n'
-            'pd_proxy_port: 7500\n'
-            'pd_buffer_size: 1073741824\n'
+            "pd_proxy_port: 7500\n"
+            "pd_buffer_size: 1073741824\n"
             'pd_buffer_device: "cuda"\n'
         ),
     )
@@ -177,9 +177,9 @@ def _lmcache_config_files(host: str) -> list[GeneratedFile]:
             'transfer_channel: "nixl"\n'
             'pd_role: "receiver"\n'
             f'pd_peer_host: "{host}"\n'
-            'pd_peer_init_port: 7300\n'
-            'pd_peer_alloc_port: 7400\n'
-            'pd_buffer_size: 1073741824\n'
+            "pd_peer_init_port: 7300\n"
+            "pd_peer_alloc_port: 7400\n"
+            "pd_buffer_size: 1073741824\n"
             'pd_buffer_device: "cuda"\n'
         ),
     )
@@ -439,9 +439,7 @@ def materialize_benchmark_stack_plan(
 
     plan_path = root / "stack-plan.json"
     plan_path.write_text(json.dumps(stack_plan.model_dump(mode="json"), indent=2) + "\n")
-    written_files.append(
-        MaterializedStackFile(path=str(plan_path), kind="plan", description="Serialized stack plan")
-    )
+    written_files.append(MaterializedStackFile(path=str(plan_path), kind="plan", description="Serialized stack plan"))
 
     for generated_file in stack_plan.generated_files:
         file_path = root / generated_file.path
@@ -461,8 +459,7 @@ def materialize_benchmark_stack_plan(
         component_names.append(component.name)
         env_path = env_dir / f"{component.name}.env"
         env_lines = [
-            f"{key}={_resolve_env_value(value, generated_paths)}"
-            for key, value in sorted(component.env_vars.items())
+            f"{key}={_resolve_env_value(value, generated_paths)}" for key, value in sorted(component.env_vars.items())
         ]
         env_path.write_text("\n".join(env_lines) + ("\n" if env_lines else ""))
         written_files.append(
@@ -500,9 +497,7 @@ def materialize_benchmark_stack_plan(
     stop_script = scripts_dir / "stop-all.sh"
     stop_script.write_text(_render_stop_script(list(reversed(component_names))))
     stop_script.chmod(0o755)
-    written_files.append(
-        MaterializedStackFile(path=str(stop_script), kind="script", description="Stop all components")
-    )
+    written_files.append(MaterializedStackFile(path=str(stop_script), kind="script", description="Stop all components"))
 
     benchmark_script = scripts_dir / "run-benchmark.sh"
     benchmark_script.write_text(_render_benchmark_script(stack_plan.benchmark_command))
@@ -632,11 +627,7 @@ def build_benchmark_stack_plan(
             warnings.append("vLLM primary slice does not fit the selected model/GPU plan")
         components.append(component)
     elif experiment.engine == "vllm" and experiment.topology.mode == "prefill_decode_split":
-        connector = (
-            experiment.topology.kv_connector
-            or getattr(experiment.cache, "connector", None)
-            or "NixlConnector"
-        )
+        connector = experiment.topology.kv_connector or getattr(experiment.cache, "connector", None) or "NixlConnector"
         is_lmcache = connector == "LMCacheConnectorV1" or experiment.cache.strategy == "lmcache"
 
         if is_lmcache:
@@ -658,22 +649,26 @@ def build_benchmark_stack_plan(
         )
 
         if is_lmcache:
-            prefill_transfer = json.dumps({
-                "kv_connector": "LMCacheConnectorV1",
-                "kv_role": "kv_producer",
-                "kv_connector_extra_config": {
-                    "discard_partial_chunks": False,
-                    "lmcache_rpc_port": "producer1",
-                },
-            })
-            decode_transfer = json.dumps({
-                "kv_connector": "LMCacheConnectorV1",
-                "kv_role": "kv_consumer",
-                "kv_connector_extra_config": {
-                    "discard_partial_chunks": False,
-                    "lmcache_rpc_port": "consumer1",
-                },
-            })
+            prefill_transfer = json.dumps(
+                {
+                    "kv_connector": "LMCacheConnectorV1",
+                    "kv_role": "kv_producer",
+                    "kv_connector_extra_config": {
+                        "discard_partial_chunks": False,
+                        "lmcache_rpc_port": "producer1",
+                    },
+                }
+            )
+            decode_transfer = json.dumps(
+                {
+                    "kv_connector": "LMCacheConnectorV1",
+                    "kv_role": "kv_consumer",
+                    "kv_connector_extra_config": {
+                        "discard_partial_chunks": False,
+                        "lmcache_rpc_port": "consumer1",
+                    },
+                }
+            )
             prefill_env = {
                 **prefill_config.env_vars,
                 **_cuda_env(gpu_layout["prefill"]),
@@ -687,14 +682,18 @@ def build_benchmark_stack_plan(
                 "LMCACHE_CONFIG_FILE": generated_files[1].path,
             }
         else:
-            prefill_transfer = json.dumps({
-                "kv_connector": connector,
-                "kv_role": "kv_producer",
-            })
-            decode_transfer = json.dumps({
-                "kv_connector": connector,
-                "kv_role": "kv_consumer",
-            })
+            prefill_transfer = json.dumps(
+                {
+                    "kv_connector": connector,
+                    "kv_role": "kv_producer",
+                }
+            )
+            decode_transfer = json.dumps(
+                {
+                    "kv_connector": connector,
+                    "kv_role": "kv_consumer",
+                }
+            )
             prefill_env = {
                 **prefill_config.env_vars,
                 **_cuda_env(gpu_layout["prefill"]),
@@ -763,7 +762,9 @@ def build_benchmark_stack_plan(
                         f"--decoder-host {host} --decoder-port {ports['decode']} "
                         f"--decoder-init-port {ports['decode_init']} --decoder-alloc-port {ports['decode_alloc']} "
                         f"--proxy-host {host} --proxy-port {ports['proxy_control']} --num-decoders 1"
-                    ) if vllm_proxy_command else (
+                    )
+                    if vllm_proxy_command
+                    else (
                         "python3 <path-to-vllm-disagg-proxy> "
                         f"--host {host} --port {ports['primary']} "
                         f"--prefiller-host {host} --prefiller-port {ports['prefill']} --num-prefillers 1 "
@@ -776,9 +777,9 @@ def build_benchmark_stack_plan(
                         "Use the proxy script shipped with the vLLM disaggregated-prefill examples.",
                         "Send benchmark traffic to the proxy endpoint, not directly to prefill/decode workers.",
                     ],
-                    warnings=[] if vllm_proxy_command else [
-                        "Bundle is not runnable until a concrete vLLM disaggregation proxy command is provided."
-                    ],
+                    warnings=[]
+                    if vllm_proxy_command
+                    else ["Bundle is not runnable until a concrete vLLM disaggregation proxy command is provided."],
                 ),
             ]
         )
@@ -875,7 +876,7 @@ def build_benchmark_stack_plan(
                         "--host",
                         host,
                         "--port",
-                        str(ports['decode']),
+                        str(ports["decode"]),
                         "--disaggregation-mode",
                         "decode",
                         "--disaggregation-transfer-backend",
@@ -1017,8 +1018,7 @@ def build_benchmark_stack_plan(
         components.append(component)
     else:
         raise ValueError(
-            "Unsupported experiment topology for launch planning: "
-            f"{experiment.engine}/{experiment.topology.mode}"
+            f"Unsupported experiment topology for launch planning: {experiment.engine}/{experiment.topology.mode}"
         )
 
     benchmark_command = _build_benchmark_command(

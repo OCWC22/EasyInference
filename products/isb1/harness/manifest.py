@@ -49,6 +49,12 @@ class RunManifest:
     warmup_requests: int = 0
     warmup_stable: bool = False
 
+    # ── runner / trace provenance ───────────────────────────────────────
+    benchmark_runner: str = ""
+    trace_path: str = ""
+    trace_request_count: int = 0
+    trace_sha256: str = ""
+
     # ── outcome ─────────────────────────────────────────────────────────
     status: str = "completed"  # "completed" | "failed" | "unstable"
     error_message: Optional[str] = None

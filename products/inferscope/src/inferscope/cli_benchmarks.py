@@ -10,6 +10,7 @@ from typing import Annotated, Any
 import typer
 
 from inferscope.benchmarks import (
+    ProceduralWorkloadOptions,
     build_benchmark_stack_plan,
     build_default_artifact_path,
     build_run_plan,
@@ -18,32 +19,71 @@ from inferscope.benchmarks import (
     list_builtin_workloads,
     load_benchmark_artifact,
     load_experiment,
-    load_workload,
     materialize_benchmark_stack_plan,
+    materialize_workload,
     parse_metrics_target_overrides,
     run_openai_replay,
 )
 from inferscope.endpoint_auth import parse_header_values
 
 
+def _build_procedural_options(
+    *,
+    synthetic_requests: int | None = None,
+    synthetic_input_tokens: int | None = None,
+    synthetic_output_tokens: int | None = None,
+    synthetic_seed: int = 42,
+    context_file: str = "",
+) -> ProceduralWorkloadOptions | None:
+    if not any(
+        value is not None and value != ""
+        for value in (
+            synthetic_requests,
+            synthetic_input_tokens,
+            synthetic_output_tokens,
+            context_file,
+        )
+    ):
+        return None
+    return ProceduralWorkloadOptions(
+        request_count=synthetic_requests,
+        input_tokens=synthetic_input_tokens,
+        output_tokens=synthetic_output_tokens,
+        seed=synthetic_seed,
+        context_file=(context_file or None),
+    )
+
+
 def _resolve_benchmark_plan(
     workload: str,
     endpoint: str,
     *,
-    experiment: str = '',
-    model: str = '',
+    experiment: str = "",
+    model: str = "",
     concurrency: int | None = None,
     metrics_endpoint: str | None = None,
     metrics_target: list[str] | None = None,
-    topology_mode: str = '',
-    session_routing: str = '',
-    session_header_name: str = '',
-    cache_strategy: str = '',
+    topology_mode: str = "",
+    session_routing: str = "",
+    session_header_name: str = "",
+    cache_strategy: str = "",
     cache_tier: list[str] | None = None,
-    cache_connector: str = '',
+    cache_connector: str = "",
     session_affinity: bool | None = None,
+    synthetic_requests: int | None = None,
+    synthetic_input_tokens: int | None = None,
+    synthetic_output_tokens: int | None = None,
+    synthetic_seed: int = 42,
+    context_file: str = "",
 ):
-    input_workload_pack = load_workload(workload)
+    procedural_options = _build_procedural_options(
+        synthetic_requests=synthetic_requests,
+        synthetic_input_tokens=synthetic_input_tokens,
+        synthetic_output_tokens=synthetic_output_tokens,
+        synthetic_seed=synthetic_seed,
+        context_file=context_file,
+    )
+    input_workload_pack = materialize_workload(workload, options=procedural_options)
     experiment_spec = load_experiment(experiment) if experiment else None
     if experiment_spec and input_workload_pack.name != experiment_spec.workload:
         raise ValueError(
@@ -52,7 +92,9 @@ def _resolve_benchmark_plan(
         )
 
     workload_reference = experiment_spec.workload if experiment_spec else workload
-    workload_pack = load_workload(workload_reference) if experiment_spec else input_workload_pack
+    workload_pack = (
+        materialize_workload(workload_reference, options=procedural_options) if experiment_spec else input_workload_pack
+    )
     metrics_target_overrides = parse_metrics_target_overrides(metrics_target)
     run_plan = build_run_plan(
         workload_pack,
@@ -81,41 +123,42 @@ def register_benchmark_commands(
 ) -> None:
     """Register benchmark and evaluation commands on the main CLI app."""
 
-    @app.command(name='benchmark-workloads')
+    @app.command(name="benchmark-workloads")
     def benchmark_workloads_cmd():
         """List built-in benchmark workload packs."""
         workloads = list_builtin_workloads()
         print_result(
             {
-                'summary': f'{len(workloads)} built-in workload pack(s) available',
-                'workloads': workloads,
+                "summary": f"{len(workloads)} built-in workload pack(s) available",
+                "workloads": workloads,
+                "procedural_workloads": ["tool-agent", "coding-long-context"],
             }
         )
 
-    @app.command(name='benchmark-experiments')
+    @app.command(name="benchmark-experiments")
     def benchmark_experiments_cmd():
         """List built-in disaggregation/cache benchmark experiment specs."""
         experiments = list_builtin_experiments()
         print_result(
             {
-                'summary': f'{len(experiments)} built-in benchmark experiment(s) available',
-                'experiments': experiments,
+                "summary": f"{len(experiments)} built-in benchmark experiment(s) available",
+                "experiments": experiments,
             }
         )
 
-    @app.command(name='benchmark-stack-plan')
+    @app.command(name="benchmark-stack-plan")
     def benchmark_stack_plan_cmd(
-        experiment: Annotated[str, typer.Argument(help='Built-in experiment spec name')],
-        gpu: Annotated[str, typer.Argument(help='GPU type for the planned stack')],
-        num_gpus: Annotated[int, typer.Option(help='Total GPU count available to the stack', min=1)] = 2,
-        model: Annotated[str, typer.Option(help='Override model name from the experiment/workload')] = '',
-        host: Annotated[str, typer.Option(help='Host/IP used in generated endpoints and commands')] = '127.0.0.1',
-        enable_trace: Annotated[bool, typer.Option(help='Enable router OTLP tracing when supported')] = False,
-        otlp_endpoint: Annotated[str, typer.Option(help='OTLP traces endpoint for router tracing')] = '',
+        experiment: Annotated[str, typer.Argument(help="Built-in experiment spec name")],
+        gpu: Annotated[str, typer.Argument(help="GPU type for the planned stack")],
+        num_gpus: Annotated[int, typer.Option(help="Total GPU count available to the stack", min=1)] = 2,
+        model: Annotated[str, typer.Option(help="Override model name from the experiment/workload")] = "",
+        host: Annotated[str, typer.Option(help="Host/IP used in generated endpoints and commands")] = "127.0.0.1",
+        enable_trace: Annotated[bool, typer.Option(help="Enable router OTLP tracing when supported")] = False,
+        otlp_endpoint: Annotated[str, typer.Option(help="OTLP traces endpoint for router tracing")] = "",
         vllm_proxy_command: Annotated[
             str,
-            typer.Option(help='Concrete proxy command for vLLM disaggregated-prefill bundles'),
-        ] = '',
+            typer.Option(help="Concrete proxy command for vLLM disaggregated-prefill bundles"),
+        ] = "",
     ):
         """Generate launch commands and benchmark wiring for a live vLLM/SGLang experiment stack."""
         try:
@@ -127,7 +170,7 @@ def register_benchmark_commands(
                 host=host,
                 enable_trace=enable_trace,
                 otlp_endpoint=otlp_endpoint,
-                request_id_headers=['x-request-id', 'x-trace-id'],
+                request_id_headers=["x-request-id", "x-trace-id"],
                 vllm_proxy_command=vllm_proxy_command,
             )
         except Exception as exc:  # noqa: BLE001
@@ -135,27 +178,27 @@ def register_benchmark_commands(
 
         print_result(
             {
-                'summary': f'Generated launch plan for {stack_plan.experiment}',
-                'stack_plan': stack_plan.model_dump(mode='json'),
-                'benchmark_command': stack_plan.benchmark_command,
+                "summary": f"Generated launch plan for {stack_plan.experiment}",
+                "stack_plan": stack_plan.model_dump(mode="json"),
+                "benchmark_command": stack_plan.benchmark_command,
             }
         )
 
-    @app.command(name='benchmark-stack-write')
+    @app.command(name="benchmark-stack-write")
     def benchmark_stack_write_cmd(
-        experiment: Annotated[str, typer.Argument(help='Built-in experiment spec name')],
-        gpu: Annotated[str, typer.Argument(help='GPU type for the planned stack')],
-        output_dir: Annotated[Path, typer.Argument(help='Directory to write scripts and configs into')],
-        num_gpus: Annotated[int, typer.Option(help='Total GPU count available to the stack', min=1)] = 2,
-        model: Annotated[str, typer.Option(help='Override model name from the experiment/workload')] = '',
-        host: Annotated[str, typer.Option(help='Host/IP used in generated endpoints and commands')] = '127.0.0.1',
-        enable_trace: Annotated[bool, typer.Option(help='Enable router OTLP tracing when supported')] = False,
-        otlp_endpoint: Annotated[str, typer.Option(help='OTLP traces endpoint for router tracing')] = '',
+        experiment: Annotated[str, typer.Argument(help="Built-in experiment spec name")],
+        gpu: Annotated[str, typer.Argument(help="GPU type for the planned stack")],
+        output_dir: Annotated[Path, typer.Argument(help="Directory to write scripts and configs into")],
+        num_gpus: Annotated[int, typer.Option(help="Total GPU count available to the stack", min=1)] = 2,
+        model: Annotated[str, typer.Option(help="Override model name from the experiment/workload")] = "",
+        host: Annotated[str, typer.Option(help="Host/IP used in generated endpoints and commands")] = "127.0.0.1",
+        enable_trace: Annotated[bool, typer.Option(help="Enable router OTLP tracing when supported")] = False,
+        otlp_endpoint: Annotated[str, typer.Option(help="OTLP traces endpoint for router tracing")] = "",
         vllm_proxy_command: Annotated[
             str,
-            typer.Option(help='Concrete proxy command for vLLM disaggregated-prefill bundles'),
-        ] = '',
-        overwrite: Annotated[bool, typer.Option(help='Allow writing into a non-empty output directory')] = False,
+            typer.Option(help="Concrete proxy command for vLLM disaggregated-prefill bundles"),
+        ] = "",
+        overwrite: Annotated[bool, typer.Option(help="Allow writing into a non-empty output directory")] = False,
     ):
         """Write a runnable benchmark stack bundle with scripts, config files, and plan metadata."""
         try:
@@ -167,7 +210,7 @@ def register_benchmark_commands(
                 host=host,
                 enable_trace=enable_trace,
                 otlp_endpoint=otlp_endpoint,
-                request_id_headers=['x-request-id', 'x-trace-id'],
+                request_id_headers=["x-request-id", "x-trace-id"],
                 vllm_proxy_command=vllm_proxy_command,
             )
             materialized = materialize_benchmark_stack_plan(stack_plan, output_dir, overwrite=overwrite)
@@ -176,33 +219,62 @@ def register_benchmark_commands(
 
         print_result(
             {
-                'summary': f'Materialized runnable stack for {stack_plan.experiment}',
-                'materialized': materialized.model_dump(mode='json'),
-                'benchmark_command': stack_plan.benchmark_command,
+                "summary": f"Materialized runnable stack for {stack_plan.experiment}",
+                "materialized": materialized.model_dump(mode="json"),
+                "benchmark_command": stack_plan.benchmark_command,
             }
         )
 
-    @app.command(name='benchmark-plan')
+    @app.command(name="benchmark-plan")
     def benchmark_plan_cmd(
-        workload: Annotated[str, typer.Argument(help='Workload file path or built-in workload name')],
-        endpoint: Annotated[str, typer.Argument(help='OpenAI-compatible request endpoint base URL')],
-        experiment: Annotated[str, typer.Option(help='Optional built-in or file-backed experiment spec')] = '',
-        model: Annotated[str, typer.Option(help='Override model name from the workload/experiment')] = '',
-        concurrency: Annotated[int | None, typer.Option(help='Override concurrency', min=1)] = None,
-        metrics_endpoint: Annotated[str | None, typer.Option(help='Optional default Prometheus base URL')] = None,
+        workload: Annotated[str, typer.Argument(help="Workload file path or built-in workload name")],
+        endpoint: Annotated[str, typer.Argument(help="OpenAI-compatible request endpoint base URL")],
+        experiment: Annotated[str, typer.Option(help="Optional built-in or file-backed experiment spec")] = "",
+        model: Annotated[str, typer.Option(help="Override model name from the workload/experiment")] = "",
+        concurrency: Annotated[int | None, typer.Option(help="Override concurrency", min=1)] = None,
+        metrics_endpoint: Annotated[str | None, typer.Option(help="Optional default Prometheus base URL")] = None,
         metrics_target: Annotated[
             list[str] | None,
             typer.Option(
-                help='Additional metrics targets as name=url. Example: --metrics-target router=http://host:9000'
+                help="Additional metrics targets as name=url. Example: --metrics-target router=http://host:9000"
             ),
         ] = None,
-        topology_mode: Annotated[str, typer.Option(help='Override topology mode')] = '',
-        session_routing: Annotated[str, typer.Option(help='Override session routing mode')] = '',
-        session_header_name: Annotated[str, typer.Option(help='Override session header name')] = '',
-        cache_strategy: Annotated[str, typer.Option(help='Override cache strategy')] = '',
-        cache_tier: Annotated[list[str] | None, typer.Option(help='Override cache tiers')] = None,
-        cache_connector: Annotated[str, typer.Option(help='Override cache connector name')] = '',
-        session_affinity: Annotated[bool | None, typer.Option(help='Override session affinity')] = None,
+        topology_mode: Annotated[str, typer.Option(help="Override topology mode")] = "",
+        session_routing: Annotated[str, typer.Option(help="Override session routing mode")] = "",
+        session_header_name: Annotated[str, typer.Option(help="Override session header name")] = "",
+        cache_strategy: Annotated[str, typer.Option(help="Override cache strategy")] = "",
+        cache_tier: Annotated[list[str] | None, typer.Option(help="Override cache tiers")] = None,
+        cache_connector: Annotated[str, typer.Option(help="Override cache connector name")] = "",
+        session_affinity: Annotated[bool | None, typer.Option(help="Override session affinity")] = None,
+        synthetic_requests: Annotated[
+            int | None,
+            typer.Option(
+                help="Procedurally expand the workload to this many requests",
+                min=1,
+            ),
+        ] = None,
+        synthetic_input_tokens: Annotated[
+            int | None,
+            typer.Option(
+                help="Approximate input token target for procedural workloads",
+                min=64,
+            ),
+        ] = None,
+        synthetic_output_tokens: Annotated[
+            int | None,
+            typer.Option(
+                help="Approximate output token target for procedural workloads",
+                min=32,
+            ),
+        ] = None,
+        synthetic_seed: Annotated[
+            int,
+            typer.Option(help="Seed for procedural workload expansion", min=0),
+        ] = 42,
+        context_file: Annotated[
+            str,
+            typer.Option(help=("Optional repo/context file used when procedurally expanding coding-long-context")),
+        ] = "",
     ):
         """Resolve workload + experiment + runtime overrides into a concrete benchmark run plan."""
         try:
@@ -221,78 +293,109 @@ def register_benchmark_commands(
                 cache_tier=cache_tier,
                 cache_connector=cache_connector,
                 session_affinity=session_affinity,
+                synthetic_requests=synthetic_requests,
+                synthetic_input_tokens=synthetic_input_tokens,
+                synthetic_output_tokens=synthetic_output_tokens,
+                synthetic_seed=synthetic_seed,
+                context_file=context_file,
             )
         except Exception as exc:  # noqa: BLE001
             raise typer.BadParameter(str(exc)) from exc
 
         print_result(
             {
-                'summary': f'Resolved benchmark plan for {workload_reference}',
-                'run_plan': run_plan.model_dump(mode='json'),
+                "summary": f"Resolved benchmark plan for {workload_reference}",
+                "run_plan": run_plan.model_dump(mode="json"),
             }
         )
 
-    @app.command(name='benchmark')
+    @app.command(name="benchmark")
     def benchmark_cmd(
-        workload: Annotated[str, typer.Argument(help='Workload file path or built-in workload name')],
-        endpoint: Annotated[str, typer.Argument(help='OpenAI-compatible request endpoint base URL')],
-        experiment: Annotated[str, typer.Option(help='Optional built-in or file-backed experiment spec')] = '',
-        model: Annotated[str, typer.Option(help='Override model name from the workload/experiment')] = '',
-        output: Annotated[Path | None, typer.Option(help='Where to write the benchmark artifact JSON')] = None,
-        concurrency: Annotated[int | None, typer.Option(help='Override concurrency', min=1)] = None,
-        metrics_endpoint: Annotated[str | None, typer.Option(help='Optional default Prometheus base URL')] = None,
+        workload: Annotated[str, typer.Argument(help="Workload file path or built-in workload name")],
+        endpoint: Annotated[str, typer.Argument(help="OpenAI-compatible request endpoint base URL")],
+        experiment: Annotated[str, typer.Option(help="Optional built-in or file-backed experiment spec")] = "",
+        model: Annotated[str, typer.Option(help="Override model name from the workload/experiment")] = "",
+        output: Annotated[Path | None, typer.Option(help="Where to write the benchmark artifact JSON")] = None,
+        concurrency: Annotated[int | None, typer.Option(help="Override concurrency", min=1)] = None,
+        metrics_endpoint: Annotated[str | None, typer.Option(help="Optional default Prometheus base URL")] = None,
         metrics_target: Annotated[
             list[str] | None,
             typer.Option(
-                help='Additional metrics targets as name=url. Example: --metrics-target router=http://host:9000'
+                help="Additional metrics targets as name=url. Example: --metrics-target router=http://host:9000"
             ),
         ] = None,
-        topology_mode: Annotated[str, typer.Option(help='Override topology mode')] = '',
-        session_routing: Annotated[str, typer.Option(help='Override session routing mode')] = '',
-        session_header_name: Annotated[str, typer.Option(help='Override session header name')] = '',
-        cache_strategy: Annotated[str, typer.Option(help='Override cache strategy')] = '',
-        cache_tier: Annotated[list[str] | None, typer.Option(help='Override cache tiers')] = None,
-        cache_connector: Annotated[str, typer.Option(help='Override cache connector name')] = '',
-        session_affinity: Annotated[bool | None, typer.Option(help='Override session affinity')] = None,
+        topology_mode: Annotated[str, typer.Option(help="Override topology mode")] = "",
+        session_routing: Annotated[str, typer.Option(help="Override session routing mode")] = "",
+        session_header_name: Annotated[str, typer.Option(help="Override session header name")] = "",
+        cache_strategy: Annotated[str, typer.Option(help="Override cache strategy")] = "",
+        cache_tier: Annotated[list[str] | None, typer.Option(help="Override cache tiers")] = None,
+        cache_connector: Annotated[str, typer.Option(help="Override cache connector name")] = "",
+        session_affinity: Annotated[bool | None, typer.Option(help="Override session affinity")] = None,
+        synthetic_requests: Annotated[
+            int | None,
+            typer.Option(
+                help="Procedurally expand the workload to this many requests",
+                min=1,
+            ),
+        ] = None,
+        synthetic_input_tokens: Annotated[
+            int | None,
+            typer.Option(
+                help="Approximate input token target for procedural workloads",
+                min=64,
+            ),
+        ] = None,
+        synthetic_output_tokens: Annotated[
+            int | None,
+            typer.Option(
+                help="Approximate output token target for procedural workloads",
+                min=32,
+            ),
+        ] = None,
+        synthetic_seed: Annotated[
+            int,
+            typer.Option(help="Seed for procedural workload expansion", min=0),
+        ] = 42,
+        context_file: Annotated[
+            str,
+            typer.Option(help=("Optional repo/context file used when procedurally expanding coding-long-context")),
+        ] = "",
         provider: Annotated[
             str,
-            typer.Option(help='Managed provider preset for auth defaults (fireworks, baseten, huggingface)'),
-        ] = '',
+            typer.Option(help="Managed provider preset for auth defaults (fireworks, baseten, huggingface)"),
+        ] = "",
         metrics_provider: Annotated[
             str,
             typer.Option(
-                help=(
-                    'Managed provider preset for the metrics endpoint if different '
-                    'from the request endpoint'
-                )
+                help=("Managed provider preset for the metrics endpoint if different from the request endpoint")
             ),
-        ] = '',
+        ] = "",
         api_key: Annotated[
             str,
-            typer.Option(envvar='OPENAI_API_KEY', help='API key or token for the request endpoint'),
-        ] = '',
-        auth_scheme: Annotated[str, typer.Option(help='Request auth scheme: bearer, api-key, x-api-key, raw')] = '',
-        auth_header_name: Annotated[str, typer.Option(help='Override request auth header name')] = '',
+            typer.Option(envvar="OPENAI_API_KEY", help="API key or token for the request endpoint"),
+        ] = "",
+        auth_scheme: Annotated[str, typer.Option(help="Request auth scheme: bearer, api-key, x-api-key, raw")] = "",
+        auth_header_name: Annotated[str, typer.Option(help="Override request auth header name")] = "",
         request_header: Annotated[
             list[str] | None,
-            typer.Option(help='Additional request headers as Header=Value. Repeat for multiple headers.'),
+            typer.Option(help="Additional request headers as Header=Value. Repeat for multiple headers."),
         ] = None,
         metrics_api_key: Annotated[
             str,
-            typer.Option(envvar='INFERSCOPE_METRICS_API_KEY', help='API key for authenticated metrics endpoints'),
-        ] = '',
+            typer.Option(envvar="INFERSCOPE_METRICS_API_KEY", help="API key for authenticated metrics endpoints"),
+        ] = "",
         metrics_auth_scheme: Annotated[
             str,
-            typer.Option(help='Metrics auth scheme: bearer, api-key, x-api-key, raw'),
-        ] = '',
-        metrics_auth_header_name: Annotated[str, typer.Option(help='Override metrics auth header name')] = '',
+            typer.Option(help="Metrics auth scheme: bearer, api-key, x-api-key, raw"),
+        ] = "",
+        metrics_auth_header_name: Annotated[str, typer.Option(help="Override metrics auth header name")] = "",
         metrics_header: Annotated[
             list[str] | None,
-            typer.Option(help='Additional metrics headers as Header=Value. Repeat for multiple headers.'),
+            typer.Option(help="Additional metrics headers as Header=Value. Repeat for multiple headers."),
         ] = None,
         capture_metrics: Annotated[
             bool,
-            typer.Option(help='Capture Prometheus snapshots before and after the run'),
+            typer.Option(help="Capture Prometheus snapshots before and after the run"),
         ] = True,
     ):
         """Replay a workload pack against an OpenAI-compatible endpoint and save an artifact."""
@@ -312,13 +415,18 @@ def register_benchmark_commands(
                 cache_tier=cache_tier,
                 cache_connector=cache_connector,
                 session_affinity=session_affinity,
+                synthetic_requests=synthetic_requests,
+                synthetic_input_tokens=synthetic_input_tokens,
+                synthetic_output_tokens=synthetic_output_tokens,
+                synthetic_seed=synthetic_seed,
+                context_file=context_file,
             )
         except Exception as exc:  # noqa: BLE001
             raise typer.BadParameter(str(exc)) from exc
 
         try:
-            metrics_headers = parse_header_values(metrics_header, option_name='metrics header')
-            request_headers = parse_header_values(request_header, option_name='request header')
+            metrics_headers = parse_header_values(metrics_header, option_name="metrics header")
+            request_headers = parse_header_values(request_header, option_name="request header")
         except ValueError as exc:
             raise typer.BadParameter(str(exc)) from exc
 
@@ -347,25 +455,25 @@ def register_benchmark_commands(
         saved_path = artifact.save_json(artifact_path)
         print_result(
             {
-                'summary': (
+                "summary": (
                     f"Benchmark completed: {artifact.summary.succeeded}/{artifact.summary.total_requests} "
                     f"requests succeeded | p95 latency={artifact.summary.latency_p95_ms:.1f} ms"
                     if artifact.summary.latency_p95_ms is not None
                     else (
                         f"Benchmark completed: {artifact.summary.succeeded}/{artifact.summary.total_requests} "
-                        'requests succeeded'
+                        "requests succeeded"
                     )
                 ),
-                'artifact_path': str(saved_path),
-                'run_plan': run_plan.model_dump(mode='json'),
-                'benchmark': artifact.model_dump(mode='json'),
+                "artifact_path": str(saved_path),
+                "run_plan": run_plan.model_dump(mode="json"),
+                "benchmark": artifact.model_dump(mode="json"),
             }
         )
 
-    @app.command(name='benchmark-compare')
+    @app.command(name="benchmark-compare")
     def benchmark_compare_cmd(
-        baseline: Annotated[Path, typer.Argument(help='Baseline benchmark artifact JSON path')],
-        candidate: Annotated[Path, typer.Argument(help='Candidate benchmark artifact JSON path')],
+        baseline: Annotated[Path, typer.Argument(help="Baseline benchmark artifact JSON path")],
+        candidate: Annotated[Path, typer.Argument(help="Candidate benchmark artifact JSON path")],
     ):
         """Compare two benchmark artifacts."""
         try:

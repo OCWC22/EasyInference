@@ -1,6 +1,6 @@
 version: "1"
 name: tool-agent
-description: Multi-turn tool-calling agent workload with repeated tool schema.
+description: Multi-turn tool-calling agent workload for MCP-style planning, code search, and patch execution.
 workload_class: tool_agent
 model: DeepSeek-R1
 concurrency: 2
@@ -8,35 +8,48 @@ stream: true
 tags:
   - agent
   - tools
+  - mcp
+  - benchmark-bridge
 requests:
   - name: planner-turn
     session_id: agent-session-1
-    max_tokens: 180
+    max_tokens: 220
     messages:
       - role: system
-        content: You are an agent planner. Call tools when required and keep reasoning concise.
+        content: You are an MCP-oriented coding agent. Call tools when required and keep reasoning concise.
       - role: user
-        content: Plan a repo migration, then ask for the next tool call you need.
+        content: Search the repository for the cache regression path and decide the next tool call.
     tools:
       - type: function
         function:
-          name: search_repo
-          description: Search the repository for matching code patterns.
+          name: search_code
+          description: Search the repository for structural patterns.
           parameters:
             type: object
             properties:
               pattern:
                 type: string
+              directory:
+                type: string
             required:
               - pattern
+              - directory
+    tool_choice: auto
   - name: executor-turn
     session_id: agent-session-1
-    max_tokens: 220
+    max_tokens: 256
     messages:
       - role: system
-        content: You are an agent planner. Call tools when required and keep reasoning concise.
+        content: You are an MCP-oriented coding agent. Call tools when required and keep reasoning concise.
       - role: user
-        content: The tool found five matching files. Decide the next patch step.
+        content: Search the repository for the cache regression path and decide the next tool call.
+      - role: assistant
+        content: '{"tool_calls": [{"id": "call_1", "type": "function", "function": {"name": "search_code", "arguments": "{\"pattern\": \"kv_cache\", \"directory\": \"/workspace\"}"}}]}'
+      - role: tool
+        tool_call_id: call_1
+        content: '[{"file": "src/cache.py", "line": 41, "match": "kv_cache.allocate(seq_id)"}]'
+      - role: user
+        content: The tool found the regression path. Decide the next patch or validation step.
     tools:
       - type: function
         function:
@@ -49,3 +62,4 @@ requests:
                 type: string
             required:
               - patch
+    tool_choice: auto

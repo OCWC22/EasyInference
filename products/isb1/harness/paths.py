@@ -23,6 +23,11 @@ def default_results_root() -> Path:
     return _PRODUCT_ROOT / "results"
 
 
+def default_traces_root() -> Path:
+    """Return the default trace directory for generated benchmark request pools."""
+    return _PRODUCT_ROOT / "traces"
+
+
 def default_publication_root() -> Path:
     """Return the default publication directory for generated artifacts."""
     return _PRODUCT_ROOT / "publication"

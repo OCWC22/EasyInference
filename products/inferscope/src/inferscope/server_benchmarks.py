@@ -3,11 +3,12 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 from fastmcp import FastMCP
 
 from inferscope.benchmarks import (
+    ProceduralWorkloadOptions,
     build_benchmark_stack_plan,
     build_default_artifact_path,
     build_run_plan,
@@ -16,8 +17,8 @@ from inferscope.benchmarks import (
     list_builtin_workloads,
     load_benchmark_artifact,
     load_experiment,
-    load_workload,
     materialize_benchmark_stack_plan,
+    materialize_workload,
     run_openai_replay,
 )
 from inferscope.config import settings
@@ -32,43 +33,84 @@ def _resolve_artifact_path_for_mcp(path_or_name: str) -> Path:
         candidate = artifact_root / candidate
     resolved = candidate.resolve()
     if artifact_root not in resolved.parents and resolved != artifact_root:
-        raise ValueError(f'Artifact path must stay under {artifact_root}')
+        raise ValueError(f"Artifact path must stay under {artifact_root}")
     return resolved
 
 
-def _default_stack_bundle_dir(experiment: str, gpu: str, num_gpus: int, model: str = '') -> Path:
-    model_part = f'-{model}' if model else ''
-    raw_name = f'{experiment}-{gpu}-{num_gpus}gpus{model_part}'
-    safe_name = ''.join(char if char.isalnum() or char in {'-', '_'} else '-' for char in raw_name)
-    return settings.benchmark_dir / 'stacks' / safe_name
+def _default_stack_bundle_dir(experiment: str, gpu: str, num_gpus: int, model: str = "") -> Path:
+    model_part = f"-{model}" if model else ""
+    raw_name = f"{experiment}-{gpu}-{num_gpus}gpus{model_part}"
+    safe_name = "".join(char if char.isalnum() or char in {"-", "_"} else "-" for char in raw_name)
+    return settings.benchmark_dir / "stacks" / safe_name
+
+
+def _build_procedural_options(
+    *,
+    synthetic_requests: int = 0,
+    synthetic_input_tokens: int = 0,
+    synthetic_output_tokens: int = 0,
+    synthetic_seed: int = 42,
+    context_file: str = "",
+) -> ProceduralWorkloadOptions | None:
+    if context_file:
+        raise ValueError("context_file is not supported from MCP tools; use the CLI for local context-file expansion")
+    if not any((synthetic_requests, synthetic_input_tokens, synthetic_output_tokens)):
+        return None
+    return ProceduralWorkloadOptions(
+        request_count=(synthetic_requests or None),
+        input_tokens=(synthetic_input_tokens or None),
+        output_tokens=(synthetic_output_tokens or None),
+        seed=synthetic_seed,
+    )
 
 
 def _resolve_benchmark_plan(
     workload: str,
     endpoint: str,
     *,
-    experiment: str = '',
-    model: str = '',
-    metrics_endpoint: str = '',
+    experiment: str = "",
+    model: str = "",
+    metrics_endpoint: str = "",
     concurrency: int = 0,
     metrics_target_overrides: dict[str, str] | None = None,
+    synthetic_requests: int = 0,
+    synthetic_input_tokens: int = 0,
+    synthetic_output_tokens: int = 0,
+    synthetic_seed: int = 42,
+    context_file: str = "",
 ):
     try:
-        input_workload_pack = load_workload(workload)
+        procedural_options = _build_procedural_options(
+            synthetic_requests=synthetic_requests,
+            synthetic_input_tokens=synthetic_input_tokens,
+            synthetic_output_tokens=synthetic_output_tokens,
+            synthetic_seed=synthetic_seed,
+            context_file=context_file,
+        )
+        input_workload_pack = materialize_workload(workload, options=procedural_options)
         experiment_spec = load_experiment(experiment) if experiment else None
         if experiment_spec and input_workload_pack.name != experiment_spec.workload:
-            return {
-                'error': (
-                    f"Workload '{input_workload_pack.name}' does not match experiment "
-                    f"'{experiment_spec.name}' workload '{experiment_spec.workload}'"
-                ),
-                'summary': f'❌ Workload does not match experiment: {input_workload_pack.name}',
-                'confidence': 1.0,
-                'evidence': 'benchmark_plan_resolution',
-            }, None, None, None
+            return (
+                {
+                    "error": (
+                        f"Workload '{input_workload_pack.name}' does not match experiment "
+                        f"'{experiment_spec.name}' workload '{experiment_spec.workload}'"
+                    ),
+                    "summary": f"❌ Workload does not match experiment: {input_workload_pack.name}",
+                    "confidence": 1.0,
+                    "evidence": "benchmark_plan_resolution",
+                },
+                None,
+                None,
+                None,
+            )
 
         workload_reference = experiment_spec.workload if experiment_spec else workload
-        workload_pack = load_workload(workload_reference) if experiment_spec else input_workload_pack
+        workload_pack = (
+            materialize_workload(workload_reference, options=procedural_options)
+            if experiment_spec
+            else input_workload_pack
+        )
         run_plan = build_run_plan(
             workload_pack,
             endpoint,
@@ -80,12 +122,17 @@ def _resolve_benchmark_plan(
             metrics_target_overrides=metrics_target_overrides or {},
         )
     except Exception as exc:  # noqa: BLE001
-        return {
-            'error': str(exc),
-            'summary': '❌ Failed to resolve benchmark plan',
-            'confidence': 1.0,
-            'evidence': 'benchmark_plan_resolution',
-        }, None, None, None
+        return (
+            {
+                "error": str(exc),
+                "summary": "❌ Failed to resolve benchmark plan",
+                "confidence": 1.0,
+                "evidence": "benchmark_plan_resolution",
+            },
+            None,
+            None,
+            None,
+        )
 
     return None, workload_reference, workload_pack, run_plan
 
@@ -98,10 +145,11 @@ def register_benchmark_tools(mcp: FastMCP) -> None:
         """List packaged workload packs for coding, RAG, agents, and mixed tenancy."""
         workloads = list_builtin_workloads()
         return {
-            'summary': f'{len(workloads)} built-in workload pack(s) available',
-            'workloads': workloads,
-            'confidence': 1.0,
-            'evidence': 'packaged_workload_catalog',
+            "summary": f"{len(workloads)} built-in workload pack(s) available",
+            "workloads": workloads,
+            "procedural_workloads": ["tool-agent", "coding-long-context"],
+            "confidence": 1.0,
+            "evidence": "packaged_workload_catalog",
         }
 
     @mcp.tool()
@@ -109,10 +157,10 @@ def register_benchmark_tools(mcp: FastMCP) -> None:
         """List packaged experiments for colocated and disaggregated cache-aware deployments."""
         experiments = list_builtin_experiments()
         return {
-            'summary': f'{len(experiments)} built-in benchmark experiment(s) available',
-            'experiments': experiments,
-            'confidence': 1.0,
-            'evidence': 'packaged_experiment_catalog',
+            "summary": f"{len(experiments)} built-in benchmark experiment(s) available",
+            "experiments": experiments,
+            "confidence": 1.0,
+            "evidence": "packaged_experiment_catalog",
         }
 
     @mcp.tool()
@@ -120,21 +168,21 @@ def register_benchmark_tools(mcp: FastMCP) -> None:
         experiment: str,
         gpu: str,
         num_gpus: int = 2,
-        model: str = '',
-        host: str = '127.0.0.1',
+        model: str = "",
+        host: str = "127.0.0.1",
         enable_trace: bool = False,
-        otlp_endpoint: str = '',
-        vllm_proxy_command: str = '',
+        otlp_endpoint: str = "",
+        vllm_proxy_command: str = "",
     ) -> dict[str, Any]:
         """Generate live launch commands for a packaged vLLM or SGLang benchmark stack."""
         available_experiments = list_builtin_experiments()
         if experiment not in available_experiments:
             return {
-                'error': f"Unknown built-in experiment '{experiment}'",
-                'available_experiments': available_experiments,
-                'summary': f'❌ Unknown built-in experiment: {experiment}',
-                'confidence': 1.0,
-                'evidence': 'builtin_experiment_catalog',
+                "error": f"Unknown built-in experiment '{experiment}'",
+                "available_experiments": available_experiments,
+                "summary": f"❌ Unknown built-in experiment: {experiment}",
+                "confidence": 1.0,
+                "evidence": "builtin_experiment_catalog",
             }
         try:
             stack_plan = build_benchmark_stack_plan(
@@ -145,22 +193,22 @@ def register_benchmark_tools(mcp: FastMCP) -> None:
                 host=host,
                 enable_trace=enable_trace,
                 otlp_endpoint=otlp_endpoint,
-                request_id_headers=['x-request-id', 'x-trace-id'],
+                request_id_headers=["x-request-id", "x-trace-id"],
                 vllm_proxy_command=vllm_proxy_command,
             )
         except Exception as exc:  # noqa: BLE001
             return {
-                'error': str(exc),
-                'summary': '❌ Failed to generate benchmark stack plan',
-                'confidence': 1.0,
-                'evidence': 'benchmark_stack_plan',
+                "error": str(exc),
+                "summary": "❌ Failed to generate benchmark stack plan",
+                "confidence": 1.0,
+                "evidence": "benchmark_stack_plan",
             }
         return {
-            'summary': f'Generated launch plan for {stack_plan.experiment}',
-            'stack_plan': stack_plan.model_dump(mode='json'),
-            'benchmark_command': stack_plan.benchmark_command,
-            'confidence': 0.9,
-            'evidence': 'benchmark_stack_plan',
+            "summary": f"Generated launch plan for {stack_plan.experiment}",
+            "stack_plan": stack_plan.model_dump(mode="json"),
+            "benchmark_command": stack_plan.benchmark_command,
+            "confidence": 0.9,
+            "evidence": "benchmark_stack_plan",
         }
 
     @mcp.tool()
@@ -168,23 +216,23 @@ def register_benchmark_tools(mcp: FastMCP) -> None:
         experiment: str,
         gpu: str,
         num_gpus: int = 2,
-        model: str = '',
-        host: str = '127.0.0.1',
+        model: str = "",
+        host: str = "127.0.0.1",
         enable_trace: bool = False,
-        otlp_endpoint: str = '',
-        vllm_proxy_command: str = '',
-        output_dir: str = '',
+        otlp_endpoint: str = "",
+        vllm_proxy_command: str = "",
+        output_dir: str = "",
         overwrite: bool = False,
     ) -> dict[str, Any]:
         """Write a runnable benchmark stack bundle under the benchmark artifact directory."""
         available_experiments = list_builtin_experiments()
         if experiment not in available_experiments:
             return {
-                'error': f"Unknown built-in experiment '{experiment}'",
-                'available_experiments': available_experiments,
-                'summary': f'❌ Unknown built-in experiment: {experiment}',
-                'confidence': 1.0,
-                'evidence': 'builtin_experiment_catalog',
+                "error": f"Unknown built-in experiment '{experiment}'",
+                "available_experiments": available_experiments,
+                "summary": f"❌ Unknown built-in experiment: {experiment}",
+                "confidence": 1.0,
+                "evidence": "builtin_experiment_catalog",
             }
         try:
             stack_plan = build_benchmark_stack_plan(
@@ -195,7 +243,7 @@ def register_benchmark_tools(mcp: FastMCP) -> None:
                 host=host,
                 enable_trace=enable_trace,
                 otlp_endpoint=otlp_endpoint,
-                request_id_headers=['x-request-id', 'x-trace-id'],
+                request_id_headers=["x-request-id", "x-trace-id"],
                 vllm_proxy_command=vllm_proxy_command,
             )
             bundle_dir = (
@@ -206,28 +254,33 @@ def register_benchmark_tools(mcp: FastMCP) -> None:
             materialized = materialize_benchmark_stack_plan(stack_plan, bundle_dir, overwrite=overwrite)
         except Exception as exc:  # noqa: BLE001
             return {
-                'error': str(exc),
-                'summary': '❌ Failed to materialize benchmark stack plan',
-                'confidence': 1.0,
-                'evidence': 'benchmark_stack_materialization',
+                "error": str(exc),
+                "summary": "❌ Failed to materialize benchmark stack plan",
+                "confidence": 1.0,
+                "evidence": "benchmark_stack_materialization",
             }
         return {
-            'summary': f'Materialized runnable stack for {stack_plan.experiment}',
-            'materialized': materialized.model_dump(mode='json'),
-            'benchmark_command': stack_plan.benchmark_command,
-            'confidence': 0.95,
-            'evidence': 'benchmark_stack_materialization',
+            "summary": f"Materialized runnable stack for {stack_plan.experiment}",
+            "materialized": materialized.model_dump(mode="json"),
+            "benchmark_command": stack_plan.benchmark_command,
+            "confidence": 0.95,
+            "evidence": "benchmark_stack_materialization",
         }
 
     @mcp.tool()
     async def tool_resolve_benchmark_plan(
         workload: str,
         endpoint: str,
-        experiment: str = '',
-        model: str = '',
-        metrics_endpoint: str = '',
+        experiment: str = "",
+        model: str = "",
+        metrics_endpoint: str = "",
         concurrency: int = 0,
         metrics_target_overrides: dict[str, str] | None = None,
+        synthetic_requests: int = 0,
+        synthetic_input_tokens: int = 0,
+        synthetic_output_tokens: int = 0,
+        synthetic_seed: int = 42,
+        context_file: str = "",
     ) -> dict[str, Any]:
         """Resolve a workload reference and optional experiment reference into a concrete run plan."""
         error, workload_reference, _, run_plan = _resolve_benchmark_plan(
@@ -238,29 +291,39 @@ def register_benchmark_tools(mcp: FastMCP) -> None:
             metrics_endpoint=metrics_endpoint,
             concurrency=concurrency,
             metrics_target_overrides=metrics_target_overrides,
+            synthetic_requests=synthetic_requests,
+            synthetic_input_tokens=synthetic_input_tokens,
+            synthetic_output_tokens=synthetic_output_tokens,
+            synthetic_seed=synthetic_seed,
+            context_file=context_file,
         )
         if error is not None:
-            return error
+            return cast(dict[str, Any], error)
         return {
-            'summary': f'Resolved benchmark plan for {workload_reference}',
-            'run_plan': run_plan.model_dump(mode='json'),
-            'confidence': 0.95,
-            'evidence': 'benchmark_plan_resolution',
+            "summary": f"Resolved benchmark plan for {workload_reference}",
+            "run_plan": cast(dict[str, Any], run_plan.model_dump(mode="json")),
+            "confidence": 0.95,
+            "evidence": "benchmark_plan_resolution",
         }
 
     @mcp.tool()
     async def tool_run_benchmark(
         workload: str,
         endpoint: str,
-        experiment: str = '',
-        model: str = '',
-        metrics_endpoint: str = '',
+        experiment: str = "",
+        model: str = "",
+        metrics_endpoint: str = "",
         concurrency: int = 0,
         capture_metrics: bool = True,
         save_artifact: bool = True,
         metrics_target_overrides: dict[str, str] | None = None,
-        provider: str = '',
-        metrics_provider: str = '',
+        synthetic_requests: int = 0,
+        synthetic_input_tokens: int = 0,
+        synthetic_output_tokens: int = 0,
+        synthetic_seed: int = 42,
+        context_file: str = "",
+        provider: str = "",
+        metrics_provider: str = "",
         request_auth: dict | None = None,
         metrics_auth: dict | None = None,
     ) -> dict[str, Any]:
@@ -273,9 +336,14 @@ def register_benchmark_tools(mcp: FastMCP) -> None:
             metrics_endpoint=metrics_endpoint,
             concurrency=concurrency,
             metrics_target_overrides=metrics_target_overrides,
+            synthetic_requests=synthetic_requests,
+            synthetic_input_tokens=synthetic_input_tokens,
+            synthetic_output_tokens=synthetic_output_tokens,
+            synthetic_seed=synthetic_seed,
+            context_file=context_file,
         )
         if error is not None:
-            return error
+            return cast(dict[str, Any], error)
 
         try:
             request_auth_config = resolve_auth_payload(request_auth, provider=provider)
@@ -292,39 +360,37 @@ def register_benchmark_tools(mcp: FastMCP) -> None:
                 provider=provider,
                 metrics_provider=metrics_provider,
                 api_key=(request_auth_config.api_key or None) if request_auth_config else None,
-                auth_scheme=request_auth_config.auth_scheme if request_auth_config else '',
-                auth_header_name=request_auth_config.auth_header_name if request_auth_config else '',
+                auth_scheme=request_auth_config.auth_scheme if request_auth_config else "",
+                auth_header_name=request_auth_config.auth_header_name if request_auth_config else "",
                 extra_headers=request_auth_config.headers if request_auth_config else None,
                 metrics_api_key=(metrics_auth_config.api_key or None) if metrics_auth_config else None,
-                metrics_auth_scheme=metrics_auth_config.auth_scheme if metrics_auth_config else '',
-                metrics_auth_header_name=(
-                    metrics_auth_config.auth_header_name if metrics_auth_config else ''
-                ),
+                metrics_auth_scheme=metrics_auth_config.auth_scheme if metrics_auth_config else "",
+                metrics_auth_header_name=(metrics_auth_config.auth_header_name if metrics_auth_config else ""),
                 metrics_headers=metrics_auth_config.headers if metrics_auth_config else None,
                 capture_metrics=capture_metrics,
                 allow_private=False,
             )
-            artifact_path = ''
+            artifact_path = ""
             if save_artifact:
                 artifact_path = str(artifact.save_json(build_default_artifact_path(artifact)))
         except Exception as exc:  # noqa: BLE001
             return {
-                'error': str(exc),
-                'summary': '❌ Benchmark run failed',
-                'confidence': 1.0,
-                'evidence': 'live_benchmark_replay',
+                "error": str(exc),
+                "summary": "❌ Benchmark run failed",
+                "confidence": 1.0,
+                "evidence": "live_benchmark_replay",
             }
         return {
-            'summary': (
+            "summary": (
                 f"Benchmark completed: {artifact.summary.succeeded}/{artifact.summary.total_requests} "
-                'requests succeeded'
+                "requests succeeded"
             ),
-            'artifact_path': artifact_path,
-            'benchmark_id': artifact.benchmark_id,
-            'run_plan': run_plan.model_dump(mode='json'),
-            'benchmark_summary': artifact.summary.model_dump(mode='json'),
-            'confidence': 0.85,
-            'evidence': 'live_benchmark_replay',
+            "artifact_path": artifact_path,
+            "benchmark_id": artifact.benchmark_id,
+            "run_plan": cast(dict[str, Any], run_plan.model_dump(mode="json")),
+            "benchmark_summary": cast(dict[str, Any], artifact.summary.model_dump(mode="json")),
+            "confidence": 0.85,
+            "evidence": "live_benchmark_replay",
         }
 
     @mcp.tool()
@@ -333,8 +399,8 @@ def register_benchmark_tools(mcp: FastMCP) -> None:
         baseline = load_benchmark_artifact(_resolve_artifact_path_for_mcp(baseline_artifact))
         candidate = load_benchmark_artifact(_resolve_artifact_path_for_mcp(candidate_artifact))
         comparison = compare_benchmark_artifacts(baseline, candidate)
-        comparison['confidence'] = 0.9
-        comparison['evidence'] = 'benchmark_artifact_comparison'
+        comparison["confidence"] = 0.9
+        comparison["evidence"] = "benchmark_artifact_comparison"
         return comparison
 
     @mcp.tool()
@@ -342,8 +408,8 @@ def register_benchmark_tools(mcp: FastMCP) -> None:
         """Read a saved benchmark artifact by filename from the benchmark directory."""
         artifact = load_benchmark_artifact(_resolve_artifact_path_for_mcp(artifact_name))
         return {
-            'summary': f'Loaded benchmark artifact {artifact.default_filename}',
-            'artifact': artifact.model_dump(mode='json'),
-            'confidence': 1.0,
-            'evidence': 'saved_benchmark_artifact',
+            "summary": f"Loaded benchmark artifact {artifact.default_filename}",
+            "artifact": cast(dict[str, Any], artifact.model_dump(mode="json")),
+            "confidence": 1.0,
+            "evidence": "saved_benchmark_artifact",
         }

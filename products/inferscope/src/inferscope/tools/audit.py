@@ -95,7 +95,8 @@ async def audit_deployment(
         ep=ep,
         fp8_support=gpu_arch in ("sm_90a", "sm_90", "sm_100", "sm_103", "gfx942", "gfx950"),
         fp8_format=(
-            "OCP" if gpu_arch in ("sm_90a", "sm_90", "sm_100", "sm_103", "gfx950")
+            "OCP"
+            if gpu_arch in ("sm_90a", "sm_90", "sm_100", "sm_103", "gfx950")
             else ("FNUZ" if gpu_arch == "gfx942" else "")
         ),
         gpu_memory_utilization=gpu_memory_utilization,

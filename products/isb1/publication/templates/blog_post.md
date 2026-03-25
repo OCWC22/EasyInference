@@ -17,7 +17,7 @@ We are releasing the results of the ISB-1 benchmark, a comprehensive evaluation 
 
 ## What is ISB-1?
 
-ISB-1 (InferScope Benchmark Standard, Version 1) is an open benchmark for evaluating how well inference engines serve large language models under realistic production conditions. Unlike single-model, single-GPU benchmarks, ISB-1 tests a full matrix of hardware, models, workloads, and optimization modes:
+ISB-1 (Inference Serving Benchmark Standard 1) is an open benchmark for evaluating how well inference engines serve large language models under realistic production conditions. Unlike single-model, single-GPU benchmarks, ISB-1 tests a full matrix of hardware, models, workloads, and optimization modes:
 
 - **{{ workloads | length }} workloads:** {{ workload_names | default(["Chat", "Agent", "RAG", "Coding"]) | join(", ") }}
 - **{{ gpus | length }} GPUs:** {{ gpus | join(", ") }}

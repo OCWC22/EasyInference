@@ -174,6 +174,19 @@ class ConfigValidator:
                 result.error(
                     f"Workload config '{workload_name}' missing required key: {key}"
                 )
+
+        trace_cfg = cfg.get("trace", {})
+        num_requests = trace_cfg.get("num_requests")
+        if num_requests is not None:
+            try:
+                if int(num_requests) < 1:
+                    result.error(
+                        f"Workload config '{workload_name}' has invalid trace.num_requests={num_requests!r}; expected >= 1"
+                    )
+            except (TypeError, ValueError):
+                result.error(
+                    f"Workload config '{workload_name}' has non-integer trace.num_requests={num_requests!r}"
+                )
         return result
 
     # ── Cross-config checks ─────────────────────────────────────────────

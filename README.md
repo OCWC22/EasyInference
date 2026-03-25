@@ -1,11 +1,19 @@
 # EasyInference
 
-EasyInference is the umbrella repository for two production-facing deliverables:
+EasyInference is a two-product monorepo for inference benchmarking and operator tooling:
 
-- **ISB-1** — a reproducible benchmark standard and execution harness for LLM inference serving in `products/isb1/`
-- **InferScope** — a self-contained CLI + MCP for inference optimization, diagnostics, and benchmark planning in `products/inferscope/`
+- **ISB-1** — the **Inference Serving Benchmark Standard 1** in `products/isb1/`
+- **InferScope** — the **CLI + MCP** for inference optimization, diagnostics, and benchmark replay in `products/inferscope/`
 
-The benchmark and the optimizer live in the same repository, but they remain intentionally separate products. That keeps the benchmark neutral and reproducible while keeping InferScope self-contained for operators, open-source users, and enterprise deployments.
+## Benchmark ecosystem position
+
+EasyInference is designed to be **complementary** to [InferenceX](https://inferencex.semianalysis.com/), not a clone of it.
+
+- **InferenceX** is the external, continuously updated, vendor-neutral public reference for cross-hardware and cross-framework inference performance.
+- **ISB-1** is the reproducible benchmark standard for local validation, methodology, publication, and scenario-specific workloads.
+- **InferScope** is the operator surface that exposes recommendation, diagnostics, and benchmark tooling through a CLI and MCP.
+
+This repo also absorbs workload ideas from the local `inferscope-bench/` donor harness — especially **MCP/tool-call** and **long-context coding** patterns — without turning that subtree into a third public product.
 
 ## Repository layout
 
@@ -13,13 +21,14 @@ The benchmark and the optimizer live in the same repository, but they remain int
 EasyInference/
 ├── products/
 │   ├── isb1/         # Benchmark standard, harness, configs, analysis, tests
-│   └── inferscope/   # CLI, MCP server, optimization engine, packaged eval assets
+│   └── inferscope/   # CLI, MCP server, optimization engine, packaged benchmark tooling
+├── inferscope-bench/ # Local donor harness used as a benchmark foundation, not a public product
 ├── .github/workflows/
-├── docs/             # Legacy benchmark doc redirects
+├── docs/
 ├── ARCHITECTURE.md
 ├── CONTRIBUTING.md
 ├── VALIDATION.md
-└── Makefile          # Monorepo delegator
+└── Makefile
 ```
 
 ## Choose the right product
@@ -27,28 +36,32 @@ EasyInference/
 ### ISB-1 benchmark
 
 Use `products/isb1/` if you need to:
-- run repeatable serving benchmarks
+- run reproducible serving benchmarks against canonical workload families
 - validate hardware / model / workload configurations
-- produce benchmark reports, leaderboards, and claims
-- compare engine behavior under standardized workloads
+- publish benchmark reports and claims
+- test scenario coverage such as chat, agent, RAG, and coding
+
+ISB-1 now executes its own generated traces through an internal OpenAI-compatible replay path. That keeps the benchmark aligned with its canonical workload definitions instead of depending on an external synthetic runner.
 
 Start here:
 - [ISB-1 product README](products/isb1/README.md)
 - [ISB-1 architecture](products/isb1/docs/ARCHITECTURE.md)
-- [ISB-1 quickstart](products/isb1/docs/QUICKSTART.md)
+- [ISB-1 methodology](products/isb1/docs/METHODOLOGY.md)
+- [ISB-1 ecosystem positioning](products/isb1/docs/ECOSYSTEM.md)
 
 ### InferScope
 
 Use `products/inferscope/` if you need to:
-- recommend serving configurations for vLLM, SGLang, TRT-LLM, Dynamo, or ATOM
+- recommend serving configs for vLLM, SGLang, TRT-LLM, Dynamo, or ATOM
 - expose optimization and diagnostics through MCP
-- audit live endpoints and telemetry
-- run InferScope’s packaged benchmark planning and replay tools
+- replay packaged benchmark workloads against a real endpoint
+- procedurally expand **tool-agent** and **coding-long-context** workloads from the benchmark bridge
+- materialize benchmark stacks for cache-aware or disaggregated serving experiments
 
 Start here:
 - [InferScope product README](products/inferscope/README.md)
 - [InferScope architecture](products/inferscope/ARCHITECTURE.md)
-- [InferScope benchmark subsystem docs](products/inferscope/docs/BENCHMARKS.md)
+- [InferScope benchmark docs](products/inferscope/docs/BENCHMARKS.md)
 
 ## Quick start from the monorepo root
 
@@ -69,10 +82,13 @@ uv run inferscope --help
 
 ## Operational stance
 
+- **Two products only:** ISB-1 and InferScope remain the supported public surfaces
 - **Separate packaging:** each product keeps its own `pyproject.toml`
-- **Separate CI:** benchmark and InferScope validate in distinct GitHub Actions workflows
-- **Separate runtime state:** ISB-1 writes into `products/isb1/results/` by default; InferScope writes benchmark artifacts to `~/.inferscope/benchmarks/` by default
-- **No forced shared runtime library:** shared repository does not mean shared product internals
+- **Separate CI:** benchmark and InferScope validate in distinct workflows
+- **Separate runtime state:**
+  - ISB-1 writes benchmark outputs under `products/isb1/results/`
+  - InferScope writes artifacts under `~/.inferscope/benchmarks/`
+- **No shared runtime library:** shared repo does not imply merged product internals
 
 ## Contributing and validation
 

@@ -45,10 +45,7 @@ class TRTLLMCompiler(ConfigCompiler):
             cfg.cli_flags["enable_kv_cache_transfer"] = True
 
             connector = profile.topology.disagg_connector or "ucx"
-            cfg.cli_flags["kv_cache_transfer_config"] = {
-                "connector": connector,
-                "overlap_compute": True
-            }
+            cfg.cli_flags["kv_cache_transfer_config"] = {"connector": connector, "overlap_compute": True}
             cfg.notes.append("Using TRT-LLM 1.1+ KV Cache Connector for disaggregated serving")
 
         # --- Build command string ---
@@ -59,6 +56,7 @@ class TRTLLMCompiler(ConfigCompiler):
                     cmd_parts.append(f"--{k}")
             elif isinstance(v, dict):
                 import json
+
                 cmd_parts.append(f"--{k}")
                 cmd_parts.append(f"'{json.dumps(v)}'")
             else:

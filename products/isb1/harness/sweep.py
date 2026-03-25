@@ -140,23 +140,14 @@ class SweepOrchestrator:
                 logger.warning("Workload config not found for '%s'", workload)
                 wl_cfg = {}
 
-            rate_sweep = (
-                wl_cfg.get("arrival", {}).get("rate_sweep", [1.0])
+            rate_sweep = wl_cfg.get("arrival", {}).get("rate_sweep", [1.0])
+            num_prompts = int(wl_cfg.get("trace", {}).get("num_requests", 1000))
+            arrival_cfg = wl_cfg.get("arrival", {})
+            arrival_model = str(arrival_cfg.get("model", "poisson"))
+            arrival_shape = (
+                float(arrival_cfg["shape"]) if "shape" in arrival_cfg else None
             )
-            num_prompts = wl_cfg.get("context", {}).get("input_tokens", {}).get("max", 1000)
-            dataset_name = wl_cfg.get("trace", {}).get("type")
-
-            # Goodput from SLO
-            slo = wl_cfg.get("slo", {})
-            goodput_str = None
-            if slo:
-                parts = []
-                if "ttft_p95_ms" in slo:
-                    parts.append(f"ttft:{slo['ttft_p95_ms']}")
-                if "tpot_p95_ms" in slo:
-                    parts.append(f"tpot:{slo['tpot_p95_ms']}")
-                if parts:
-                    goodput_str = ",".join(parts)
+            goodput_slo = wl_cfg.get("slo") or None
 
             # Default quantizations
             for quant in default_quants:
@@ -182,8 +173,9 @@ class SweepOrchestrator:
                             num_prompts=num_prompts,
                             rate_sweep=rate_sweep,
                             seed=42 + trial,
-                            dataset_name=dataset_name,
-                            goodput=goodput_str,
+                            arrival_model=arrival_model,
+                            arrival_shape=arrival_shape,
+                            goodput_slo=goodput_slo,
                             warmup_requests=warmup_requests,
                             warmup_seconds=warmup_seconds,
                             warmup_max_extensions=warmup_max_ext,
@@ -219,8 +211,9 @@ class SweepOrchestrator:
                             num_prompts=num_prompts,
                             rate_sweep=rate_sweep,
                             seed=42 + trial,
-                            dataset_name=dataset_name,
-                            goodput=goodput_str,
+                            arrival_model=arrival_model,
+                            arrival_shape=arrival_shape,
+                            goodput_slo=goodput_slo,
                             warmup_requests=warmup_requests,
                             warmup_seconds=warmup_seconds,
                             warmup_max_extensions=warmup_max_ext,
@@ -254,8 +247,13 @@ class SweepOrchestrator:
                     except FileNotFoundError:
                         wl_cfg = {}
                     rate_sweep = wl_cfg.get("arrival", {}).get("rate_sweep", [1.0])
-                    num_prompts = wl_cfg.get("context", {}).get("input_tokens", {}).get("max", 1000)
-                    dataset_name = wl_cfg.get("trace", {}).get("type")
+                    num_prompts = int(wl_cfg.get("trace", {}).get("num_requests", 1000))
+                    arrival_cfg = wl_cfg.get("arrival", {})
+                    arrival_model = str(arrival_cfg.get("model", "poisson"))
+                    arrival_shape = (
+                        float(arrival_cfg["shape"]) if "shape" in arrival_cfg else None
+                    )
+                    goodput_slo = wl_cfg.get("slo") or None
 
                     config_paths = self._collect_config_paths(
                         gpu, model_short, workload, mode
@@ -276,7 +274,9 @@ class SweepOrchestrator:
                                 num_prompts=num_prompts,
                                 rate_sweep=rate_sweep,
                                 seed=42 + trial,
-                                dataset_name=dataset_name,
+                                arrival_model=arrival_model,
+                                arrival_shape=arrival_shape,
+                                goodput_slo=goodput_slo,
                                 warmup_requests=warmup_requests,
                                 warmup_seconds=warmup_seconds,
                                 warmup_max_extensions=warmup_max_ext,

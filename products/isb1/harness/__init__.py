@@ -1,4 +1,4 @@
-"""ISB-1 Benchmark Harness — execution engine for InferScope Benchmark Standard."""
+"""ISB-1 Benchmark Harness — execution engine for Inference Serving Benchmark Standard 1."""
 
 from harness.manifest import RunManifest
 from harness.config_validator import ConfigValidator

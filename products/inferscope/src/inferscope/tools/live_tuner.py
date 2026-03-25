@@ -56,9 +56,7 @@ def _derive_adjustments(
     seen_params: set[str] = set()
 
     for finding in findings:
-        new_adjustments = _adjustments_for_finding(
-            finding, metrics, current_scheduler, current_cache
-        )
+        new_adjustments = _adjustments_for_finding(finding, metrics, current_scheduler, current_cache)
         for adj in new_adjustments:
             if adj.parameter not in seen_params:
                 adjustments.append(adj)
@@ -79,126 +77,150 @@ def _adjustments_for_finding(
 
     if cid == "DECODE_STARVATION":
         current_priority = scheduler.get("decode_priority", 0.5)
-        adjs.append(TuningAdjustment(
-            parameter="scheduler.decode_priority",
-            current_value=current_priority,
-            recommended_value=min(0.9, current_priority + 0.2),
-            reason="Decode tokens starved by prefill batches — increase decode scheduling priority",
-            confidence=0.8,
-            trigger=cid,
-        ))
+        adjs.append(
+            TuningAdjustment(
+                parameter="scheduler.decode_priority",
+                current_value=current_priority,
+                recommended_value=min(0.9, current_priority + 0.2),
+                reason="Decode tokens starved by prefill batches — increase decode scheduling priority",
+                confidence=0.8,
+                trigger=cid,
+            )
+        )
         current_ratio = scheduler.get("max_prefill_chunk_ratio", 0.5)
-        adjs.append(TuningAdjustment(
-            parameter="scheduler.max_prefill_chunk_ratio",
-            current_value=current_ratio,
-            recommended_value=max(0.2, current_ratio - 0.15),
-            reason="Limit prefill batch fraction to free scheduler budget for decode",
-            confidence=0.75,
-            trigger=cid,
-        ))
+        adjs.append(
+            TuningAdjustment(
+                parameter="scheduler.max_prefill_chunk_ratio",
+                current_value=current_ratio,
+                recommended_value=max(0.2, current_ratio - 0.15),
+                reason="Limit prefill batch fraction to free scheduler budget for decode",
+                confidence=0.75,
+                trigger=cid,
+            )
+        )
 
     elif cid == "PREFILL_STARVATION":
         current_priority = scheduler.get("decode_priority", 0.5)
-        adjs.append(TuningAdjustment(
-            parameter="scheduler.decode_priority",
-            current_value=current_priority,
-            recommended_value=max(0.2, current_priority - 0.2),
-            reason="Prefill queued behind heavy decode — reduce decode priority to admit new requests",
-            confidence=0.8,
-            trigger=cid,
-        ))
+        adjs.append(
+            TuningAdjustment(
+                parameter="scheduler.decode_priority",
+                current_value=current_priority,
+                recommended_value=max(0.2, current_priority - 0.2),
+                reason="Prefill queued behind heavy decode — reduce decode priority to admit new requests",
+                confidence=0.8,
+                trigger=cid,
+            )
+        )
         current_budget = scheduler.get("prefill_lane_budget", 0)
         target_budget = scheduler.get("batched_token_budget", 8192)
-        adjs.append(TuningAdjustment(
-            parameter="scheduler.prefill_lane_budget",
-            current_value=current_budget,
-            recommended_value=target_budget // 2,
-            reason="Reserve dedicated prefill budget to prevent decode from starving new requests",
-            confidence=0.7,
-            trigger=cid,
-        ))
+        adjs.append(
+            TuningAdjustment(
+                parameter="scheduler.prefill_lane_budget",
+                current_value=current_budget,
+                recommended_value=target_budget // 2,
+                reason="Reserve dedicated prefill budget to prevent decode from starving new requests",
+                confidence=0.7,
+                trigger=cid,
+            )
+        )
 
     elif cid == "PCIE_OFFLOAD_THRASH":
-        adjs.append(TuningAdjustment(
-            parameter="cache.offload_policy",
-            current_value=cache.get("offload_policy", "cold_only"),
-            recommended_value="disabled",
-            reason="PCIe transfer during active decode causes latency explosion — disable offloading",
-            confidence=0.85,
-            trigger=cid,
-        ))
+        adjs.append(
+            TuningAdjustment(
+                parameter="cache.offload_policy",
+                current_value=cache.get("offload_policy", "cold_only"),
+                recommended_value="disabled",
+                reason="PCIe transfer during active decode causes latency explosion — disable offloading",
+                confidence=0.85,
+                trigger=cid,
+            )
+        )
 
     elif cid == "GPU_UNDERUTILIZATION":
         current_seqs = scheduler.get("max_num_seqs", 256)
-        adjs.append(TuningAdjustment(
-            parameter="scheduler.max_num_seqs",
-            current_value=current_seqs,
-            recommended_value=min(512, current_seqs * 2),
-            reason="GPU has KV headroom but scheduler is limiting admissions",
-            confidence=0.8,
-            trigger=cid,
-        ))
+        adjs.append(
+            TuningAdjustment(
+                parameter="scheduler.max_num_seqs",
+                current_value=current_seqs,
+                recommended_value=min(512, current_seqs * 2),
+                reason="GPU has KV headroom but scheduler is limiting admissions",
+                confidence=0.8,
+                trigger=cid,
+            )
+        )
         current_budget = scheduler.get("batched_token_budget", 8192)
-        adjs.append(TuningAdjustment(
-            parameter="scheduler.batched_token_budget",
-            current_value=current_budget,
-            recommended_value=min(32768, current_budget * 2),
-            reason="Raise batch budget to admit more tokens per step while GPU has capacity",
-            confidence=0.75,
-            trigger=cid,
-        ))
+        adjs.append(
+            TuningAdjustment(
+                parameter="scheduler.batched_token_budget",
+                current_value=current_budget,
+                recommended_value=min(32768, current_budget * 2),
+                reason="Raise batch budget to admit more tokens per step while GPU has capacity",
+                confidence=0.75,
+                trigger=cid,
+            )
+        )
 
     elif cid == "OOM_DESPITE_FREE":
-        adjs.append(TuningAdjustment(
-            parameter="cache.fragmentation_check",
-            current_value=cache.get("fragmentation_check", False),
-            recommended_value=True,
-            reason="Preemptions despite free KV — enable fragmentation monitoring",
-            confidence=0.85,
-            trigger=cid,
-        ))
-        adjs.append(TuningAdjustment(
-            parameter="cache.kv_compaction_trigger",
-            current_value=cache.get("kv_compaction_trigger", 0.4),
-            recommended_value=0.3,
-            reason="Lower compaction trigger to reclaim fragmented blocks earlier",
-            confidence=0.75,
-            trigger=cid,
-        ))
+        adjs.append(
+            TuningAdjustment(
+                parameter="cache.fragmentation_check",
+                current_value=cache.get("fragmentation_check", False),
+                recommended_value=True,
+                reason="Preemptions despite free KV — enable fragmentation monitoring",
+                confidence=0.85,
+                trigger=cid,
+            )
+        )
+        adjs.append(
+            TuningAdjustment(
+                parameter="cache.kv_compaction_trigger",
+                current_value=cache.get("kv_compaction_trigger", 0.4),
+                recommended_value=0.3,
+                reason="Lower compaction trigger to reclaim fragmented blocks earlier",
+                confidence=0.75,
+                trigger=cid,
+            )
+        )
 
     elif cid == "KV_FRAGMENTATION_HIGH":
-        adjs.append(TuningAdjustment(
-            parameter="cache.kv_compaction_trigger",
-            current_value=cache.get("kv_compaction_trigger", 0.4),
-            recommended_value=0.5,
-            reason="High KV usage with low active sequences — raise compaction trigger",
-            confidence=0.7,
-            trigger=cid,
-        ))
+        adjs.append(
+            TuningAdjustment(
+                parameter="cache.kv_compaction_trigger",
+                current_value=cache.get("kv_compaction_trigger", 0.4),
+                recommended_value=0.5,
+                reason="High KV usage with low active sequences — raise compaction trigger",
+                confidence=0.7,
+                trigger=cid,
+            )
+        )
 
     elif cid == "HIGH_TTFT":
         # TTFT spike: consider disabling chunked prefill or increasing prefill budget
         current_chunked = scheduler.get("chunked_prefill", True)
         if current_chunked:
-            adjs.append(TuningAdjustment(
-                parameter="scheduler.chunked_prefill",
-                current_value=True,
-                recommended_value=False,
-                reason="High TTFT may be caused by chunked prefill splitting — try contiguous prefill",
-                confidence=0.65,
-                trigger=cid,
-            ))
+            adjs.append(
+                TuningAdjustment(
+                    parameter="scheduler.chunked_prefill",
+                    current_value=True,
+                    recommended_value=False,
+                    reason="High TTFT may be caused by chunked prefill splitting — try contiguous prefill",
+                    confidence=0.65,
+                    trigger=cid,
+                )
+            )
 
     elif cid == "KV_CACHE_CRITICAL":
         current_util = cache.get("gpu_memory_utilization", 0.92)
-        adjs.append(TuningAdjustment(
-            parameter="cache.gpu_memory_utilization",
-            current_value=current_util,
-            recommended_value=max(0.85, current_util - 0.03),
-            reason="KV cache saturated — lower memory utilization to create headroom",
-            confidence=0.8,
-            trigger=cid,
-        ))
+        adjs.append(
+            TuningAdjustment(
+                parameter="cache.gpu_memory_utilization",
+                current_value=current_util,
+                recommended_value=max(0.85, current_util - 0.03),
+                reason="KV cache saturated — lower memory utilization to create headroom",
+                confidence=0.8,
+                trigger=cid,
+            )
+        )
 
     return adjs
 

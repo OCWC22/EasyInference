@@ -36,7 +36,7 @@ from inferscope.tools.recommend import (
 )
 
 mcp = FastMCP(
-    'inferscope',
+    "inferscope",
     instructions="""InferScope is a hardware-aware inference optimization toolkit for
     LLM serving on NVIDIA (Ampere/Hopper/Blackwell) and AMD (CDNA3/CDNA4) GPUs.
 
@@ -82,7 +82,7 @@ async def tool_get_gpu_specs(gpu: str) -> dict:
 
 
 @mcp.tool()
-async def tool_compare_gpus(gpu_a: str, gpu_b: str, workload: str = 'inference') -> dict:
+async def tool_compare_gpus(gpu_a: str, gpu_b: str, workload: str = "inference") -> dict:
     """Side-by-side GPU comparison with inference-relevant metrics.
 
     Includes roofline analysis and cost-performance ratio.
@@ -111,8 +111,8 @@ async def tool_validate_serving_config(
     model: str,
     gpu: str,
     tp: int = 1,
-    quantization: str = 'auto',
-    engine: str = 'vllm',
+    quantization: str = "auto",
+    engine: str = "vllm",
 ) -> dict:
     """Pre-flight check: does this serving config work?
 
@@ -127,7 +127,7 @@ async def tool_estimate_capacity(
     model: str,
     gpu: str,
     num_gpus: int = 1,
-    quantization: str = 'auto',
+    quantization: str = "auto",
     max_context: int = 0,
 ) -> dict:
     """Calculate max concurrent users, max context length, and KV cache budget.
@@ -144,9 +144,9 @@ async def tool_estimate_capacity(
 async def tool_recommend_config(
     model: str,
     gpu: str,
-    workload: str = 'chat',
+    workload: str = "chat",
     num_gpus: int = 1,
-    engine: str = 'auto',
+    engine: str = "auto",
 ) -> dict:
     """Generate optimal serving config for a model+GPU+workload combination."""
     return recommend_config(model, gpu, workload, num_gpus, engine=engine)
@@ -156,7 +156,7 @@ async def tool_recommend_config(
 async def tool_recommend_engine(
     model: str,
     gpu: str,
-    workload: str = 'chat',
+    workload: str = "chat",
     num_gpus: int = 1,
     multi_node: bool = False,
 ) -> dict:
@@ -178,7 +178,7 @@ async def tool_calculate_kv_budget(
     model: str,
     context_length: int,
     batch_size: int = 1,
-    kv_dtype: str = 'fp8',
+    kv_dtype: str = "fp8",
 ) -> dict:
     """Calculate exact KV cache memory requirement in bytes."""
     return calculate_kv_budget(model, context_length, batch_size, kv_dtype)
@@ -188,7 +188,7 @@ async def tool_calculate_kv_budget(
 async def tool_recommend_kv_strategy(
     model: str,
     gpu: str,
-    workload: str = 'chat',
+    workload: str = "chat",
     max_context: int = 32768,
     concurrent_sessions: int = 100,
 ) -> dict:
@@ -230,15 +230,15 @@ async def tool_compare_quantization(model: str, gpu: str) -> dict:
 @mcp.tool()
 async def tool_audit_deployment(
     endpoint: str,
-    gpu_arch: str = '',
-    model_name: str = '',
-    model_type: str = '',
-    attention_type: str = '',
+    gpu_arch: str = "",
+    model_name: str = "",
+    model_type: str = "",
+    attention_type: str = "",
     experts_total: int = 0,
     tp: int = 1,
-    quantization: str = '',
-    kv_cache_dtype: str = '',
-    provider: str = '',
+    quantization: str = "",
+    kv_cache_dtype: str = "",
+    provider: str = "",
     metrics_auth: dict | None = None,
 ) -> dict:
     """Run all audit checks against a live vLLM/SGLang/ATOM endpoint."""
@@ -260,7 +260,7 @@ async def tool_audit_deployment(
 @mcp.tool()
 async def tool_check_deployment(
     endpoint: str,
-    provider: str = '',
+    provider: str = "",
     metrics_auth: dict | None = None,
 ) -> dict:
     """Scrape a live endpoint and return a health snapshot."""
@@ -274,7 +274,7 @@ async def tool_check_deployment(
 @mcp.tool()
 async def tool_check_memory_pressure(
     endpoint: str,
-    provider: str = '',
+    provider: str = "",
     metrics_auth: dict | None = None,
 ) -> dict:
     """Analyze KV cache utilization and preemption rates from live metrics."""
@@ -288,7 +288,7 @@ async def tool_check_memory_pressure(
 @mcp.tool()
 async def tool_get_cache_effectiveness(
     endpoint: str,
-    provider: str = '',
+    provider: str = "",
     metrics_auth: dict | None = None,
 ) -> dict:
     """Measure prefix cache hit rate and cache-aware routing effectiveness."""
@@ -302,11 +302,11 @@ async def tool_get_cache_effectiveness(
 @mcp.tool()
 async def tool_auto_tune_deployment(
     endpoint: str,
-    current_engine: str = '',
-    current_workload: str = '',
+    current_engine: str = "",
+    current_workload: str = "",
     current_scheduler: dict | None = None,
     current_cache: dict | None = None,
-    provider: str = '',
+    provider: str = "",
     metrics_auth: dict | None = None,
 ) -> dict:
     """Analyze a live endpoint and recommend config adjustments."""

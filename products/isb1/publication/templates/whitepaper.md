@@ -1,7 +1,7 @@
 {# ISB-1 Benchmark Whitepaper Template #}
 {# Render with Jinja2: provide a context dict with the variables referenced below. #}
 
-# ISB-1: InferScope Benchmark Standard for LLM Serving Optimization
+# ISB-1: Inference Serving Benchmark Standard 1
 
 **Version {{ benchmark_version | default("1.0.0") }}**
 **Date: {{ publication_date | default("YYYY-MM-DD") }}**
@@ -10,7 +10,7 @@
 
 ## Abstract
 
-This report presents the results of the ISB-1 (InferScope Benchmark Standard, Version 1) benchmark evaluation. ISB-1 measures large language model inference serving performance across {{ gpus | length }} GPU configurations, {{ models | length }} models, {{ workloads | length }} production-representative workloads, and {{ modes | length }} execution modes. The benchmark evaluates throughput, latency, goodput, SLO attainment, and output quality using a statistically rigorous methodology with a minimum of {{ min_trials | default(3) }} trials per cell and {{ measurement_duration | default(600) }}-second steady-state measurement windows.
+This report presents the results of the ISB-1 (Inference Serving Benchmark Standard 1) benchmark evaluation. ISB-1 measures large language model inference serving performance across {{ gpus | length }} GPU configurations, {{ models | length }} models, {{ workloads | length }} production-representative workloads, and {{ modes | length }} execution modes. The benchmark evaluates throughput, latency, goodput, SLO attainment, and output quality using a statistically rigorous methodology with a minimum of {{ min_trials | default(3) }} trials per cell and {{ measurement_duration | default(600) }}-second steady-state measurement windows.
 
 {% if key_findings is defined %}
 Key findings include:

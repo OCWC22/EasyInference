@@ -1,74 +1,78 @@
 # InferScope Architecture
 
-InferScope is a hardware-aware inference optimization product with a small number of explicit subsystem boundaries.
+InferScope is a hardware-aware operator product with two public surfaces:
 
-## Repository boundaries
+- the `inferscope` CLI
+- the `inferscope serve` MCP server
+
+Both surfaces expose the same benchmark-aware optimization core.
+
+## Boundary model
+
+InferScope sits on top of the EasyInference benchmark stack.
+
+- **InferenceX** is the external public reference.
+- **ISB-1** is the reproducible benchmark standard.
+- **InferScope** is the operator layer that packages benchmark assets for direct use.
+
+This means InferScope should not grow into a second benchmark standard. It should stay focused on planning, replay, comparison, and diagnostics.
+
+## Repository layout
 
 ```text
 src/inferscope/
-├── optimization/   # normalized ServingProfile DAG and tuning logic
-├── engines/        # engine compiler seam (vLLM, SGLang, ATOM, TRT-LLM, Dynamo)
-├── hardware/       # GPU profiles and hardware detection
-├── models/         # model metadata and sizing rules
-├── tools/          # CLI/MCP-facing operational tools
-├── benchmarks/     # packaged evaluation subsystem
-├── profiling/      # advisory seam for future profiler/kernel work
-├── cli.py          # user-facing CLI composition root
-├── cli_benchmarks.py
-├── server.py       # MCP composition root
-└── server_benchmarks.py
+├── optimization/        # recommendation DAG and serving profiles
+├── engines/             # engine compiler seam
+├── hardware/            # GPU metadata and detection
+├── models/              # model metadata
+├── tools/               # operator-facing audits and diagnostics
+├── benchmarks/          # packaged workloads, experiments, replay, artifacts
+├── profiling/           # future profiler/kernel boundary
+├── cli.py               # primary CLI composition root
+├── cli_benchmarks.py    # benchmark CLI commands
+├── server.py            # primary MCP composition root
+└── server_benchmarks.py # benchmark MCP tools
 ```
 
-The dependency direction is intentional:
+## Dependency direction
 
-- **core optimization does not depend on benchmarks**
-- **benchmarks depend inward on core optimization and engine compilers**
-- **profiling is advisory-only today** and exists so future kernel work does not need to land inside the core DAG file
+- optimization does not depend on benchmark orchestration
+- benchmarks may depend inward on optimization and engine metadata
+- CLI and MCP surfaces compose the same underlying benchmark subsystem
+- profiling remains advisory-only today
 
-## DAG pipeline
+## Benchmark subsystem
 
-InferScope's recommendation flow is orchestrated in `optimization/recommender.py`:
+`src/inferscope/benchmarks/` is the source of truth for built-in benchmark assets.
 
-```text
-HardwareNode → ModelNode → WorkloadNode → ProfilingNode → TelemetryNode → CompilerNode
-```
+It owns:
 
-### Node responsibilities
+- packaged workload YAMLs
+- packaged experiment specs
+- workload catalog resolution
+- OpenAI-compatible replay
+- benchmark artifact persistence
+- procedural materialization for selected built-ins
 
-1. **HardwareNode** selects an engine family and precision path from GPU ISA capabilities.
-2. **ModelNode** resolves topology boundaries such as TP/DP/EP and speculative decoding.
-3. **WorkloadNode** maps workload shape to scheduler, cache, offload, and chunked-prefill policy.
-4. **ProfilingNode** records an advisory profiling intent (`nsys` or `rocprofv3`) via the profiling subsystem.
-5. **TelemetryNode** appends operator-facing metrics and alert guidance.
-6. **CompilerNode** binds the normalized `ServingProfile` to an engine-specific command surface.
+The key bridge API is `materialize_workload(...)`.
 
-## Public surfaces
+Behavior:
 
-### CLI
+- built-in workloads can be loaded as static seed packs
+- selected built-ins can be procedurally expanded at runtime
+- explicit file paths still work, but procedural expansion is limited to packaged built-ins
 
-`src/inferscope/cli.py` owns the main Typer app. Benchmark and evaluation commands are registered from `src/inferscope/cli_benchmarks.py`, keeping the core operator commands separate from evaluation orchestration.
+## MCP bridge workloads
 
-### MCP server
+Two built-ins currently act as the main bridge from benchmark methodology into operator workflows:
 
-`src/inferscope/server.py` owns the main FastMCP server. Benchmark and artifact tools are registered from `src/inferscope/server_benchmarks.py`, which keeps evaluation features isolated without changing public tool names.
+- `tool-agent`
+- `coding-long-context`
 
-## Evaluation subsystem
-
-`src/inferscope/benchmarks/` is the single source of truth for built-in workloads and experiment specs.
-
-- `catalog.py` resolves packaged built-ins and supports legacy repo-path aliases for compatibility.
-- `experiments.py` and `launchers.py` generate concrete run plans and benchmark stack bundles.
-- `openai_replay.py` runs workloads against OpenAI-compatible endpoints and writes artifacts under `~/.inferscope/benchmarks/`.
-
-This makes the installed package self-contained while leaving the benchmark subsystem easy to extract into a separate repo later if needed.
+They are intentionally practical rather than normative. They map back to the stable ISB-1 families rather than redefining the benchmark taxonomy.
 
 ## Profiling boundary
 
-`src/inferscope/profiling/` currently contains advisory intent resolution only. That package exists to host future integrations such as:
+`src/inferscope/profiling/` exists so future profiler or kernel work can evolve without coupling itself to the replay and MCP surfaces.
 
-- `nsys` and `rocprofv3` execution helpers
-- kernel advisory metadata
-- trace export policies
-- profiler-specific validation or artifact export
-
-The important architectural point is that future kernel work now has a home that does not force deeper coupling with benchmark orchestration or the core optimizer.
+Today it records advisory profiling intent. Later it can host profiler execution helpers, trace export, and kernel-facing integrations.

@@ -9,6 +9,10 @@ from typing import Any
 
 from inferscope.benchmarks.experiments import BenchmarkExperimentSpec
 from inferscope.benchmarks.models import BenchmarkArtifact, WorkloadPack
+from inferscope.benchmarks.procedural import (
+    ProceduralWorkloadOptions,
+    materialize_procedural_workload,
+)
 
 _RESOURCE_EXTENSIONS = (".yaml", ".yml", ".json")
 _LEGACY_RESOURCE_PREFIXES: dict[str, tuple[str, ...]] = {
@@ -34,8 +38,8 @@ def _find_packaged_resource(package: str, builtin_name: str) -> Path | None:
 
 
 def _normalize_reference(reference: str | Path) -> str:
-    normalized = str(reference).strip().replace('\\', '/')
-    if normalized.startswith('./'):
+    normalized = str(reference).strip().replace("\\", "/")
+    if normalized.startswith("./"):
         return normalized[2:]
     return normalized
 
@@ -49,7 +53,7 @@ def _legacy_builtin_name(reference: str | Path, *, kind: str) -> str | None:
         resource_path = Path(candidate)
         if resource_path.suffix.lower() not in _RESOURCE_EXTENSIONS:
             return None
-        if resource_path.parent != Path('.'):
+        if resource_path.parent != Path("."):
             return None
         return resource_path.stem
     return None
@@ -74,7 +78,7 @@ def _resolve_packaged_resource(package: str, reference: str | Path, kind: str) -
         if packaged is not None:
             return packaged
 
-    available = ', '.join(_list_packaged_resources(package))
+    available = ", ".join(_list_packaged_resources(package))
     raise ValueError(f"Unknown {kind} reference '{reference}'. Available built-ins: {available}")
 
 
@@ -89,7 +93,7 @@ def _list_packaged_resources(package: str) -> list[str]:
 
 def resolve_workload_reference(reference: str | Path) -> Path:
     """Resolve a workload reference from a file path or packaged built-in name."""
-    return _resolve_packaged_resource('inferscope.benchmarks.workloads', reference, 'workload')
+    return _resolve_packaged_resource("inferscope.benchmarks.workloads", reference, "workload")
 
 
 def load_workload(reference: str | Path) -> WorkloadPack:
@@ -97,16 +101,28 @@ def load_workload(reference: str | Path) -> WorkloadPack:
     return WorkloadPack.from_file(resolve_workload_reference(reference))
 
 
+def materialize_workload(
+    reference: str | Path,
+    *,
+    options: ProceduralWorkloadOptions | None = None,
+) -> WorkloadPack:
+    """Resolve a workload reference and optionally expand it procedurally."""
+    if options is None or not options.enabled:
+        return load_workload(reference)
+    if Path(reference).exists():
+        raise ValueError("Procedural generation is supported only for packaged built-in workloads, not explicit files")
+    seed_pack = load_workload(reference)
+    return materialize_procedural_workload(seed_pack, options)
+
+
 def list_builtin_workloads() -> list[str]:
     """List packaged built-in workload packs."""
-    return _list_packaged_resources('inferscope.benchmarks.workloads')
+    return _list_packaged_resources("inferscope.benchmarks.workloads")
 
 
 def resolve_experiment_reference(reference: str | Path) -> Path:
     """Resolve an experiment reference from a file path or packaged built-in name."""
-    return _resolve_packaged_resource(
-        'inferscope.benchmarks.experiment_specs', reference, 'experiment'
-    )
+    return _resolve_packaged_resource("inferscope.benchmarks.experiment_specs", reference, "experiment")
 
 
 def load_experiment(reference: str | Path) -> BenchmarkExperimentSpec:
@@ -116,7 +132,7 @@ def load_experiment(reference: str | Path) -> BenchmarkExperimentSpec:
 
 def list_builtin_experiments() -> list[str]:
     """List packaged built-in benchmark experiment specs."""
-    return _list_packaged_resources('inferscope.benchmarks.experiment_specs')
+    return _list_packaged_resources("inferscope.benchmarks.experiment_specs")
 
 
 def load_benchmark_artifact(path: str | Path) -> BenchmarkArtifact:
@@ -124,7 +140,7 @@ def load_benchmark_artifact(path: str | Path) -> BenchmarkArtifact:
     file_path = Path(path)
     data = json.loads(file_path.read_text())
     if not isinstance(data, dict):
-        raise ValueError('Benchmark artifact JSON must contain an object at the top level')
+        raise ValueError("Benchmark artifact JSON must contain an object at the top level")
     return BenchmarkArtifact.model_validate(data)
 
 
@@ -147,32 +163,32 @@ def _run_plan_field(artifact: BenchmarkArtifact, field: str, default: Any) -> An
 
 
 def _topology_mode(artifact: BenchmarkArtifact) -> str:
-    topology = _run_plan_field(artifact, 'topology', {})
+    topology = _run_plan_field(artifact, "topology", {})
     if isinstance(topology, dict):
-        return str(topology.get('mode', 'single_endpoint'))
-    return 'single_endpoint'
+        return str(topology.get("mode", "single_endpoint"))
+    return "single_endpoint"
 
 
 def _cache_strategy(artifact: BenchmarkArtifact) -> str:
-    cache = _run_plan_field(artifact, 'cache', {})
+    cache = _run_plan_field(artifact, "cache", {})
     if isinstance(cache, dict):
-        return str(cache.get('strategy', 'unknown'))
-    return 'unknown'
+        return str(cache.get("strategy", "unknown"))
+    return "unknown"
 
 
 def _metrics_roles(artifact: BenchmarkArtifact) -> list[str]:
-    if artifact.run_plan and isinstance(artifact.run_plan.get('metrics_targets'), list):
+    if artifact.run_plan and isinstance(artifact.run_plan.get("metrics_targets"), list):
         role_list = [
-            str(target.get('role', 'primary'))
-            for target in artifact.run_plan['metrics_targets']
+            str(target.get("role", "primary"))
+            for target in artifact.run_plan["metrics_targets"]
             if isinstance(target, dict)
         ]
-        return sorted(role_list) if role_list else ['primary']
+        return sorted(role_list) if role_list else ["primary"]
     if artifact.metrics_before_targets or artifact.metrics_after_targets:
         combined_snapshots = artifact.metrics_before_targets + artifact.metrics_after_targets
         role_set = {snapshot.target_role for snapshot in combined_snapshots}
-        return sorted(role_set) if role_set else ['primary']
-    return ['primary']
+        return sorted(role_set) if role_set else ["primary"]
+    return ["primary"]
 
 
 def compare_benchmark_artifacts(
@@ -187,13 +203,13 @@ def compare_benchmark_artifacts(
     differing_fields: list[str] = []
 
     comparable_fields = {
-        'pack_name': (baseline.pack_name, candidate.pack_name),
-        'workload_class': (baseline.workload_class, candidate.workload_class),
-        'model': (baseline.model, candidate.model),
-        'concurrency': (baseline.concurrency, candidate.concurrency),
-        'topology_mode': (_topology_mode(baseline), _topology_mode(candidate)),
-        'cache_strategy': (_cache_strategy(baseline), _cache_strategy(candidate)),
-        'metrics_roles': (_metrics_roles(baseline), _metrics_roles(candidate)),
+        "pack_name": (baseline.pack_name, candidate.pack_name),
+        "workload_class": (baseline.workload_class, candidate.workload_class),
+        "model": (baseline.model, candidate.model),
+        "concurrency": (baseline.concurrency, candidate.concurrency),
+        "topology_mode": (_topology_mode(baseline), _topology_mode(candidate)),
+        "cache_strategy": (_cache_strategy(baseline), _cache_strategy(candidate)),
+        "metrics_roles": (_metrics_roles(baseline), _metrics_roles(candidate)),
     }
 
     for field, (baseline_value, candidate_value) in comparable_fields.items():
@@ -204,53 +220,53 @@ def compare_benchmark_artifacts(
             )
 
     comparison: dict[str, Any] = {
-        'baseline': {
-            'path': baseline.default_filename,
-            'pack_name': baseline.pack_name,
-            'endpoint': baseline.endpoint,
-            'model': baseline.model,
-            'summary': baseline_summary.model_dump(mode='json'),
+        "baseline": {
+            "path": baseline.default_filename,
+            "pack_name": baseline.pack_name,
+            "endpoint": baseline.endpoint,
+            "model": baseline.model,
+            "summary": baseline_summary.model_dump(mode="json"),
         },
-        'candidate': {
-            'path': candidate.default_filename,
-            'pack_name': candidate.pack_name,
-            'endpoint': candidate.endpoint,
-            'model': candidate.model,
-            'summary': candidate_summary.model_dump(mode='json'),
+        "candidate": {
+            "path": candidate.default_filename,
+            "pack_name": candidate.pack_name,
+            "endpoint": candidate.endpoint,
+            "model": candidate.model,
+            "summary": candidate_summary.model_dump(mode="json"),
         },
-        'compatibility': {
-            'comparable': not differing_fields,
-            'warnings': compatibility_warnings,
-            'differing_fields': differing_fields,
+        "compatibility": {
+            "comparable": not differing_fields,
+            "warnings": compatibility_warnings,
+            "differing_fields": differing_fields,
         },
-        'deltas': {
-            'latency_p95_ms': _delta(candidate_summary.latency_p95_ms, baseline_summary.latency_p95_ms),
-            'ttft_p95_ms': _delta(candidate_summary.ttft_p95_ms, baseline_summary.ttft_p95_ms),
-            'latency_avg_ms': _delta(candidate_summary.latency_avg_ms, baseline_summary.latency_avg_ms),
-            'wall_time_ms': _delta(candidate_summary.wall_time_ms, baseline_summary.wall_time_ms),
-            'succeeded': candidate_summary.succeeded - baseline_summary.succeeded,
-            'failed': candidate_summary.failed - baseline_summary.failed,
-            'total_tokens': candidate_summary.total_tokens - baseline_summary.total_tokens,
+        "deltas": {
+            "latency_p95_ms": _delta(candidate_summary.latency_p95_ms, baseline_summary.latency_p95_ms),
+            "ttft_p95_ms": _delta(candidate_summary.ttft_p95_ms, baseline_summary.ttft_p95_ms),
+            "latency_avg_ms": _delta(candidate_summary.latency_avg_ms, baseline_summary.latency_avg_ms),
+            "wall_time_ms": _delta(candidate_summary.wall_time_ms, baseline_summary.wall_time_ms),
+            "succeeded": candidate_summary.succeeded - baseline_summary.succeeded,
+            "failed": candidate_summary.failed - baseline_summary.failed,
+            "total_tokens": candidate_summary.total_tokens - baseline_summary.total_tokens,
         },
-        'ratios': {
-            'latency_p95': _ratio(candidate_summary.latency_p95_ms, baseline_summary.latency_p95_ms),
-            'ttft_p95': _ratio(candidate_summary.ttft_p95_ms, baseline_summary.ttft_p95_ms),
-            'wall_time': _ratio(candidate_summary.wall_time_ms, baseline_summary.wall_time_ms),
+        "ratios": {
+            "latency_p95": _ratio(candidate_summary.latency_p95_ms, baseline_summary.latency_p95_ms),
+            "ttft_p95": _ratio(candidate_summary.ttft_p95_ms, baseline_summary.ttft_p95_ms),
+            "wall_time": _ratio(candidate_summary.wall_time_ms, baseline_summary.wall_time_ms),
         },
     }
 
-    latency_delta = comparison['deltas']['latency_p95_ms']
-    ttft_delta = comparison['deltas']['ttft_p95_ms']
+    latency_delta = comparison["deltas"]["latency_p95_ms"]
+    ttft_delta = comparison["deltas"]["ttft_p95_ms"]
     summary_parts = []
     if latency_delta is not None:
-        direction = 'faster' if latency_delta < 0 else 'slower' if latency_delta > 0 else 'unchanged'
+        direction = "faster" if latency_delta < 0 else "slower" if latency_delta > 0 else "unchanged"
         summary_parts.append(f"p95 latency {direction} by {abs(latency_delta):.1f} ms")
     if ttft_delta is not None:
-        direction = 'lower' if ttft_delta < 0 else 'higher' if ttft_delta > 0 else 'unchanged'
+        direction = "lower" if ttft_delta < 0 else "higher" if ttft_delta > 0 else "unchanged"
         summary_parts.append(f"p95 TTFT {direction} by {abs(ttft_delta):.1f} ms")
     if compatibility_warnings:
         summary_parts.append(f"compatibility warnings: {len(compatibility_warnings)}")
     if not summary_parts:
-        summary_parts.append('comparison computed')
-    comparison['summary'] = ' | '.join(summary_parts)
+        summary_parts.append("comparison computed")
+    comparison["summary"] = " | ".join(summary_parts)
     return comparison

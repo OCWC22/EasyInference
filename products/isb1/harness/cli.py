@@ -50,7 +50,7 @@ def _setup_logging(verbose: bool = False) -> None:
 @click.option("-v", "--verbose", is_flag=True, help="Enable debug logging.")
 @click.version_option(version="1.0.0", prog_name="isb1")
 def main(verbose: bool) -> None:
-    """ISB-1: InferScope Benchmark Standard for LLM Serving Optimization."""
+    """ISB-1: Inference Serving Benchmark Standard 1."""
     _setup_logging(verbose)
 
 
@@ -273,7 +273,11 @@ def run_cell(
         raise SystemExit(1)
 
     rate_sweep = wl_cfg.get("arrival", {}).get("rate_sweep", [1.0])
-    dataset_name = wl_cfg.get("trace", {}).get("type")
+    num_prompts = int(wl_cfg.get("trace", {}).get("num_requests", 1000))
+    arrival_cfg = wl_cfg.get("arrival", {})
+    arrival_model = str(arrival_cfg.get("model", "poisson"))
+    arrival_shape = float(arrival_cfg["shape"]) if "shape" in arrival_cfg else None
+    goodput_slo = wl_cfg.get("slo") or None
 
     cell = CellConfig(
         gpu=gpu,
@@ -285,9 +289,12 @@ def run_cell(
         quantization=quantization,
         topology=topology,
         trial_number=trial,
+        num_prompts=num_prompts,
         rate_sweep=rate_sweep,
-        dataset_name=dataset_name,
         seed=42 + trial,
+        arrival_model=arrival_model,
+        arrival_shape=arrival_shape,
+        goodput_slo=goodput_slo,
         output_dir=output_dir,
         config_root=config_root,
     )

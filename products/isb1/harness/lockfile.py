@@ -139,6 +139,8 @@ class LockfileGenerator:
         engine_args: dict[str, Any] | None = None,
         config_paths: list[str | Path] | None = None,
         random_seeds: dict[str, int] | None = None,
+        benchmark_runner: str = "",
+        trace_info: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         """Build the complete lockfile dict."""
         lockfile: dict[str, Any] = {
@@ -157,6 +159,12 @@ class LockfileGenerator:
 
         if random_seeds:
             lockfile["random_seeds"] = random_seeds
+
+        if benchmark_runner:
+            lockfile["benchmark_runner"] = benchmark_runner
+
+        if trace_info:
+            lockfile["trace"] = trace_info
 
         self._data = lockfile
         return lockfile

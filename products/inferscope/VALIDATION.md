@@ -6,8 +6,6 @@ Within the EasyInference monorepo, this product lives at `products/inferscope/`.
 
 ## Naming convention
 
-Use:
-
 ```text
 NN-YYYY-MM-DD-name.md
 ```
@@ -19,21 +17,18 @@ NN-YYYY-MM-DD-name.md
 
 ## Current validation contract
 
-As of **March 24, 2026**, the repo should be considered valid when the following checks pass:
+As of **March 25, 2026**, InferScope should be considered valid when the following checks pass:
 
-- `uv run ruff check ...`
-- `uv run ruff format --check ...`
+- `uv run ruff check src/ tests/`
+- `uv run ruff format --check src/ tests/`
 - `uv run mypy src/inferscope/`
+- `uv run pytest tests/ -v --tb=short`
 - `uv run bandit -r src/inferscope/ -c pyproject.toml -ll`
-- package-data smoke checks from a built wheel for packaged benchmark workloads and experiment specs
-
-Optional validation layers:
-
-- `uv run pytest ...` when a `tests/` tree is present in the checkout
-- live integration tests when the repo contains that suite and the required endpoint secrets are configured
+- built-wheel smoke checks for packaged benchmark workloads and experiment specs
+- built-wheel smoke checks for procedural benchmark plan resolution on `tool-agent` and `coding-long-context`
 
 ## Notes
 
-- Treat each file in `validations/` as a point-in-time report, not a permanent statement about the current repo.
-- If docs drift from code, trust the current package layout and executable CLI/MCP surfaces.
-- TRT-LLM and Dynamo compiler surfaces exist, but live-validation breadth should still be documented conservatively.
+- Treat files in `validations/` as point-in-time reports, not permanent guarantees.
+- If docs drift from code, trust the current packaged CLI and MCP surfaces.
+- Procedural benchmark generation is limited to selected packaged built-ins, not arbitrary YAML file paths.

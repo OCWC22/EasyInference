@@ -537,12 +537,7 @@ def _check_kv_fragmentation_high(m: NormalizedMetrics, ctx: DeploymentContext) -
 
 def _check_decode_starvation(m: NormalizedMetrics, ctx: DeploymentContext) -> AuditFinding | None:
     """DECODE_STARVATION — prefill is hogging the scheduler, starving decode tokens."""
-    if (
-        m.itl_avg_s is not None
-        and m.ttft_avg_s is not None
-        and m.itl_avg_s > 0.1
-        and m.ttft_avg_s < 1.0
-    ):
+    if m.itl_avg_s is not None and m.ttft_avg_s is not None and m.itl_avg_s > 0.1 and m.ttft_avg_s < 1.0:
         return AuditFinding(
             check_id="DECODE_STARVATION",
             severity="warning",
@@ -555,8 +550,7 @@ def _check_decode_starvation(m: NormalizedMetrics, ctx: DeploymentContext) -> Au
             current_value=f"ITL={m.itl_avg_s * 1000:.0f}ms, TTFT={m.ttft_avg_s * 1000:.0f}ms",
             recommended_value="ITL <50ms with decode priority >=0.7",
             fix_command=(
-                "Increase decode_priority, lower max_prefill_chunk_ratio, "
-                "or enable prefill/decode lane isolation"
+                "Increase decode_priority, lower max_prefill_chunk_ratio, or enable prefill/decode lane isolation"
             ),
             confidence=0.8,
             evidence="metric_correlation",
@@ -566,12 +560,7 @@ def _check_decode_starvation(m: NormalizedMetrics, ctx: DeploymentContext) -> Au
 
 def _check_prefill_starvation(m: NormalizedMetrics, ctx: DeploymentContext) -> AuditFinding | None:
     """PREFILL_STARVATION — decode-heavy batch is starving new prefills."""
-    if (
-        m.ttft_avg_s is not None
-        and m.itl_avg_s is not None
-        and m.ttft_avg_s > 5.0
-        and m.itl_avg_s < 0.03
-    ):
+    if m.ttft_avg_s is not None and m.itl_avg_s is not None and m.ttft_avg_s > 5.0 and m.itl_avg_s < 0.03:
         return AuditFinding(
             check_id="PREFILL_STARVATION",
             severity="warning",
@@ -584,8 +573,7 @@ def _check_prefill_starvation(m: NormalizedMetrics, ctx: DeploymentContext) -> A
             current_value=f"TTFT={m.ttft_avg_s * 1000:.0f}ms, ITL={m.itl_avg_s * 1000:.0f}ms",
             recommended_value="TTFT <2s with prefill priority rebalanced",
             fix_command=(
-                "Decrease decode_priority, increase prefill_lane_budget, "
-                "or enable chunked prefill to interleave"
+                "Decrease decode_priority, increase prefill_lane_budget, or enable chunked prefill to interleave"
             ),
             confidence=0.8,
             evidence="metric_correlation",

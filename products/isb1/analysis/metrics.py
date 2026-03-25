@@ -232,13 +232,15 @@ class MetricComputer:
         # ── goodput (both TTFT and TPOT SLOs must be met) ────────────────
         good_count = 0
         for r in successful:
-            ttft_ok = r.get("ttft", float("inf")) <= self.ttft_slo
+            ttft_threshold = r.get("ttft_slo_seconds", self.ttft_slo)
+            tpot_threshold = r.get("tpot_slo_seconds", self.tpot_slo)
+            ttft_ok = r.get("ttft", float("inf")) <= ttft_threshold
             tpot_val = _compute_tpot(
                 r.get("e2e_latency", 0.0),
                 r.get("ttft", 0.0),
                 r.get("output_tokens", 0),
             )
-            tpot_ok = tpot_val is not None and tpot_val <= self.tpot_slo
+            tpot_ok = tpot_val is not None and tpot_val <= tpot_threshold
             if ttft_ok and tpot_ok:
                 good_count += 1
         goodput = good_count / wall_clock if wall_clock > 0 else 0.0

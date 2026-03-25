@@ -1,58 +1,44 @@
 # InferScope Benchmark Plan
 
-InferScope's benchmark plan exists to answer one question:
+InferScope's benchmark plan is simple:
 
-> Do InferScope's recommendations measurably improve inference behavior for real workloads on real hardware?
+> turn benchmark methodology into an operator workflow that can be consumed locally or through MCP.
 
-## Benchmark boundary
+## What this product should do
 
-Built-in workloads and experiment specs are owned by the packaged evaluation subsystem under `src/inferscope/benchmarks/`. The source tree no longer treats a repo-root `benchmarks/` directory as authoritative.
+InferScope should be the fastest path from an operational question to an actionable benchmark loop:
 
-This makes the benchmark subsystem:
+1. recommend a serving strategy
+2. replay a relevant workload against an endpoint
+3. persist an artifact
+4. compare artifacts before and after a change
+5. expose the same flow to MCP clients
 
-- self-contained in the installable package
-- consistent across CLI and MCP usage
-- easier to extract into a dedicated repo later if needed
+## What it should not do
 
-## Core benchmark surfaces
+InferScope should not become a competing benchmark standard or a dashboard clone.
 
-- `benchmark-workloads` — list packaged workload built-ins
-- `benchmark-experiments` — list packaged experiment built-ins
-- `benchmark-plan` — resolve a concrete run plan
-- `benchmark` — replay a workload against an OpenAI-compatible endpoint
-- `benchmark-compare` — compare saved artifacts
-- `benchmark-stack-plan` / `benchmark-stack-write` — model full experiment stacks
+- InferenceX remains the public reference.
+- ISB-1 remains the benchmark standard in this repo.
+- InferScope remains the operator layer.
 
-## Workload classes to keep shipping
+## Current bridge workloads
 
-- coding long-context
-- enterprise tool-agent
-- medical and legal RAG
-- mixed neo-cloud traffic
-- chat and reasoning workloads
+The immediate bridge workloads are:
 
-## Measurement priorities
+- `tool-agent`
+- `coding-long-context`
 
-- TTFT and end-to-end latency
-- throughput and queue depth
-- KV cache pressure and preemptions
-- prefix cache hit rate
-- before/after artifact comparison for rollout review
+These are high-leverage because they reflect the kinds of workloads operators actually need to validate when using an MCP or coding-focused deployment.
 
-## Validation philosophy
+## Donor benchmark basis
 
-Each claim InferScope makes should be testable with:
+The local `inferscope-bench/` tree contributes workload and replay ideas. Those ideas should be absorbed into InferScope's packaged benchmark subsystem rather than maintained as a separate public product.
 
-1. a baseline engine configuration
-2. an InferScope-generated configuration
-3. a workload pack that reflects a real usage pattern
-4. saved artifacts plus metrics snapshots for later review
+## Near-term priorities
 
-## Future extraction goal
-
-If the benchmark subsystem becomes its own repo later, the extraction target should preserve the current contract:
-
-- packaged built-ins remain authoritative
-- core optimization remains an inward dependency
-- runtime artifacts stay outside the source tree
-- CLI and MCP call patterns stay stable
+1. keep the packaged workload catalog self-contained
+2. support procedural materialization for bridge workloads
+3. preserve stable `WorkloadPack` and `BenchmarkArtifact` contracts
+4. make CLI and MCP benchmark surfaces symmetric
+5. keep benchmark artifacts easy to review and compare

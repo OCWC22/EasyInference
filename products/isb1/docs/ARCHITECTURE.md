@@ -1,344 +1,141 @@
 # ISB-1 Technical Architecture
 
-This document describes the internal architecture of the ISB-1 benchmark system: module dependencies, data flow, and the execution lifecycle.
+This document describes the current product architecture for ISB-1 as implemented in `products/isb1/`.
 
----
+## Design intent
 
-## Table of Contents
+ISB-1 is the benchmark standard inside EasyInference.
 
-- [Module Overview](#module-overview)
-- [Module Dependencies](#module-dependencies)
-- [Data Flow](#data-flow)
-- [Execution Lifecycle](#execution-lifecycle)
-- [Key Abstractions](#key-abstractions)
-- [Configuration System](#configuration-system)
-- [Telemetry Pipeline](#telemetry-pipeline)
+- It is **not** a public dashboard product.
+- It is **not** intended to replace InferenceX as the external market-wide reference.
+- It **is** the reproducible benchmark layer that EasyInference uses for methodology, publication, and operator review.
 
----
+The current harness implementation launches vLLM and measures it through an internal OpenAI-compatible replay path.
 
-## Module Overview
+## Module layout
 
-ISB-1 is organized into four primary modules and several supporting modules:
-
-| Module | Path | Responsibility |
-|--------|------|---------------|
-| **Workloads** | `workloads/` | Generate deterministic request traces for each workload type |
-| **Harness** | `harness/` | Manage server lifecycle, execute benchmarks, collect data |
-| **Analysis** | `analysis/` | Compute metrics, run statistical tests, generate visualizations |
-| **Quality** | `quality/` | Evaluate output correctness against reference data |
-| **Configs** | `configs/` | Hierarchical YAML configuration for GPUs, models, workloads, sweeps |
-| **Publication** | `publication/` | Jinja2 templates for rendering results into reports |
-| **Scripts** | `scripts/` | One-time setup, dataset download, trace generation |
-
----
-
-## Module Dependencies
-
-```
-                    ┌──────────┐
-                    │  configs  │
-                    └────┬─────┘
-                         │ (loaded by)
-          ┌──────────────┼──────────────┐
-          v              v              v
-   ┌───────────┐  ┌───────────┐  ┌───────────┐
-   │ workloads │  │  harness   │  │  quality   │
-   └─────┬─────┘  └─────┬─────┘  └─────┬─────┘
-         │              │              │
-         │  (traces)    │  (raw data)  │  (quality scores)
-         └──────┬───────┘              │
-                v                      │
-         ┌───────────┐                 │
-         │  analysis  │ <──────────────┘
-         └─────┬─────┘
-               │ (metrics, stats, plots)
-               v
-        ┌─────────────┐
-        │ publication  │
-        └─────────────┘
+```text
+products/isb1/
+├── workloads/
+│   ├── base.py
+│   ├── chat.py
+│   ├── agent.py
+│   ├── rag.py
+│   ├── coding.py
+│   ├── arrivals.py
+│   └── materialize.py
+├── harness/
+│   ├── server.py
+│   ├── replay_client.py
+│   ├── client.py
+│   ├── runner.py
+│   ├── sweep.py
+│   ├── warmup.py
+│   ├── telemetry.py
+│   ├── engine_metrics.py
+│   ├── manifest.py
+│   ├── lockfile.py
+│   └── config_validator.py
+├── analysis/
+├── quality/
+├── configs/
+├── publication/
+├── scripts/
+└── tests/
 ```
 
-### Dependency Details
+## Dependency direction
 
-**workloads** depends on:
-- `numpy` for random number generation and distributions
-- `configs/workloads/*.yaml` for workload parameters
-- `workloads/schemas/*.json` for tool-call schemas (agent workload)
-
-**harness** depends on:
-- `workloads` for loading pre-generated request traces
-- `configs/` for GPU, model, workload, and sweep definitions
-- `vllm` for the inference server and benchmark_serving client
-- `requests` for health-check polling
-- `harness.config_validator.ConfigValidator` for pre-run validation
-
-**analysis** depends on:
-- Raw result data produced by the harness
-- `numpy`, `scipy` for metric computation and statistical tests
-- `matplotlib`, `seaborn`, `plotly` for visualization
-
-**quality** depends on:
-- `rouge-score` for ROUGE-L evaluation
-- `lm-eval` and `human-eval` (optional, for HumanEval and MMLU-Pro)
-- Reference output data in `quality/reference_outputs/`
-
-**publication** depends on:
-- `jinja2` for template rendering
-- Aggregated metrics and figures from the analysis module
-
----
-
-## Data Flow
-
-### Phase 1: Trace Generation (Offline)
-
-```
-configs/workloads/*.yaml
-        │
-        v
-workloads.chat.ChatWorkloadGenerator
-workloads.agent.AgentTraceGenerator
-workloads.arrivals.PoissonArrival / GammaArrival
-        │
-        v
-    traces/*.jsonl   (deterministic, seed-controlled)
+```text
+configs ──┬──> workloads ───────┐
+          ├──> harness ─────────┼──> analysis ──> publication
+          └──> quality ─────────┘
 ```
 
-Each workload generator reads its configuration, uses a seeded random number generator (`numpy.random.default_rng`), and writes a JSONL file where each line is a `Request` object serialized as JSON. Traces include messages in OpenAI chat-completion format, expected output token counts, session IDs, and metadata.
+Key rules:
 
-### Phase 2: Benchmark Execution (Online)
+- `workloads/` owns canonical request generation.
+- `harness/` owns execution, trace persistence, replay, manifests, and lockfiles.
+- `analysis/` consumes raw results; it does not launch workloads.
+- `publication/` consumes aggregated outputs; it does not compute primary metrics.
 
-```
-configs/sweep/core.yaml
-        │
-        v
-harness.config_validator.ConfigValidator
-        │ (validates)
-        v
-harness.sweep.SweepOrchestrator
-        │
-        ├── for each cell in matrix:
-        │       │
-        │       v
-        │   harness.lockfile.LockfileGenerator  ──> lockfiles/*.json
-        │       │
-        │       v
-        │   harness.server.VLLMServer
-        │       │ .start() -> wait for /health 200
-        │       │
-        │       v
-        │   harness.warmup.WarmupValidator
-        │       │ (sends warmup requests, validates steady-state)
-        │       │
-        │       v
-        │   harness.runner.BenchmarkRunner
-        │       │
-        │       ├── harness.client.BenchmarkClient.run(rate)
-        │       │       │ (calls vllm benchmark_serving.py)
-        │       │       v
-        │       │   results/raw/<run_id>.json
-        │       │
-        │       ├── harness.telemetry.TelemetryCollector
-        │       │       │ (GPU power, thermal, memory)
-        │       │       v
-        │       │   telemetry data (in-memory or file)
-        │       │
-        │       └── harness.engine_metrics.EngineMetricsCollector
-        │               │ (scrapes /metrics endpoint)
-        │               v
-        │           engine metrics data
-        │
-        │       v
-        │   harness.manifest.RunManifest  ──> results/raw/<run_id>/manifest.json
-        │       │
-        │       v
-        │   harness.server.VLLMServer.stop()
-        │
-        └── (next cell)
-```
+## Execution lifecycle
 
-### Phase 3: Analysis (Offline)
+A single benchmark cell runs through the following lifecycle.
 
-```
-results/raw/*.json
-        │
-        v
-analysis.metrics.MetricComputer
-        │ (computes CellMetrics for each cell)
-        v
-results/aggregated/*.json, *.csv
-        │
-        ├── analysis.statistical.paired_ttest()
-        │       (Mode A vs Mode B comparisons)
-        │
-        ├── analysis.statistical.bootstrap_ci()
-        │       (confidence intervals on metrics)
-        │
-        ├── analysis.statistical.coefficient_of_variation()
-        │       (trial stability checks)
-        │
-        ├── analysis.claim_evaluator
-        │       v
-        │   results/claims/*.json
-        │
-        ├── analysis.leaderboard
-        │       v
-        │   results/leaderboard/*.json
-        │
-        └── analysis.plots.*
-                v
-            publication/figures/*.png, *.html
-```
+### 1. Configuration resolution
 
-### Phase 4: Publication (Offline)
+`harness.runner.BenchmarkRunner` loads GPU, model, and workload config, checks memory fit, resolves topology defaults, and constructs a `CellConfig`.
 
-```
-results/aggregated/     ─┐
-results/claims/         ─┤
-results/leaderboard/    ─┤
-publication/figures/    ─┤
-                         v
-            jinja2 template rendering
-                         │
-                         v
-            publication/output/
-                ├── whitepaper.md
-                ├── blog_post.md
-                └── claim_report.md
-```
+### 2. Trace materialization
 
----
+`workloads.materialize.materialize_requests()` builds a deterministic request pool from the workload config.
 
-## Execution Lifecycle
+Important properties:
 
-### Single Cell Execution
+- trace size comes from `trace.num_requests` unless overridden
+- request content is deterministic under the configured seed
+- the request pool is saved as `trace.jsonl` in the run directory
+- the trace SHA-256 is recorded in the manifest and lockfile
 
-The `BenchmarkRunner` manages the lifecycle of a single cell execution:
+### 3. Server startup
 
-1. **Configuration resolution.** Load GPU, model, and workload configs. Resolve tensor parallelism, quantization, and memory settings.
+`harness.server.VLLMServer` launches the serving stack for the cell and waits for a healthy endpoint.
 
-2. **Lockfile generation.** `LockfileGenerator` captures vLLM version, CUDA version, PyTorch version, nvidia-smi output, NVLink topology, pip freeze, config file hashes, model revision, and random seeds.
+### 4. Warmup
 
-3. **Server startup.** `VLLMServer.start()` spawns a `vllm serve` process, then polls the `/health` endpoint every 5 seconds until it returns HTTP 200, or until the 600-second startup timeout expires.
+`harness.warmup.WarmupValidator` validates that the serving stack reaches a stable state before the benchmark sweep proceeds.
 
-4. **Warmup.** `WarmupValidator` sends warmup requests and monitors throughput variance across sliding windows. Steady-state is declared when CV drops below 20%. Up to 3 extensions are allowed.
+### 5. Replay execution
 
-5. **Measurement.** For each rate in the workload's rate sweep:
-   - `BenchmarkClient.run()` invokes `vllm.benchmarks.benchmark_serving` with the configured parameters.
-   - `TelemetryCollector` samples GPU power/thermal readings in a background thread.
-   - `EngineMetricsCollector` scrapes the `/metrics` Prometheus endpoint.
-   - Results are written as JSON to `results/raw/`.
+`harness.client.BenchmarkClient` wraps the internal replay runner in `harness.replay_client`.
 
-6. **Manifest.** `RunManifest` records run identity, timestamps, hardware, model, workload, mode, quantization, trial number, request counts, duration, and status.
+The replay runner:
 
-7. **Shutdown.** `VLLMServer.stop()` sends SIGTERM to the process group, waits up to 30 seconds for graceful shutdown, then sends SIGKILL if necessary.
+- sends OpenAI-compatible `/v1/chat/completions` requests
+- supports Poisson and Gamma arrival models
+- expands the saved request pool to cover the target measurement window
+- records TTFT, token timestamps, E2E latency, errors, and token counts
+- resolves request-specific SLO thresholds where needed
 
-8. **Cooldown.** 30 seconds between consecutive rate points.
+This is the main architectural change from the older design: ISB-1 no longer shells out to `vllm.benchmarks.benchmark_serving`.
 
-### Sweep Orchestration
+### 6. Telemetry collection
 
-The `SweepOrchestrator` iterates the full cross-product of the sweep matrix:
+During replay, ISB-1 can collect:
 
-```
-for gpu in gpus:
-  for model in models:
-    for workload in workloads:
-      for mode in modes:
-        for quantization in quantizations:
-          for trial in range(num_trials):
-            run_cell(gpu, model, workload, mode, quantization, trial)
-```
+- GPU telemetry
+- engine metrics from the Prometheus endpoint
+- manifest metadata for the run
 
-After each trial completes, the orchestrator checks the CV threshold. If the CV of the primary metric across completed trials exceeds 10%, additional trials are scheduled up to the maximum.
+### 7. Aggregation and publication
 
----
+`analysis.metrics.MetricComputer` converts raw replay output into benchmark metrics such as TTFT, TPOT, ITL, throughput, goodput, and SLO attainment. Publication templates then consume those aggregated outputs.
 
-## Key Abstractions
+## Canonical workload families
 
-### Request (workloads.base)
+ISB-1 intentionally keeps a stable public taxonomy:
 
-An immutable dataclass representing a single inference request in OpenAI chat-completion format. Fields: `request_id`, `messages`, `expected_output_tokens`, `session_id`, `metadata`.
+- `chat`
+- `agent`
+- `rag`
+- `coding`
 
-### WorkloadGenerator (workloads.base)
+These families are broad enough to absorb more specific scenarios without fragmenting the benchmark.
 
-Abstract base class for all workload trace generators. Subclasses implement `generate(num_requests)` to produce a list of `Request` objects. The base class provides JSONL persistence via `save()` and `load()`.
+Examples:
 
-### CellConfig / RunResult (harness.runner)
+- MCP and tool-calling scenarios belong to the **agent** family.
+- Long-context repository review belongs to the **coding** family.
 
-`CellConfig` encapsulates all parameters for a single benchmark cell. `RunResult` wraps the outcome including the result file path, manifest, and any errors.
+## Relationship to InferScope
 
-### CellMetrics (analysis.metrics)
+InferScope is the operator-facing product that packages benchmark assets for CLI and MCP use.
 
-A dataclass holding all computed metrics for a single cell: latency percentiles (TTFT, TPOT, ITL, E2E), throughput, goodput, SLO attainment, engine metrics, power metrics, and error rates.
+The bridge works like this:
 
-### MetricComputer (analysis.metrics)
+1. ISB-1 defines the neutral benchmark families and replay methodology.
+2. InferScope packages practical built-ins such as `tool-agent` and `coding-long-context`.
+3. Those built-ins map back to the canonical ISB-1 families.
 
-Computes `CellMetrics` from raw per-request latency data, engine metric time-series, and GPU telemetry data. Enforces the invariant that TTFT is excluded from TPOT and ITL.
-
-### RunManifest (harness.manifest)
-
-An immutable metadata record for a single benchmark run. Serializable to/from JSON. Captures run identity, hardware, model, parameters, timing, and outcome status.
-
-### LockfileGenerator (harness.lockfile)
-
-Captures the complete software, hardware, and configuration state for reproducibility. Collects vLLM version, CUDA version, PyTorch version, nvidia-smi output, pip freeze, config file hashes, and model revision.
-
-### ValidationResult (harness.config_validator)
-
-Aggregated result of a configuration validation pass. Contains a list of errors and warnings with a boolean `ok` property.
-
----
-
-## Configuration System
-
-ISB-1 uses a hierarchical YAML configuration system:
-
-```
-configs/
-├── gpus/          # Hardware definitions (one file per GPU)
-├── models/        # Model specs with min GPU requirements and topologies
-├── workloads/     # Workload parameters, arrival models, SLO gates
-├── quality/       # Quality evaluation settings
-└── sweep/         # Matrix definitions combining GPUs x models x workloads x modes
-```
-
-The `ConfigValidator` class loads, caches, and cross-validates configs. Key cross-validations:
-
-- **Memory fit:** Estimates model VRAM at the requested quantization (using bytes-per-parameter lookup) and compares against available HBM with a 25% KV cache overhead factor.
-- **Quantization support:** Verifies the GPU's `fp_formats` list includes the requested format.
-- **Min GPU count:** Checks the model's `min_gpus` table against the cell's GPU count.
-
----
-
-## Telemetry Pipeline
-
-ISB-1 collects three categories of telemetry during benchmark execution:
-
-### GPU Telemetry (harness.telemetry)
-
-Collected via `nvidia-smi` or NVML:
-- Power draw (watts)
-- GPU temperature
-- Memory utilization
-- GPU utilization
-
-Sampled at regular intervals during measurement. Used to compute `avg_power_watts` and `watts_per_token`.
-
-### Engine Metrics (harness.engine_metrics)
-
-Scraped from vLLM's Prometheus `/metrics` endpoint:
-- `kv_cache_utilization` -- fraction of KV cache memory in use
-- `prefix_cache_hit_rate` -- fraction of prefix cache hits
-- `preemptions` -- cumulative preemption count
-- `queue_depth` -- number of requests waiting to be scheduled
-
-### Client Metrics (harness.client)
-
-Collected by `benchmark_serving.py` per request:
-- `ttft` -- time to first token
-- `e2e_latency` -- end-to-end latency
-- `output_tokens` -- number of output tokens
-- `token_timestamps` -- per-token arrival timestamps (when available)
-- `error` -- whether the request failed
-
-All telemetry streams are time-aligned and passed to `MetricComputer` for aggregation.
+This keeps the benchmark standard stable while letting the MCP surface evolve faster.

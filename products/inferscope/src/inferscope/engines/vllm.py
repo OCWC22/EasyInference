@@ -101,8 +101,7 @@ class VLLMCompiler(ConfigCompiler):
                 )
             if profile.cache.gpu_memory_utilization >= 0.95:
                 cfg.notes.append(
-                    "gpu_memory_utilization=0.95: safe on Hopper HBM3/HBM3e "
-                    "(stable thermal envelope at 700W TDP)"
+                    "gpu_memory_utilization=0.95: safe on Hopper HBM3/HBM3e (stable thermal envelope at 700W TDP)"
                 )
         elif is_hopper_pcie:
             cfg.warnings.append(
@@ -127,14 +126,9 @@ class VLLMCompiler(ConfigCompiler):
                     "via NVLink-C2C @ 900 GB/s — ~7x faster than PCIe Gen5 offloading"
                 )
             if inventory.fp4_support:
-                cfg.notes.append(
-                    "NVFP4 native: --quantization nvfp4 for 2x throughput vs FP8 at <1% accuracy loss"
-                )
+                cfg.notes.append("NVFP4 native: --quantization nvfp4 for 2x throughput vs FP8 at <1% accuracy loss")
             if profile.cache.gpu_memory_utilization >= 0.95:
-                cfg.notes.append(
-                    "gpu_memory_utilization=0.95: safe on Blackwell HBM3e "
-                    "(stable thermal envelope)"
-                )
+                cfg.notes.append("gpu_memory_utilization=0.95: safe on Blackwell HBM3e (stable thermal envelope)")
 
         # --- Speculative decoding ---
         if profile.speculation.mode != "off" and profile.speculation.method:
@@ -164,28 +158,20 @@ class VLLMCompiler(ConfigCompiler):
             # MI300X Bottleneck Fixes
             cfg.cli_flags["enable-chunked-prefill"] = profile.scheduler.chunked_prefill
             if not profile.scheduler.chunked_prefill:
-                cfg.notes.append(
-                    "Chunked prefill disabled: reduces TTFT for long-context "
-                    "(med tech/coding) on MI300X."
-                )
+                cfg.notes.append("Chunked prefill disabled: reduces TTFT for long-context (med tech/coding) on MI300X.")
             cfg.warnings.append(
-                "CRITICAL: Ensure `sysctl -w kernel.numa_balancing=0` is set on the host "
-                "to prevent GPU hangs."
+                "CRITICAL: Ensure `sysctl -w kernel.numa_balancing=0` is set on the host to prevent GPU hangs."
             )
 
             if cfg.cli_flags.get("quantization") == "fp8":
                 cfg.warnings.append(
-                    "FP8 inference on MI300X MoE is currently slower than BF16 due to "
-                    "ROCm regressions."
+                    "FP8 inference on MI300X MoE is currently slower than BF16 due to ROCm regressions."
                 )
-            if (
-                profile.topology.tp > 1
-                and profile.model_class
-                not in (ModelClass.FRONTIER_DENSE, ModelClass.FRONTIER_MLA_MOE)
+            if profile.topology.tp > 1 and profile.model_class not in (
+                ModelClass.FRONTIER_DENSE,
+                ModelClass.FRONTIER_MLA_MOE,
             ):
-                cfg.warnings.append(
-                    "High TP on small models (<40B) via RCCL is slower than TP=1 replicas on AMD."
-                )
+                cfg.warnings.append("High TP on small models (<40B) via RCCL is slower than TP=1 replicas on AMD.")
 
             if inventory.gpu_arch == "gfx942":
                 cfg.env_vars["VLLM_ROCM_USE_AITER_FP8BMM"] = "0"
@@ -294,16 +280,12 @@ class VLLMCompiler(ConfigCompiler):
             ModelClass.CLASSICAL_MOE,
         ):
             cfg.cli_flags["enable-moe-dense-overlap"] = True
-            cfg.notes.append(
-                "MoE comm/compute overlap — dispatch/combine overlaps with expert/attention execution"
-            )
+            cfg.notes.append("MoE comm/compute overlap — dispatch/combine overlaps with expert/attention execution")
 
         # --- Expert Parallel Load Balancing / EPLB (GTC 2026) ---
         if profile.topology.enable_eplb and profile.topology.ep > 1:
             cfg.cli_flags["enable-eplb"] = True
-            cfg.notes.append(
-                "EPLB enabled — hot experts replicated across EP ranks for load balancing"
-            )
+            cfg.notes.append("EPLB enabled — hot experts replicated across EP ranks for load balancing")
 
         # --- Hybrid Memory Allocator (GTC 2026) ---
         if profile.cache.hybrid_block_sizes:
@@ -315,13 +297,9 @@ class VLLMCompiler(ConfigCompiler):
 
         # --- Attention Kernel Fusion Notes (GTC 2026) ---
         if inventory.gpu_arch in ("sm_100", "sm_103"):
-            cfg.notes.append(
-                "Blackwell: FlashAttention-4 with aggressive RoPE+KV cache fusion (4.5x speedup)"
-            )
+            cfg.notes.append("Blackwell: FlashAttention-4 with aggressive RoPE+KV cache fusion (4.5x speedup)")
         elif inventory.gpu_arch == "sm_90a":
-            cfg.notes.append(
-                "Hopper: FlashAttention-2/3 auto-selected — RoPE+KV cache fusion available"
-            )
+            cfg.notes.append("Hopper: FlashAttention-2/3 auto-selected — RoPE+KV cache fusion available")
 
         # --- Qwen3.5 Hybrid Attention (GTC 2026) ---
         if profile.model_class == ModelClass.QWEN35_HYBRID:

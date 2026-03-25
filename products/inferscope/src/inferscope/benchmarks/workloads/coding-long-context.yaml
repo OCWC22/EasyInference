@@ -1,6 +1,6 @@
 version: "1"
 name: coding-long-context
-description: Cursor-style multi-turn coding workload with repeated repo context.
+description: Long-context repository coding workload focused on large codebase review, cache reuse, and patch planning.
 workload_class: coding
 model: Qwen3.5-32B
 concurrency: 2
@@ -8,24 +8,44 @@ stream: true
 tags:
   - coding
   - long-context
+  - benchmark-bridge
 requests:
   - name: repo-review-seed
     session_id: coding-session-1
-    max_tokens: 256
+    max_tokens: 320
     messages:
       - role: system
-        content: You are a coding agent. Prefer precise diffs and short rationale.
+        content: |
+          You are an inference optimization engineer. Prefer precise diffs and short rationale.
+
+          # === CODEBASE START ===
+          src/server.py: benchmark entrypoints and replay orchestration
+          src/cache.py: KV cache planner and allocator
+          src/telemetry.py: latency and power collection
+          # === CODEBASE END ===
       - role: user
         content: |
-          Review a Python service with telemetry, CLI, and benchmark modules.
-          Identify the most likely bottleneck in a long-context code review flow.
+          Review the repository context and identify the first implementation change needed to reduce
+          long-context TTFT without hurting cache reuse.
   - name: follow-up-fix-plan
     session_id: coding-session-1
-    max_tokens: 384
+    max_tokens: 420
     messages:
       - role: system
-        content: You are a coding agent. Prefer precise diffs and short rationale.
+        content: |
+          You are an inference optimization engineer. Prefer precise diffs and short rationale.
+
+          # === CODEBASE START ===
+          src/server.py: benchmark entrypoints and replay orchestration
+          src/cache.py: KV cache planner and allocator
+          src/telemetry.py: latency and power collection
+          # === CODEBASE END ===
       - role: user
         content: |
-          Given the same repository context, propose a minimal patch plan to reduce
-          TTFT and preserve prefix cache reuse across tool calls.
+          Review the repository context and identify the first implementation change needed to reduce
+          long-context TTFT without hurting cache reuse.
+      - role: assistant
+        content: The main bottleneck is prefill pressure across the shared repo context.
+      - role: user
+        content: |
+          Given the same repository context, produce the minimal patch plan and validation sequence.
