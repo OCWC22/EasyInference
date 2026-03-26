@@ -44,6 +44,7 @@ from inferscope.benchmarks.models import (
     WorkloadRequest,
 )
 from inferscope.benchmarks.openai_replay import build_default_artifact_path, run_openai_replay
+from inferscope.benchmarks.datasets import DatasetLoadOptions, load_trace_dataset
 from inferscope.benchmarks.procedural import ProceduralWorkloadOptions
 from inferscope.benchmarks.prometheus_capture import capture_endpoint_snapshot, capture_metrics_targets
 from inferscope.benchmarks.strategy import plan_benchmark_strategy, plan_benchmark_strategy_with_runtime
@@ -66,6 +67,7 @@ __all__ = [
     "BenchmarkSupportIssue",
     "BenchmarkSupportProfile",
     "BenchmarkTopologyMetadata",
+    "DatasetLoadOptions",
     "GeneratedFile",
     "LaunchComponent",
     "MaterializedBenchmarkStack",
@@ -93,6 +95,7 @@ __all__ = [
     "list_builtin_workloads",
     "load_benchmark_artifact",
     "load_experiment",
+    "load_trace_dataset",
     "load_workload",
     "materialize_workload",
     "parse_metrics_target_overrides",
