@@ -379,7 +379,63 @@ _register(
     )
 )
 
-# --- Llama 3 family (Dense GQA) ---
+# --- Qwen 2.5 family (Dense GQA) ---
+
+_register(
+    ModelVariant(
+        name="Qwen2.5-7B-Instruct",
+        family="Qwen 2.5",
+        model_class=ModelClass.DENSE_GQA,
+        params_total_b=7,
+        params_active_b=7,
+        model_type="dense",
+        context_length=131072,
+        attention_type="GQA",
+        kv_heads=4,
+        head_dim=128,
+        layers=28,
+        vocab_size=152064,
+        serving={"tp_fp16": 1, "tp_fp8": 1},
+    )
+)
+
+_register(
+    ModelVariant(
+        name="Qwen2.5-32B-Instruct",
+        family="Qwen 2.5",
+        model_class=ModelClass.DENSE_GQA,
+        params_total_b=32,
+        params_active_b=32,
+        model_type="dense",
+        context_length=131072,
+        attention_type="GQA",
+        kv_heads=8,
+        head_dim=128,
+        layers=64,
+        vocab_size=152064,
+        serving={"tp_fp8": 1, "tp_bf16": 2},
+    )
+)
+
+_register(
+    ModelVariant(
+        name="Qwen2.5-72B-Instruct",
+        family="Qwen 2.5",
+        model_class=ModelClass.DENSE_GQA,
+        params_total_b=72,
+        params_active_b=72,
+        model_type="dense",
+        context_length=131072,
+        attention_type="GQA",
+        kv_heads=8,
+        head_dim=128,
+        layers=80,
+        vocab_size=152064,
+        serving={"tp_fp8": 2, "tp_bf16": 4},
+    )
+)
+
+# --- Llama 3/3.3/4 family (Dense GQA) ---
 
 _register(
     ModelVariant(
@@ -412,6 +468,61 @@ _register(
         head_dim=128,
         layers=80,
         serving={"tp_fp8_h200": 1, "tp_fp8_h100": 2, "tp_fp16": 4},
+    )
+)
+
+_register(
+    ModelVariant(
+        name="Llama-3.3-70B-Instruct",
+        family="Llama 3.3",
+        model_class=ModelClass.DENSE_GQA,
+        params_total_b=70,
+        params_active_b=70,
+        model_type="dense",
+        context_length=131072,
+        attention_type="GQA",
+        kv_heads=8,
+        head_dim=128,
+        layers=80,
+        serving={"tp_fp8_h200": 1, "tp_fp8_h100": 2, "tp_fp16": 4},
+    )
+)
+
+_register(
+    ModelVariant(
+        name="Llama-4-Maverick",
+        family="Llama 4",
+        model_class=ModelClass.CLASSICAL_MOE,
+        params_total_b=400,
+        params_active_b=17,
+        model_type="moe",
+        context_length=1048576,
+        attention_type="GQA",
+        kv_heads=8,
+        head_dim=128,
+        layers=48,
+        experts_total=128,
+        experts_active=1,
+        serving={"tp_fp8": 4, "tp_bf16": 8, "note": "Natively multimodal, interleaved attention"},
+    )
+)
+
+_register(
+    ModelVariant(
+        name="Llama-4-Scout",
+        family="Llama 4",
+        model_class=ModelClass.CLASSICAL_MOE,
+        params_total_b=109,
+        params_active_b=17,
+        model_type="moe",
+        context_length=524288,
+        attention_type="GQA",
+        kv_heads=8,
+        head_dim=128,
+        layers=48,
+        experts_total=16,
+        experts_active=1,
+        serving={"tp_fp8": 1, "tp_bf16": 2, "note": "Natively multimodal, interleaved attention"},
     )
 )
 

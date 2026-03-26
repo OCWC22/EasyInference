@@ -167,9 +167,13 @@ def assess_benchmark_support(
     elif model_variant is None:
         _append_issue(
             issues,
-            severity="error",
+            severity="warning",
             code="unknown_model",
-            message=f"Unknown model '{model_name}'.",
+            message=(
+                f"Model '{model_name}' is not in the InferScope registry. "
+                "Benchmark will proceed but GPU/context/architecture checks are skipped. "
+                "This does not affect measurement accuracy."
+            ),
             component="model",
         )
 

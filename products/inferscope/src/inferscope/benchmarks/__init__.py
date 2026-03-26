@@ -44,6 +44,7 @@ from inferscope.benchmarks.models import (
     WorkloadRequest,
 )
 from inferscope.benchmarks.openai_replay import build_default_artifact_path, run_openai_replay
+from inferscope.benchmarks.runtime import BenchmarkConnectionError
 from inferscope.benchmarks.datasets import DatasetLoadOptions, load_trace_dataset
 from inferscope.benchmarks.procedural import ProceduralWorkloadOptions
 from inferscope.benchmarks.prometheus_capture import capture_endpoint_snapshot, capture_metrics_targets
@@ -55,6 +56,7 @@ from inferscope.benchmarks.support import (
 )
 
 __all__ = [
+    "BenchmarkConnectionError",
     "BenchmarkArtifact",
     "BenchmarkCacheMetadata",
     "BenchmarkExecutionProfile",
