@@ -263,7 +263,32 @@ _register(
     )
 )
 
-# --- Kimi K2.5 (Frontier MLA MoE) ---
+# --- Kimi K2 / K2.5 (Frontier MLA MoE) ---
+
+_register(
+    ModelVariant(
+        name="Kimi-K2",
+        family="Kimi K2/K2.5",
+        model_class=ModelClass.FRONTIER_MLA_MOE,
+        params_total_b=1000,
+        params_active_b=32,
+        model_type="moe",
+        context_length=128000,
+        attention_type="MLA",
+        kv_heads=64,
+        head_dim=192,
+        layers=61,
+        experts_total=384,
+        experts_active=8,
+        vocab_size=160000,
+        serving={
+            "vllm_flags": "--trust-remote-code --enforce-eager",
+            "tp_min": 4,
+            "tp_fp8": 4,
+            "tp_bf16": 8,
+        },
+    )
+)
 
 _register(
     ModelVariant(
@@ -292,7 +317,29 @@ _register(
     )
 )
 
-# --- GLM family ---
+# --- GLM family (Zhipu AI / THUDM) ---
+
+_register(
+    ModelVariant(
+        name="GLM-4-9B",
+        family="GLM",
+        model_class=ModelClass.DENSE_GQA,
+        params_total_b=9,
+        params_active_b=9,
+        model_type="dense",
+        context_length=131072,
+        attention_type="GQA",
+        kv_heads=2,
+        head_dim=128,
+        layers=40,
+        vocab_size=151552,
+        serving={
+            "vllm_flags": "--trust-remote-code",
+            "tp_fp16": 1,
+            "tp_fp8": 1,
+        },
+    )
+)
 
 _register(
     ModelVariant(
@@ -312,6 +359,34 @@ _register(
             "vllm_flags": "--trust-remote-code",
             "mtp_speculative": "--speculative-config.method mtp --speculative-config.num_speculative_tokens 1",
             "mtp_acceptance_rate": ">90%",
+            "tp_fp8": 4,
+            "tp_bf16": 8,
+        },
+    )
+)
+
+_register(
+    ModelVariant(
+        name="GLM-5",
+        family="GLM",
+        model_class=ModelClass.FRONTIER_MLA_MOE,
+        params_total_b=400,
+        params_active_b=52,
+        model_type="moe",
+        context_length=1048576,
+        attention_type="GQA",
+        kv_heads=8,
+        head_dim=128,
+        layers=64,
+        experts_total=192,
+        experts_active=8,
+        vocab_size=151552,
+        serving={
+            "vllm_flags": "--trust-remote-code",
+            "mtp_speculative": "--speculative-config.method mtp --speculative-config.num_speculative_tokens 1",
+            "tp_fp8": 4,
+            "tp_bf16": 8,
+            "ep_recommended": True,
         },
     )
 )

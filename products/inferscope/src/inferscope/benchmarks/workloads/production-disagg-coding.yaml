@@ -1,0 +1,311 @@
+version: "1"
+name: production-disagg-coding
+description: Production-realistic disaggregated serving workload with real code review content. Designed for prefill/decode split benchmarks with LMCache or NIXL KV transfer.
+workload_class: coding
+benchmark_role: topology_probe
+target_gpu_families: [hopper, hopper_grace, blackwell, blackwell_ultra, blackwell_grace, blackwell_ultra_grace]
+target_model_classes: [dense_gqa, qwen35_hybrid, frontier_mla_moe, compact_agentic_moe]
+focus_areas: [disaggregation, kv_transfer, ttft, prefix_cache, long_context]
+concurrency: 4
+stream: true
+tags:
+  - disaggregated
+  - ttft
+  - prefix-cache
+  - production
+  - hydration:hydrated
+requests:
+  # Session 1: Code review with shared prefix (tests prefix cache hit on decode worker)
+  - name: code-review-initial
+    session_id: review-session-1
+    max_tokens: 512
+    messages:
+      - role: system
+        content: |
+          You are a senior software engineer conducting a thorough code review.
+          Focus on correctness, performance, and security issues.
+          Be specific — reference line numbers and suggest concrete fixes.
+      - role: user
+        content: |
+          Review this Python module that implements an async HTTP benchmark runtime:
+
+          ```python
+          import asyncio
+          import time
+          import json
+          import math
+          from dataclasses import dataclass
+          from typing import Any, Literal
+          from uuid import uuid4
+          import httpx
+
+          @dataclass(slots=True)
+          class RequestResult:
+              name: str
+              session_id: str | None
+              status: Literal["ok", "error"]
+              started_at: str
+              completed_at: str
+              elapsed_ms: float
+              ttft_ms: float | None
+              status_code: int | None
+              prompt_tokens: int | None
+              completion_tokens: int | None
+              total_tokens: int | None
+              error: str = ""
+
+          def percentile(values: list[float], p: float) -> float | None:
+              if not values:
+                  return None
+              ordered = sorted(values)
+              rank = (len(ordered) - 1) * p
+              lower = math.floor(rank)
+              upper = math.ceil(rank)
+              if lower == upper:
+                  return ordered[lower]
+              fraction = rank - lower
+              return ordered[lower] + (ordered[upper] - ordered[lower]) * fraction
+
+          async def run_request(
+              client: httpx.AsyncClient,
+              endpoint: str,
+              payload: dict[str, Any],
+              headers: dict[str, str],
+              timeout_seconds: int = 120,
+          ) -> RequestResult:
+              started_at = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+              started_mono = time.monotonic()
+              ttft_ms = None
+              generated = []
+
+              try:
+                  async with client.stream("POST", endpoint, json=payload, headers=headers) as resp:
+                      resp.raise_for_status()
+                      async for line in resp.aiter_lines():
+                          line = line.strip()
+                          if not line or not line.startswith("data:"):
+                              continue
+                          data = line[5:].strip()
+                          if data == "[DONE]":
+                              break
+                          event = json.loads(data)
+                          content = event.get("choices", [{}])[0].get("delta", {}).get("content")
+                          if content:
+                              if ttft_ms is None:
+                                  ttft_ms = (time.monotonic() - started_mono) * 1000
+                              generated.append(content)
+
+                  elapsed = (time.monotonic() - started_mono) * 1000
+                  return RequestResult(
+                      name=payload.get("model", "unknown"),
+                      session_id=headers.get("X-Session-ID"),
+                      status="ok",
+                      started_at=started_at,
+                      completed_at=time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+                      elapsed_ms=elapsed,
+                      ttft_ms=ttft_ms,
+                      status_code=resp.status_code,
+                      prompt_tokens=None,
+                      completion_tokens=len(generated),
+                      total_tokens=None,
+                  )
+              except Exception as exc:
+                  elapsed = (time.monotonic() - started_mono) * 1000
+                  return RequestResult(
+                      name=payload.get("model", "unknown"),
+                      session_id=headers.get("X-Session-ID"),
+                      status="error",
+                      started_at=started_at,
+                      completed_at=time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+                      elapsed_ms=elapsed,
+                      ttft_ms=None,
+                      status_code=None,
+                      prompt_tokens=None,
+                      completion_tokens=None,
+                      total_tokens=None,
+                      error=str(exc),
+                  )
+
+          async def run_benchmark(
+              endpoint: str,
+              payloads: list[dict[str, Any]],
+              concurrency: int = 8,
+              headers: dict[str, str] | None = None,
+          ) -> list[RequestResult]:
+              sem = asyncio.Semaphore(concurrency)
+              hdrs = headers or {"Content-Type": "application/json"}
+
+              async def bounded(p):
+                  async with sem:
+                      async with httpx.AsyncClient(timeout=300) as client:
+                          return await run_request(client, endpoint, p, hdrs)
+
+              return await asyncio.gather(*(bounded(p) for p in payloads))
+          ```
+
+          Key concerns:
+          1. Are there any race conditions or resource leaks?
+          2. Is the error handling sufficient for production use?
+          3. What happens under high concurrency (1000+ requests)?
+
+  - name: code-review-followup
+    session_id: review-session-1
+    max_tokens: 512
+    messages:
+      - role: system
+        content: |
+          You are a senior software engineer conducting a thorough code review.
+          Focus on correctness, performance, and security issues.
+          Be specific — reference line numbers and suggest concrete fixes.
+      - role: user
+        content: |
+          Review this Python module that implements an async HTTP benchmark runtime:
+          [same code as above — tests prefix cache reuse on the shared system prompt + code block]
+      - role: assistant
+        content: |
+          The code has several issues for production use:
+          1. Each request creates a new httpx.AsyncClient — this prevents connection pooling
+          2. No backpressure mechanism beyond the semaphore
+          3. The SSE parsing is fragile — multi-line data events will be dropped
+      - role: user
+        content: |
+          Good observations. Now produce the minimal diff to fix issue #1 (connection pooling).
+          Show the exact code changes needed, nothing else.
+
+  # Session 2: Infrastructure config review (independent session, tests parallel disagg)
+  - name: infra-config-review
+    session_id: infra-session-1
+    max_tokens: 256
+    messages:
+      - role: system
+        content: You are a DevOps engineer reviewing infrastructure configurations for security and reliability.
+      - role: user
+        content: |
+          Review this Kubernetes deployment spec for a vLLM inference server:
+
+          ```yaml
+          apiVersion: apps/v1
+          kind: Deployment
+          metadata:
+            name: vllm-server
+            namespace: inference
+          spec:
+            replicas: 2
+            selector:
+              matchLabels:
+                app: vllm-server
+            template:
+              metadata:
+                labels:
+                  app: vllm-server
+              spec:
+                containers:
+                - name: vllm
+                  image: vllm/vllm-openai:latest
+                  command: ["python", "-m", "vllm.entrypoints.openai.api_server"]
+                  args:
+                    - "--model"
+                    - "meta-llama/Llama-3-70B-Instruct"
+                    - "--tensor-parallel-size"
+                    - "4"
+                    - "--gpu-memory-utilization"
+                    - "0.95"
+                    - "--max-model-len"
+                    - "131072"
+                  resources:
+                    limits:
+                      nvidia.com/gpu: "4"
+                    requests:
+                      nvidia.com/gpu: "4"
+                  ports:
+                    - containerPort: 8000
+                  readinessProbe:
+                    httpGet:
+                      path: /health
+                      port: 8000
+                    initialDelaySeconds: 120
+                    periodSeconds: 10
+                  livenessProbe:
+                    httpGet:
+                      path: /health
+                      port: 8000
+                    initialDelaySeconds: 300
+                    periodSeconds: 30
+                  volumeMounts:
+                    - name: model-cache
+                      mountPath: /root/.cache/huggingface
+                    - name: shm
+                      mountPath: /dev/shm
+                volumes:
+                  - name: model-cache
+                    persistentVolumeClaim:
+                      claimName: model-cache-pvc
+                  - name: shm
+                    emptyDir:
+                      medium: Memory
+                      sizeLimit: 16Gi
+          ```
+
+          What are the top 3 reliability and security concerns?
+
+  # Session 3: Multi-turn debugging (tests session affinity and growing context)
+  - name: debug-turn-1
+    session_id: debug-session-1
+    max_tokens: 384
+    messages:
+      - role: system
+        content: You are a debugging assistant helping trace a production issue with an inference serving stack.
+      - role: user
+        content: |
+          We're seeing intermittent 503 errors from our vLLM disaggregated serving setup.
+          The prefill worker seems healthy but the decode worker occasionally returns 503.
+          Here are the last 20 lines of the decode worker log:
+
+          ```
+          INFO 03-25 14:22:01 async_llm_engine.py:245] Added request req-a1b2c3
+          INFO 03-25 14:22:01 async_llm_engine.py:245] Added request req-d4e5f6
+          WARNING 03-25 14:22:02 scheduler.py:891] Preempting 3 sequences due to KV cache pressure
+          INFO 03-25 14:22:02 async_llm_engine.py:245] Added request req-g7h8i9
+          WARNING 03-25 14:22:03 scheduler.py:891] Preempting 5 sequences due to KV cache pressure
+          ERROR 03-25 14:22:03 engine.py:156] Engine loop failed: CUDA out of memory
+          INFO 03-25 14:22:04 engine.py:162] Engine recovering from error
+          INFO 03-25 14:22:05 async_llm_engine.py:245] Added request req-j0k1l2
+          WARNING 03-25 14:22:06 scheduler.py:891] Preempting 8 sequences due to KV cache pressure
+          ERROR 03-25 14:22:06 api_server.py:342] Request req-j0k1l2 failed: 503 Service Unavailable
+          INFO 03-25 14:22:07 async_llm_engine.py:245] Added request req-m3n4o5
+          WARNING 03-25 14:22:08 scheduler.py:891] Preempting 4 sequences due to KV cache pressure
+          INFO 03-25 14:22:09 metrics.py:112] KV cache usage: 98.7% (blocks: 15823/16024)
+          INFO 03-25 14:22:10 async_llm_engine.py:245] Added request req-p6q7r8
+          WARNING 03-25 14:22:11 scheduler.py:891] Preempting 6 sequences due to KV cache pressure
+          ERROR 03-25 14:22:11 api_server.py:342] Request req-p6q7r8 failed: 503 Service Unavailable
+          INFO 03-25 14:22:12 metrics.py:112] KV cache usage: 99.1% (blocks: 15887/16024)
+          INFO 03-25 14:22:13 async_llm_engine.py:245] Added request req-s9t0u1
+          WARNING 03-25 14:22:14 scheduler.py:891] Preempting 7 sequences due to KV cache pressure
+          ERROR 03-25 14:22:14 api_server.py:342] Request req-s9t0u1 failed: 503 Service Unavailable
+          ```
+
+          What is the root cause, and what are the immediate and long-term fixes?
+
+  - name: debug-turn-2
+    session_id: debug-session-1
+    max_tokens: 384
+    messages:
+      - role: system
+        content: You are a debugging assistant helping trace a production issue with an inference serving stack.
+      - role: user
+        content: "[previous debug context]"
+      - role: assistant
+        content: |
+          Root cause: KV cache exhaustion on the decode worker. At 98.7-99.1% utilization,
+          the scheduler can't allocate blocks for new sequences and is aggressively preempting.
+          Immediate: reduce --gpu-memory-utilization from 0.95 to 0.90, or reduce max concurrent sequences.
+          Long-term: enable FP8 KV cache, add prefix caching, or scale decode workers.
+      - role: user
+        content: |
+          We reduced gpu-memory-utilization to 0.90 and the 503s stopped. But now TTFT degraded
+          from ~200ms to ~800ms. The Prometheus metrics show:
+          - vllm:num_preemptions_total went from 47/min to 2/min
+          - vllm:gpu_cache_usage_perc dropped from 99% to 78%
+          - vllm:avg_prompt_throughput_toks_per_s dropped from 12000 to 4500
+
+          Why did TTFT get worse when we have MORE free KV cache?
