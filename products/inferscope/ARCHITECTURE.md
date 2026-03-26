@@ -118,6 +118,20 @@ It owns:
 
 The key bridge API is `materialize_workload(...)`.
 
+### Dynamo / disaggregated KV cache
+
+Benchmark experiment metadata supports disaggregated prefill/decode topologies with KV cache transfer:
+
+- `cache.strategy: "nixl"` — declares NIXL-based KV transfer between prefill and decode pools
+- `cache.connector: "NixlConnector"` — the production connector for Dynamo-orchestrated deployments
+- `compression: BenchmarkCacheCompressionMetadata` — optional compression overlay (lz4, fp8, kvtc, turboquant, mxfp4, cachegen)
+
+The launcher subsystem generates Dynamo declarative YAML configs, vLLM worker commands for prefill/decode pools, and Smart Router endpoint wiring. Dynamo's KV Block Manager and NIXL handle KV cache transfer automatically via RDMA/NVLink.
+
+Support gating rejects deprecated `remote_backend="simm"` with a clear migration message (`deprecated_remote_backend`). The benchmark strategy layer auto-selects Dynamo lanes for multi-GPU NVIDIA deployments.
+
+Telemetry scrapes vLLM/SGLang worker endpoints for per-engine metrics; Dynamo orchestration-layer metrics (router latency, SLO compliance, KV transfer throughput) come from the Dynamo metrics endpoint.
+
 Behavior:
 
 - built-in workloads can be loaded as static seed packs

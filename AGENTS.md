@@ -25,6 +25,8 @@ This file helps AI coding agents (Claude Code, Codex, Copilot Workspace, etc.) n
 |------|-----------------|
 | Recommendation / optimization / engine logic | `products/inferscope/src/inferscope/optimization/`, `engines/` |
 | Benchmark workloads, replay, artifacts | `products/inferscope/src/inferscope/benchmarks/` |
+| KV cache tools and strategy | `products/inferscope/src/inferscope/tools/kv_cache.py` |
+| Telemetry and engine metrics | `products/inferscope/src/inferscope/telemetry/` |
 | Runtime profiling | `products/inferscope/src/inferscope/profiling/` |
 | GPU / model metadata | `products/inferscope/src/inferscope/hardware/`, `models/` |
 | CLI commands | `products/inferscope/src/inferscope/cli*.py` |
@@ -137,5 +139,8 @@ make all-checks  # runs both products
 - `BenchmarkArtifact` — the standard benchmark output container
 - `ServingProfile` → `ConfigCompiler` → `EngineConfig` — the recommendation pipeline
 - `MetricSnapshot` — shared telemetry schema used by both profiling and benchmarks
+- `BenchmarkCacheMetadata` — cache tier, strategy, remote backend, and compression metadata
+- `BenchmarkCacheCompressionMetadata` — compression algorithm overlay for KV cache experiments
+- `CacheRemoteBackend` — `Literal["unknown", "none", "simm"]` (legacy read-compat; SiMM is deprecated, use Dynamo + NIXL)
 - Packaged workloads: `src/inferscope/benchmarks/workloads/*.yaml`
-- Packaged experiments: `src/inferscope/benchmarks/experiment_specs/*.yaml`
+- Packaged experiments: `src/inferscope/benchmarks/experiment_specs/*.yaml` (14+ specs including 3 Dynamo lanes)

@@ -10,6 +10,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 Validation: [03-runtime-profiling-v1](validations/03-2026-03-25-runtime-profiling-v1.md), [04-hopper-blackwell-hardening](validations/04-2026-03-25-hopper-blackwell-hardening.md)
 
 ### Added
+- **NVIDIA Dynamo 1.0 production support** — first-class engine with disaggregated prefill/decode orchestration, NIXL KV transfer, KV-aware Smart Router, and SLO-driven autoscaling
+- **KV cache compression overlay** — `BenchmarkCacheCompressionMetadata` model supporting lz4, fp8, kvtc, turboquant, mxfp4, and cachegen algorithms
+- 3 Dynamo experiment specs: coding (NIXL), RAG (NIXL), and Grace Blackwell topologies
+- Dynamo disaggregated launcher with Smart Router, vLLM worker prefill/decode pools, and NIXL env wiring
+- Dynamo engine promotion: RECOMMENDED for multi-node NVIDIA, SUPPORTED for single-node
+- TensorRT-LLM promotion from PREVIEW to SUPPORTED tier
+- `remote_backend` field in KV strategy recommendation output (now outputs `"none"` with Dynamo orchestration guidance)
+- 10 new unit tests for `BenchmarkCacheMetadata` validation rules
+
+### Removed
+- 7 SiMM experiment specs (replaced by Dynamo + NIXL lanes)
+- SiMM-specific support gating codes (`simm_requires_rdma`, `simm_rdma_unknown`, `simm_strategy_mismatch`, `simm_requires_remote_cache_tier`) — replaced by `deprecated_remote_backend`
+- SiMM telemetry catalog (14 metrics) — replaced by Dynamo/NIXL orchestration-layer telemetry
+- SiMM engine detection in telemetry normalizer
+- SiMM launcher helpers (`_simm_config_file`, `_lmcache_simm_config_files`)
+- SiMM-backed HiCache lanes from benchmark strategy
 - Shared Hopper/Blackwell platform policy used by the recommendation DAG, validators, and compilers
 - Explicit support-tier metadata for engine recommendations and compiled engine configs
 - New NVIDIA regression coverage for H100, H200, B200, and GB200 recommendation paths

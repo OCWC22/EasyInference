@@ -27,7 +27,8 @@ Key policy decisions:
 
 - **vLLM** and **SGLang** are the supported NVIDIA auto-selection paths
 - **vLLM** is the supported AMD auto-selection path
-- **TRT-LLM** and **Dynamo** remain **preview planning targets** (NVIDIA only)
+- **TRT-LLM** is a **supported** NVIDIA engine (highest compiled throughput, requires compilation step)
+- **Dynamo 1.0** is **recommended** for multi-node NVIDIA disaggregated serving (KV-aware routing, NIXL, SLO autoscaling)
 - Blackwell is treated explicitly as **B200/B300 vs GB200/GB300**, not inferred from raw memory size
 - Grace coherent overflow is surfaced as an advisory capacity tier, not silently treated as normal HBM fit
 - AMD GPUs are supported for planning, benchmark gating, and support assessment; NVIDIA remains the primary validated path
@@ -121,13 +122,25 @@ Primary surfaces:
 
 ## Benchmark architecture lanes
 
-InferScope now carries three distinct long-context operator lanes:
+InferScope carries distinct long-context operator lanes:
 
 - **GPU-resident baseline** — compare against a clean single-endpoint vLLM or SGLang path
 - **OffloadingConnector lane** — single-endpoint vLLM with explicit cold-session KV spill
 - **LMCache disaggregated lane** — vLLM prefill/decode split with LMCache and optional Grace-aware overflow modeling
+- **Dynamo disaggregated lanes** — Dynamo 1.0 orchestrated prefill/decode split with NIXL KV transfer, KV-aware Smart Router, and SLO-driven autoscaling
+- **KV compression lanes** — FP8 KV quantization, prefix caching hit rates, chunked prefill tuning
 
 These lanes are the main way InferScope extends beyond InferenceX today: not by cloning the public leaderboard, but by giving operators a reproducible way to study realistic KV-tiering behavior.
+
+### Dynamo integration
+
+NVIDIA Dynamo 1.0 is the production orchestration layer for disaggregated NVIDIA serving. InferScope treats Dynamo as a first-class engine with orchestration semantics:
+
+- 3 Dynamo experiment specs: coding, RAG, and Grace Blackwell topologies
+- Launcher generates Dynamo declarative YAML config, vLLM worker commands, and Smart Router endpoints
+- NIXL handles KV cache transfer between prefill/decode pools via RDMA/NVLink
+- Strategy auto-selects Dynamo lanes for multi-GPU NVIDIA deployments
+- Telemetry scrapes vLLM/SGLang worker endpoints (Dynamo metrics come from the orchestration layer)
 
 Benchmark planning and replay are now also GPU/model/ISA-aware:
 
@@ -230,12 +243,18 @@ Runtime profiles are **not** persisted to disk by default in v1.
 
 ## Documentation
 
-- [ARCHITECTURE.md](ARCHITECTURE.md)
-- [docs/PROFILING.md](docs/PROFILING.md)
-- [docs/BENCHMARKS.md](docs/BENCHMARKS.md)
-- [docs/BENCHMARK-PLAN.md](docs/BENCHMARK-PLAN.md)
-- [docs/DEPLOYMENT-GUIDE.md](docs/DEPLOYMENT-GUIDE.md)
-- [VALIDATION.md](VALIDATION.md)
+- [ARCHITECTURE.md](ARCHITECTURE.md) — product boundaries, dependency flow, subsystem descriptions
+- [docs/BENCHMARKS.md](docs/BENCHMARKS.md) — benchmark subsystem, experiment lanes, Dynamo integration
+- [docs/PROFILING.md](docs/PROFILING.md) — runtime profiling surface
+- [docs/BENCHMARK-PLAN.md](docs/BENCHMARK-PLAN.md) — benchmark product direction
+- [docs/DEPLOYMENT-GUIDE.md](docs/DEPLOYMENT-GUIDE.md) — deployment patterns and MCP workflows
+- [docs/GPU-REFERENCE.md](docs/GPU-REFERENCE.md) — NVIDIA Hopper and Blackwell GPU specs
+- [docs/GPU-MARKET-MAP.md](docs/GPU-MARKET-MAP.md) — GPU market data, pricing, and fleet estimates
+- [docs/INFERENCE-SERVING-REFERENCE.md](docs/INFERENCE-SERVING-REFERENCE.md) — inference serving ecosystem reference
+- [CHANGELOG.md](CHANGELOG.md) — version history
+- [CONTRIBUTING.md](CONTRIBUTING.md) — development setup and contribution guide
+- [SECURITY.md](SECURITY.md) — security policy and threat model
+- [VALIDATION.md](VALIDATION.md) — validation reports and test expectations
 
 ## License
 
