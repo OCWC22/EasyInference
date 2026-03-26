@@ -68,6 +68,19 @@ ATOM_METRICS = {
     "atom:inter_token_latency_seconds": "Inter-token latency (ITL)",
 }
 
+# Legacy: SiMM metrics removed — SiMM is not a supported production backend.
+SIMM_METRICS: dict[str, str] = {}
+
+# Dynamo orchestration layer metrics (from Smart Router / SLO Planner).
+# These use prefix families rather than exact names because Dynamo emits
+# per-worker and per-route metric variants within each family.
+# Source: https://docs.nvidia.com/dynamo/latest/user-guides/kv-cache-aware-routing
+DYNAMO_METRIC_PREFIXES: dict[str, str] = {
+    "dynamo_component_router_": "Per-request KV-aware routing decisions and latency",
+    "dynamo_router_overhead_": "Router scheduling and dispatch overhead",
+    "dynamo_frontend_worker_": "Per-worker load, queue depth, and health gauges",
+}
+
 # Regex for Prometheus text format: metric_name{labels} value [timestamp]
 _METRIC_LINE_RE = re.compile(
     r"^([a-zA-Z_:][a-zA-Z0-9_:]*)"  # metric name
@@ -109,6 +122,71 @@ class ScrapeResult:
             return total / count
         return None
 
+    def samples_for(self, name: str) -> list[MetricSample]:
+        """Return all samples matching an exact metric name (preserves label variants)."""
+        return [s for s in self.samples if s.name == name]
+
+    def samples_with_prefix(self, prefix: str) -> list[MetricSample]:
+        """Return all samples whose name starts with the given prefix."""
+        return [s for s in self.samples if s.name.startswith(prefix)]
+
+
+def _parse_prometheus_labels(labels_str: str) -> dict[str, str]:
+    """Parse Prometheus label string, correctly handling quoted values with commas."""
+    labels: dict[str, str] = {}
+    if not labels_str:
+        return labels
+    i = 0
+    n = len(labels_str)
+    while i < n:
+        # Skip whitespace and commas between pairs
+        while i < n and labels_str[i] in " ,\t":
+            i += 1
+        if i >= n:
+            break
+        # Read key
+        key_start = i
+        while i < n and labels_str[i] != '=':
+            i += 1
+        if i >= n:
+            break
+        key = labels_str[key_start:i].strip()
+        i += 1  # skip '='
+        if i >= n:
+            break
+        # Read value — may be quoted
+        if labels_str[i] == '"':
+            i += 1  # skip opening quote
+            value_chars: list[str] = []
+            while i < n:
+                ch = labels_str[i]
+                if ch == '\\' and i + 1 < n:
+                    next_ch = labels_str[i + 1]
+                    if next_ch == '"':
+                        value_chars.append('"')
+                    elif next_ch == '\\':
+                        value_chars.append('\\')
+                    elif next_ch == 'n':
+                        value_chars.append('\n')
+                    else:
+                        value_chars.append(ch)
+                        value_chars.append(next_ch)
+                    i += 2
+                elif ch == '"':
+                    i += 1  # skip closing quote
+                    break
+                else:
+                    value_chars.append(ch)
+                    i += 1
+            labels[key] = "".join(value_chars)
+        else:
+            # Unquoted value — read until comma or end
+            val_start = i
+            while i < n and labels_str[i] != ',':
+                i += 1
+            labels[key] = labels_str[val_start:i].strip()
+    return labels
+
 
 def parse_prometheus_text(text: str) -> list[MetricSample]:
     """Parse Prometheus text exposition format into MetricSample list."""
@@ -123,14 +201,7 @@ def parse_prometheus_text(text: str) -> list[MetricSample]:
             labels_str = match.group(2) or ""
             value_str = match.group(3)
 
-            # Parse labels
-            labels: dict[str, str] = {}
-            if labels_str:
-                for pair in labels_str.split(","):
-                    pair = pair.strip()
-                    if "=" in pair:
-                        k, v = pair.split("=", 1)
-                        labels[k.strip()] = v.strip().strip('"')
+            labels = _parse_prometheus_labels(labels_str)
 
             # Parse value
             try:
@@ -150,6 +221,8 @@ def detect_engine_from_metrics(text: str) -> str:
         return "sglang"
     if "atom:" in text:
         return "atom"
+    if any(prefix in text for prefix in ("dynamo_component_router_", "dynamo_router_overhead_", "dynamo_frontend_worker_")):
+        return "dynamo"
     return "unknown"
 
 
