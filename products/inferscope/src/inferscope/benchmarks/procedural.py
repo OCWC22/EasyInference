@@ -201,7 +201,9 @@ def _load_context_file(path: str) -> str:
 
 
 def _with_tags(seed_pack: WorkloadPack, *tags: str) -> list[str]:
-    return sorted({*seed_pack.tags, *tags})
+    # Remove any existing hydration: tags before adding new ones
+    base = {t for t in seed_pack.tags if not t.startswith("hydration:")}
+    return sorted({*base, *tags})
 
 
 def _effective_request_count(seed_pack: WorkloadPack, options: ProceduralWorkloadOptions) -> int:
@@ -256,7 +258,7 @@ def _materialize_tool_agent(
                 tool_choice="auto",
                 metadata={
                     "bridge_source": "mcp_tool_call",
-                    "approx_context_tokens": max(options.input_tokens or 0, _approx_tokens(context_text)),
+                    "target_context_tokens": max(options.input_tokens or 0, _approx_tokens(context_text)),
                     "synthetic_seed": options.seed,
                     "synthetic_index": len(requests),
                 },
@@ -289,7 +291,7 @@ def _materialize_tool_agent(
                 tool_choice="auto",
                 metadata={
                     "bridge_source": "mcp_tool_call",
-                    "approx_context_tokens": max(options.input_tokens or 0, _approx_tokens(context_text)),
+                    "target_context_tokens": max(options.input_tokens or 0, _approx_tokens(context_text)),
                     "synthetic_seed": options.seed,
                     "synthetic_index": len(requests),
                 },
@@ -307,7 +309,7 @@ def _materialize_tool_agent(
         endpoint_path=seed_pack.endpoint_path,
         concurrency=seed_pack.concurrency,
         stream=seed_pack.stream,
-        tags=_with_tags(seed_pack, "procedural", "mcp-bridge"),
+        tags=_with_tags(seed_pack, "procedural", "mcp-bridge", "hydration:synthetic"),
         requests=requests[:request_count],
     )
 
@@ -331,7 +333,7 @@ def _materialize_coding_long_context(
 
     task_order = list(_CODING_TASKS)
     rng.shuffle(task_order)
-    approx_context_tokens = max(options.input_tokens or 0, _approx_tokens(context_text))
+    target_context_tokens = max(options.input_tokens or 0, _approx_tokens(context_text))
 
     requests: list[WorkloadRequest] = []
     for session_index in range(math.ceil(request_count / 2)):
@@ -358,7 +360,7 @@ def _materialize_coding_long_context(
                 ],
                 metadata={
                     "bridge_source": "long_context_code",
-                    "approx_context_tokens": approx_context_tokens,
+                    "target_context_tokens": target_context_tokens,
                     "synthetic_seed": options.seed,
                     "synthetic_index": len(requests),
                 },
@@ -384,7 +386,7 @@ def _materialize_coding_long_context(
                 ],
                 metadata={
                     "bridge_source": "long_context_code",
-                    "approx_context_tokens": approx_context_tokens,
+                    "target_context_tokens": target_context_tokens,
                     "synthetic_seed": options.seed,
                     "synthetic_index": len(requests),
                 },
@@ -404,7 +406,8 @@ def _materialize_coding_long_context(
         endpoint_path=seed_pack.endpoint_path,
         concurrency=seed_pack.concurrency,
         stream=seed_pack.stream,
-        tags=_with_tags(seed_pack, "procedural", "long-context-bridge"),
+        tags=_with_tags(seed_pack, "procedural", "long-context-bridge",
+                        "hydration:hydrated" if options.context_file else "hydration:synthetic"),
         requests=requests[:request_count],
     )
 

@@ -58,3 +58,21 @@ def test_recommend_engine_matches_recommend_config_for_nvidia_coding_workloads()
         engines = recommend_engine("DeepSeek-V3", gpu, workload="coding", num_gpus=8 if gpu != "b200" else 4)
 
         assert engines["rankings"][0]["engine"] == config["engine_config"]["engine"]
+
+
+def test_recommend_engine_dynamo_not_promoted_on_single_host_multi_gpu() -> None:
+    """Single-host 8×H100 must NOT auto-promote Dynamo to rank 1."""
+    engines = recommend_engine("Qwen3.5-72B", "h100", workload="coding", num_gpus=8, multi_node=False)
+    dynamo_ranking = next((r for r in engines["rankings"] if r["engine"] == "dynamo"), None)
+    assert dynamo_ranking is not None
+    # Dynamo should NOT be rank 1 without multi_node=True
+    assert dynamo_ranking["rank"] > 1
+
+
+def test_recommend_engine_dynamo_promoted_on_multi_node() -> None:
+    """Explicit multi_node=True should boost Dynamo to top or near-top ranking."""
+    engines = recommend_engine("Qwen3.5-72B", "h100", workload="coding", num_gpus=8, multi_node=True)
+    dynamo_ranking = next((r for r in engines["rankings"] if r["engine"] == "dynamo"), None)
+    assert dynamo_ranking is not None
+    # Dynamo should be ranked very high (rank 0 or 1)
+    assert dynamo_ranking["rank"] <= 1

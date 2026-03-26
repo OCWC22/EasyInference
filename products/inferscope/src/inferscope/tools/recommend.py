@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from inferscope.hardware.gpu_profiles import get_gpu_profile, list_gpus
 from inferscope.models.registry import get_model_variant, list_models
-from inferscope.optimization.platform_policy import EngineSupportTier, resolve_engine_support
+from inferscope.optimization.platform_policy import EngineSupportTier, resolve_engine_support, resolve_platform_traits
 from inferscope.optimization.recommender import recommend
 from inferscope.optimization.serving_profile import EngineType, WorkloadMode
 from inferscope.security import InputValidationError, validate_gpu_name, validate_model_name, validate_positive_int
@@ -129,7 +129,7 @@ def recommend_engine(
         EngineSupportTier.PREVIEW: 3,
     }
     rankings = []
-    is_multi_node = multi_node or num_gpus > 1
+    is_multi_node = multi_node
     for candidate in EngineType:
         support = resolve_engine_support(candidate, gpu_profile, multi_node=is_multi_node)
         if support.tier == EngineSupportTier.UNSUPPORTED:
@@ -142,16 +142,25 @@ def recommend_engine(
         if candidate.value == selected_engine:
             rank = 0
             rationale = f"Matches InferScope's full DAG recommendation. {support.reason}"
+        elif candidate == EngineType.DYNAMO and is_multi_node and resolve_platform_traits(gpu_profile).is_nvidia:
+            # Dynamo 1.0 is the production orchestration layer for multi-node NVIDIA —
+            # outranks everything except the DAG-selected engine when disaggregated.
+            rank = 1
+            best_for = (
+                "Production multi-node/disaggregated NVIDIA serving with KV-aware routing, "
+                "NIXL transfer, and SLO-driven autoscaling"
+            )
+            rationale = f"Dynamo 1.0 is the recommended orchestration layer for multi-node NVIDIA. {support.reason}"
         elif candidate == EngineType.SGLANG and wm in (WorkloadMode.CODING, WorkloadMode.AGENT):
             rank -= 3
-            best_for = "Coding copilots, multi-turn agents, and prefix-heavy workloads"
+            best_for = "Coding copilots, multi-turn agents, and prefix-heavy workloads (RadixAttention)"
             rationale = f"Prefix-heavy workload bias. {support.reason}"
         elif candidate == EngineType.VLLM:
-            best_for = "Broad compatibility and first-class InferScope support"
+            best_for = "Primary production engine — broad compatibility, first-class InferScope support"
         elif candidate == EngineType.TRTLLM:
-            best_for = "Manual Blackwell throughput experiments after explicit validation"
+            best_for = "Highest compiled throughput on NVIDIA hardware (requires compilation step)"
         elif candidate == EngineType.DYNAMO:
-            best_for = "Multi-node or disaggregated planning experiments"
+            best_for = "NVIDIA orchestration layer for disaggregated serving (best at multi-node scale)"
         elif candidate == EngineType.ATOM:
             best_for = "AMD MLA/MoE deployments"
 

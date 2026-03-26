@@ -22,15 +22,36 @@ def test_plan_benchmark_strategy_selects_long_context_rag_suite_on_grace() -> No
     assert result["evidence"] == "benchmark_strategy_planner"
     assert result["benchmark_strategy"]["primary_workload"]["name"] == "long-context-kv-offload-rag"
     assert result["benchmark_strategy"]["selected_engine"] == "vllm"
-    assert [lane["experiment"] for lane in result["benchmark_strategy"]["suite"]] == [
+    suite_experiments = [lane["experiment"] for lane in result["benchmark_strategy"]["suite"]]
+    # Core lanes must be present in order
+    assert suite_experiments[:3] == [
         "vllm-single-endpoint-long-context-rag-baseline",
         "vllm-single-endpoint-offloading-connector",
-        "vllm-disagg-prefill-lmcache-grace",
+        "dynamo-disagg-prefill-nixl-grace",
     ]
+    # LMCache comparison lane follows the Dynamo primary lane
+    assert "vllm-disagg-prefill-lmcache-grace" in suite_experiments
     assert result["benchmark_strategy"]["suite"][2]["required"] is True
     assert result["benchmark_strategy"]["ready"] is True
     assert result["benchmark_strategy"]["support"]["gpu_isa"] == "sm_100"
     assert result["benchmark_strategy"]["suite"][2]["support"]["status"] == "supported"
+
+
+def test_plan_benchmark_strategy_coding_selects_dynamo_on_nvidia_multi_gpu() -> None:
+    result = plan_benchmark_strategy(
+        "Qwen3.5-72B",
+        "h100",
+        workload="coding",
+        num_gpus=4,
+        has_rdma=True,
+        include_stack_plans=False,
+    )
+
+    suite_experiments = [lane["experiment"] for lane in result["benchmark_strategy"]["suite"]]
+    # Dynamo should appear as a disaggregated lane for NVIDIA coding
+    assert "dynamo-disagg-prefill-nixl" in suite_experiments
+    # Reference baseline must be first
+    assert suite_experiments[0] == "vllm-single-endpoint-baseline"
 
 
 @pytest.mark.asyncio

@@ -52,6 +52,56 @@ def test_build_benchmark_stack_plan_generates_lmcache_bundle_for_grace_lane() ->
     assert plan.support["gpu_isa"] == "sm_100"
 
 
+def test_build_benchmark_stack_plan_dynamo_disagg_resolves_all_metrics_targets() -> None:
+    """Dynamo disaggregated stack plan must resolve primary + router + prefill + decode targets."""
+    plan = build_benchmark_stack_plan(
+        "dynamo-disagg-prefill-nixl",
+        "h100",
+        4,
+    )
+
+    # Components: dynamo-router, vllm-prefill, vllm-decode
+    component_names = {c.name for c in plan.components}
+    assert "dynamo-router" in component_names
+    assert "vllm-prefill" in component_names
+    assert "vllm-decode" in component_names
+
+    # Run plan must have resolved metrics targets
+    run_plan = plan.run_plan
+    assert run_plan is not None
+    metrics_targets = run_plan.get("metrics_targets", [])
+    target_names = {t["name"] for t in metrics_targets}
+    assert "primary" in target_names
+    assert "router" in target_names
+    assert "prefill" in target_names
+    assert "decode" in target_names
+
+    # Primary target should be the decode worker (vLLM), not the router
+    primary_target = next(t for t in metrics_targets if t["name"] == "primary")
+    assert primary_target["expected_engine"] == "vllm"
+
+    # Router target is optional (required=false) and expects dynamo
+    router_target = next(t for t in metrics_targets if t["name"] == "router")
+    assert router_target["expected_engine"] == "dynamo"
+
+    # Worker targets expect vllm
+    prefill_target = next(t for t in metrics_targets if t["name"] == "prefill")
+    decode_target = next(t for t in metrics_targets if t["name"] == "decode")
+    assert prefill_target["expected_engine"] == "vllm"
+    assert decode_target["expected_engine"] == "vllm"
+
+    # Generated files should include Dynamo config
+    generated_paths = {g.path for g in plan.generated_files}
+    assert "configs/dynamo-config.yaml" in generated_paths
+
+    # Benchmark command must include metrics-target flags
+    assert "--metrics-target" in plan.benchmark_command
+
+    # Support should resolve ISA
+    assert plan.support is not None
+    assert plan.support["gpu_isa"] == "sm_90a"
+
+
 def test_build_benchmark_stack_plan_rejects_grace_lane_on_non_grace_gpu() -> None:
     try:
         build_benchmark_stack_plan(

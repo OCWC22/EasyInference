@@ -169,6 +169,7 @@ def recommend_kv_strategy(
     # Connector recommendation
     if len(strategy["tiers"]) == 1:
         strategy["connector"] = "none (GPU-resident prefix caching is sufficient)"
+        strategy["remote_backend"] = "none"
     elif gpu_profile.vendor == "nvidia":
         if wm in (WorkloadMode.CODING, WorkloadMode.AGENT):
             strategy["connector"] = "LMCacheConnectorV1 (content-addressed, cross-session sharing)"
@@ -176,8 +177,17 @@ def recommend_kv_strategy(
         else:
             strategy["connector"] = "OffloadingConnector (simple GPU→CPU offload)"
             strategy["engine_recommendation"] = "vLLM with OffloadingConnector"
+        strategy["remote_backend"] = "none"
+        # Dynamo + NIXL recommendation for multi-GPU disaggregated setups
+        if "G3_local_ssd" in strategy["tiers"] or total_kv_gb > gpu_kv_budget_gb * 2:
+            strategy["notes"].append(
+                "KV exceeds local tiers — consider Dynamo 1.0 for orchestrated disaggregated serving "
+                "with NIXL KV transfer (RDMA/NVLink) to distribute KV pressure across prefill/decode pools."
+            )
+            strategy["orchestration_layer"] = "dynamo"
     elif gpu_profile.vendor == "amd":
         strategy["connector"] = "MooncakeConnector (RDMA-based, AMD-optimized)"
+        strategy["remote_backend"] = "none"
         if is_mla:
             strategy["engine_recommendation"] = "ATOM standalone (MLA models on AMD)"
         else:

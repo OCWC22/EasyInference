@@ -116,6 +116,7 @@ def _select_suite_lanes(
     disaggregation: dict[str, Any],
     has_grace: bool,
     has_rdma: bool,
+    is_nvidia: bool = False,
 ) -> list[dict[str, Any]]:
     lanes: list[dict[str, Any]] = []
 
@@ -144,19 +145,37 @@ def _select_suite_lanes(
             )
         )
         if num_gpus >= 2:
-            experiment = "vllm-disagg-prefill-lmcache-grace" if has_grace else "vllm-disagg-prefill-lmcache-rag"
+            # Dynamo + NIXL is the production disaggregated lane
+            dynamo_experiment = (
+                "dynamo-disagg-prefill-nixl-grace" if has_grace else "dynamo-disagg-prefill-nixl-rag"
+            )
             lanes.append(
                 _make_lane(
                     phase="disaggregated",
-                    objective="Measure prefill/decode split with remote/coherent KV reuse for long-context serving.",
-                    experiment=experiment,
+                    objective="Measure Dynamo-orchestrated prefill/decode split with NIXL KV transfer for long-context serving.",
+                    experiment=dynamo_experiment,
                     workload=primary_workload,
                     rationale=(
-                        "Grace platforms should benchmark coherent overflow explicitly."
-                        if has_grace
-                        else "Non-Grace platforms should benchmark LMCache-backed disaggregated reuse."
+                        "Dynamo 1.0 is the production orchestration layer for disaggregated NVIDIA deployments. "
+                        + ("Grace platforms benchmark coherent overflow explicitly."
+                           if has_grace
+                           else "NIXL provides zero-copy RDMA KV transfer between prefill and decode pools.")
                     ),
                     required=bool(disaggregation.get("recommended", False)),
+                )
+            )
+            # Keep LMCache as a secondary comparison lane
+            lmcache_experiment = "vllm-disagg-prefill-lmcache-grace" if has_grace else "vllm-disagg-prefill-lmcache-rag"
+            lanes.append(
+                _make_lane(
+                    phase="cache_extension",
+                    objective="Compare raw vLLM worker disaggregation via LMCache against Dynamo-orchestrated path.",
+                    experiment=lmcache_experiment,
+                    workload=primary_workload,
+                    rationale=(
+                        "LMCache lane provides a direct worker-only comparison without Dynamo orchestration overhead."
+                    ),
+                    required=False,
                 )
             )
         return lanes
@@ -221,10 +240,46 @@ def _select_suite_lanes(
                         required=avg_prompt_tokens >= 8_192,
                     )
                 )
+                # Also add Dynamo disaggregated lane for NVIDIA platforms as a comparison
+                if is_nvidia:
+                    dynamo_experiment = (
+                        "dynamo-disagg-prefill-nixl-grace" if has_grace else "dynamo-disagg-prefill-nixl"
+                    )
+                    lanes.append(
+                        _make_lane(
+                            phase="disaggregated",
+                            objective="Compare Dynamo-orchestrated NIXL disaggregation against SGLang routing for coding.",
+                            experiment=dynamo_experiment,
+                            workload="coding-long-context",
+                            rationale=(
+                                "Dynamo 1.0 provides production KV-aware routing with NIXL transfer — "
+                                "compare against SGLang's native routing to determine the optimal NVIDIA path."
+                            ),
+                            required=False,
+                        )
+                    )
             return lanes
 
         if num_gpus >= 2:
-            if has_rdma:
+            if is_nvidia:
+                # Dynamo is the production disaggregated lane for NVIDIA coding workloads
+                dynamo_experiment = (
+                    "dynamo-disagg-prefill-nixl-grace" if has_grace else "dynamo-disagg-prefill-nixl"
+                )
+                lanes.append(
+                    _make_lane(
+                        phase="disaggregated",
+                        objective="Measure Dynamo-orchestrated prefill/decode split with NIXL KV transfer for coding.",
+                        experiment=dynamo_experiment,
+                        workload="coding-long-context",
+                        rationale=(
+                            "Dynamo 1.0 is the production orchestration layer for NVIDIA disaggregated serving "
+                            "with KV-aware routing and NIXL transfer."
+                        ),
+                        required=bool(disaggregation.get("recommended", False)),
+                    )
+                )
+            elif has_rdma:
                 lanes.append(
                     _make_lane(
                         phase="disaggregated",
@@ -241,13 +296,13 @@ def _select_suite_lanes(
             lanes.append(
                 _make_lane(
                     phase="cache_extension",
-                    objective="Measure remote KV reuse and session persistence across prefill/decode roles.",
+                    objective="Compare raw vLLM worker disaggregation via LMCache against the primary disaggregated path.",
                     experiment="vllm-disagg-prefill-lmcache",
                     workload="coding-long-context",
                     rationale=(
-                        "LMCache is the practical operator lane for content-addressed reuse beyond a single GPU slice."
+                        "LMCache lane provides a direct worker-only comparison for content-addressed KV reuse."
                     ),
-                    required=avg_prompt_tokens >= 8_192,
+                    required=not is_nvidia and avg_prompt_tokens >= 8_192,
                 )
             )
         return lanes
@@ -321,6 +376,7 @@ def plan_benchmark_strategy(
     avg_prompt_tokens: int = 4_096,
     request_rate_per_sec: float = 10.0,
     has_rdma: bool = False,
+    multi_node: bool = False,
     host: str = "127.0.0.1",
     include_stack_plans: bool = True,
 ) -> dict[str, Any]:
@@ -386,6 +442,7 @@ def plan_benchmark_strategy(
         disaggregation=disagg.get("disaggregation", {}),
         has_grace=traits.is_grace,
         has_rdma=has_rdma,
+        is_nvidia=traits.is_nvidia,
     )
 
     overall_support = assess_benchmark_support(
@@ -484,6 +541,7 @@ async def plan_benchmark_strategy_with_runtime(
     avg_prompt_tokens: int = 4_096,
     request_rate_per_sec: float = 10.0,
     has_rdma: bool = False,
+    multi_node: bool = False,
     host: str = "127.0.0.1",
     endpoint: str = "",
     include_stack_plans: bool = True,
@@ -516,6 +574,7 @@ async def plan_benchmark_strategy_with_runtime(
         avg_prompt_tokens=avg_prompt_tokens,
         request_rate_per_sec=request_rate_per_sec,
         has_rdma=has_rdma,
+        multi_node=multi_node,
         host=host,
         include_stack_plans=include_stack_plans,
     )

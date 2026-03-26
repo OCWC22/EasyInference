@@ -252,10 +252,10 @@ def resolve_engine_support(engine: EngineType | str, gpu: GPUProfile, multi_node
             )
         return EngineSupport(
             engine="trtllm",
-            tier=EngineSupportTier.PREVIEW,
+            tier=EngineSupportTier.SUPPORTED,
             reason=(
-                "TensorRT-LLM remains a preview planning target in InferScope; "
-                "compiler coverage exists but runtime support is still partial."
+                "TensorRT-LLM v1.2+ is a supported NVIDIA engine with the highest compiled throughput; "
+                "requires a compilation step and NVIDIA-only hardware."
             ),
         )
 
@@ -266,10 +266,23 @@ def resolve_engine_support(engine: EngineType | str, gpu: GPUProfile, multi_node
                 tier=EngineSupportTier.UNSUPPORTED,
                 reason="NVIDIA Dynamo is NVIDIA-only.",
             )
-        reason = "Dynamo is a preview planning target in InferScope for disaggregated NVIDIA deployments."
-        if not multi_node:
-            reason += " It is not auto-selected for standard single-node recommendations."
-        return EngineSupport(engine="dynamo", tier=EngineSupportTier.PREVIEW, reason=reason)
+        if multi_node:
+            return EngineSupport(
+                engine="dynamo",
+                tier=EngineSupportTier.RECOMMENDED,
+                reason=(
+                    "Dynamo 1.0 is the recommended orchestration layer for multi-node NVIDIA "
+                    "disaggregated serving with KV-aware routing, NIXL transfer, and SLO-driven autoscaling."
+                ),
+            )
+        return EngineSupport(
+            engine="dynamo",
+            tier=EngineSupportTier.SUPPORTED,
+            reason=(
+                "Dynamo 1.0 is a production orchestration layer for NVIDIA deployments. "
+                "Recommended for multi-node/disaggregated topologies; supported for single-node."
+            ),
+        )
 
     return EngineSupport(
         engine=engine_name,

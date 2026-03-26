@@ -83,22 +83,20 @@ def test_vllm_compiler_labels_gb300_without_gb200_mislabel() -> None:
     assert all("GB200" not in note for note in cfg.notes)
 
 
-def test_trtllm_compiler_uses_batched_token_budget_and_marks_preview() -> None:
+def test_trtllm_compiler_uses_batched_token_budget_and_marks_supported() -> None:
     compiler = TRTLLMCompiler()
     profile = _profile()
 
     cfg = compiler.compile(profile, _inventory("b200"))
 
     assert cfg.cli_flags["max_num_tokens"] == 16384
-    assert cfg.support_tier == "preview"
-    assert any("Preview engine" in warning for warning in cfg.warnings)
+    assert cfg.support_tier == "supported"
 
 
-def test_dynamo_compiler_marks_preview() -> None:
+def test_dynamo_compiler_marks_supported() -> None:
     compiler = DynamoCompiler()
     profile = _profile()
 
     cfg = compiler.compile(profile, _inventory("gb200"))
 
-    assert cfg.support_tier == "preview"
-    assert any("Preview engine" in warning for warning in cfg.warnings)
+    assert cfg.support_tier == "supported"
