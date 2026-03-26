@@ -133,14 +133,8 @@ def _approx_token_count_from_text(value: object) -> int:
 
 
 def _approx_prompt_tokens(request: WorkloadRequest) -> int:
-    approx = request.metadata.get("approx_context_tokens")
-    if isinstance(approx, int) and approx > 0:
-        return approx
-    total = 0
-    for message in request.messages:
-        total += _approx_token_count_from_text(message.role)
-        total += _approx_token_count_from_text(message.content)
-    return max(1, total)
+    """Estimate actual prompt tokens from message content (not target/planning values)."""
+    return request.actual_context_tokens
 
 
 def _extract_output_payload(payload: dict[str, Any]) -> object | None:
@@ -321,9 +315,8 @@ def _threshold_from_value(value: Any, prompt_tokens: int | None) -> float | None
 
 
 def _request_slo(request: WorkloadRequest, execution: BenchmarkExecutionProfile) -> tuple[float | None, float | None]:
-    prompt_tokens = request.metadata.get("approx_context_tokens")
-    if not isinstance(prompt_tokens, int) or prompt_tokens < 1:
-        prompt_tokens = _approx_prompt_tokens(request)
+    # Use actual payload size for SLO bucketing, not target/planning values
+    prompt_tokens = request.actual_context_tokens
     ttft_threshold = _threshold_from_value(execution.goodput_slo.ttft_p95_ms, prompt_tokens)
     tpot_threshold = _threshold_from_value(execution.goodput_slo.tpot_p95_ms, prompt_tokens)
     return ttft_threshold, tpot_threshold
@@ -704,12 +697,31 @@ def _observed_runtime(
             {*workload.tags, *(str(request.metadata.get("bridge_source", "")) for request in workload.requests)} - {""}
         ),
         "timing_granularity": "stream_chunk" if workload.stream else "e2e_only",
-        "warnings": [
-            "ITL is approximated from streamed output chunks rather than token-level traces."
-            if workload.stream
-            else "ITL is unavailable for non-streaming runs."
-        ],
+        "context_tokens": {
+            "hydration_mode": workload.hydration_mode,
+            "target_max": workload.max_target_context_tokens(),
+            "actual_max": workload.max_actual_context_tokens(),
+        },
+        "warnings": _build_runtime_warnings(workload),
     }
+
+
+def _build_runtime_warnings(workload: WorkloadPack) -> list[str]:
+    """Build runtime warnings including hydration and measurement caveats."""
+    warnings: list[str] = []
+    if workload.stream:
+        warnings.append("ITL is approximated from streamed output chunks rather than token-level traces.")
+    else:
+        warnings.append("ITL is unavailable for non-streaming runs.")
+    if workload.hydration_mode == "template":
+        target = workload.max_target_context_tokens()
+        actual = workload.max_actual_context_tokens()
+        warnings.append(
+            f"Template workload: actual payload ~{actual} tokens vs target {target} tokens. "
+            "Latency and throughput reflect the inline template, not the target corpus size. "
+            "Use --context-file or procedural expansion for benchmark-grade runs."
+        )
+    return warnings
 
 
 async def run_benchmark_runtime(
