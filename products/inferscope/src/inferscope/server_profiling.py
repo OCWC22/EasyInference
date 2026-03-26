@@ -42,6 +42,7 @@ async def _profile_runtime_for_mcp(
     include_samples: bool = False,
     provider: str = "",
     metrics_auth: dict | None = None,
+    allow_private: bool = False,
 ) -> dict[str, Any]:
     """MCP-safe runtime profiling helper."""
     return await profile_runtime(
@@ -62,7 +63,7 @@ async def _profile_runtime_for_mcp(
         split_prefill_decode=split_prefill_decode,
         current_scheduler=current_scheduler,
         current_cache=current_cache,
-        allow_private=False,
+        allow_private=allow_private,
         metrics_auth=resolve_auth_payload(metrics_auth, provider=provider),
         include_identity=include_identity,
         include_tuning_preview=include_tuning_preview,
@@ -99,8 +100,12 @@ def register_profiling_tools(mcp: FastMCP) -> None:
         include_samples: bool = False,
         provider: str = "",
         metrics_auth: dict | None = None,
+        allow_private: bool = False,
     ) -> dict[str, Any]:
-        """Build a unified live runtime profile for a running inference endpoint."""
+        """Build a unified live runtime profile for a running inference endpoint.
+
+        Set allow_private=True for localhost/private IP endpoints (local development).
+        """
         return await _profile_runtime_for_mcp(
             endpoint,
             gpu_arch=gpu_arch,
@@ -125,6 +130,7 @@ def register_profiling_tools(mcp: FastMCP) -> None:
             include_samples=include_samples,
             provider=provider,
             metrics_auth=metrics_auth,
+            allow_private=allow_private,
         )
 
     @mcp.tool()
@@ -140,8 +146,12 @@ def register_profiling_tools(mcp: FastMCP) -> None:
         kv_cache_dtype: str = "",
         provider: str = "",
         metrics_auth: dict | None = None,
+        allow_private: bool = False,
     ) -> dict[str, Any]:
-        """Run all audit checks against a live vLLM/SGLang/ATOM endpoint."""
+        """Run all audit checks against a live vLLM/SGLang/ATOM endpoint.
+
+        Set allow_private=True for localhost/private IP endpoints (local development).
+        """
         return await audit_deployment(
             endpoint,
             gpu_arch=gpu_arch,
@@ -152,7 +162,7 @@ def register_profiling_tools(mcp: FastMCP) -> None:
             tp=tp,
             quantization=quantization,
             kv_cache_dtype=kv_cache_dtype,
-            allow_private=False,
+            allow_private=allow_private,
             metrics_auth=resolve_auth_payload(metrics_auth, provider=provider),
         )
 
@@ -161,11 +171,15 @@ def register_profiling_tools(mcp: FastMCP) -> None:
         endpoint: str,
         provider: str = "",
         metrics_auth: dict | None = None,
+        allow_private: bool = False,
     ) -> dict[str, Any]:
-        """Scrape a live endpoint and return a health snapshot."""
+        """Scrape a live endpoint and return a health snapshot.
+
+        Set allow_private=True for localhost/private IP endpoints (local development).
+        """
         return await check_deployment(
             endpoint,
-            allow_private=False,
+            allow_private=allow_private,
             metrics_auth=resolve_auth_payload(metrics_auth, provider=provider),
         )
 
@@ -174,11 +188,15 @@ def register_profiling_tools(mcp: FastMCP) -> None:
         endpoint: str,
         provider: str = "",
         metrics_auth: dict | None = None,
+        allow_private: bool = False,
     ) -> dict[str, Any]:
-        """Analyze KV cache utilization and preemption rates from live metrics."""
+        """Analyze KV cache utilization and preemption rates from live metrics.
+
+        Set allow_private=True for localhost/private IP endpoints (local development).
+        """
         return await check_memory_pressure(
             endpoint,
-            allow_private=False,
+            allow_private=allow_private,
             metrics_auth=resolve_auth_payload(metrics_auth, provider=provider),
         )
 
@@ -187,11 +205,15 @@ def register_profiling_tools(mcp: FastMCP) -> None:
         endpoint: str,
         provider: str = "",
         metrics_auth: dict | None = None,
+        allow_private: bool = False,
     ) -> dict[str, Any]:
-        """Measure prefix cache hit rate and cache-aware routing effectiveness."""
+        """Measure prefix cache hit rate and cache-aware routing effectiveness.
+
+        Set allow_private=True for localhost/private IP endpoints (local development).
+        """
         return await get_cache_effectiveness(
             endpoint,
-            allow_private=False,
+            allow_private=allow_private,
             metrics_auth=resolve_auth_payload(metrics_auth, provider=provider),
         )
 
@@ -204,14 +226,18 @@ def register_profiling_tools(mcp: FastMCP) -> None:
         current_cache: dict | None = None,
         provider: str = "",
         metrics_auth: dict | None = None,
+        allow_private: bool = False,
     ) -> dict[str, Any]:
-        """Analyze a live endpoint and recommend config adjustments."""
+        """Analyze a live endpoint and recommend config adjustments.
+
+        Set allow_private=True for localhost/private IP endpoints (local development).
+        """
         return await auto_tune_deployment(
             endpoint,
             current_engine=current_engine,
             current_workload=current_workload,
             current_scheduler=current_scheduler,
             current_cache=current_cache,
-            allow_private=False,
+            allow_private=allow_private,
             metrics_auth=resolve_auth_payload(metrics_auth, provider=provider),
         )

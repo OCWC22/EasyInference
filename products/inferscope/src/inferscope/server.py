@@ -55,7 +55,7 @@ mcp = FastMCP(
     - artifact comparison and benchmark stack planning/materialization
 
     On NVIDIA, InferScope currently auto-selects vLLM or SGLang for supported deployments.
-    TRT-LLM and Dynamo are exposed as preview planning targets and are not auto-promoted.
+    TRT-LLM and Dynamo are supported engines. Dynamo is RECOMMENDED for multi-node NVIDIA disaggregated serving.
 
     Runtime profiling is first-class today through Prometheus scraping and normalized metrics.
     Direct trace and kernel execution remain future work behind the profiling boundary.
