@@ -1,0 +1,50 @@
+version: "1"
+name: dynamo-disagg-prefill-nixl
+description: Dynamo 1.0 orchestrated prefill/decode split with NIXL KV transfer, KV-aware Smart Router, and SLO-driven autoscaling.
+engine: dynamo
+workload: coding-long-context
+benchmark_role: topology_probe
+target_gpu_families: [hopper, blackwell, blackwell_ultra, blackwell_grace, blackwell_ultra_grace]
+target_model_classes: [dense_gqa, qwen35_hybrid, frontier_mla_moe, compact_agentic_moe]
+focus_areas: [disaggregation, kv_transfer, rdma, long_context, dynamo]
+topology:
+  mode: prefill_decode_split
+  session_routing: sticky
+  session_header_name: X-Session-ID
+  request_target_name: primary
+  kv_connector: NixlConnector
+  notes:
+    - "Dynamo Smart Router handles KV-aware request routing between prefill and decode pools"
+    - "SLO Planner dynamically adjusts pool ratios based on measured latency"
+    - "NIXL provides zero-copy RDMA KV transfer between prefill and decode workers"
+cache:
+  strategy: nixl
+  tiers: [gpu_hbm]
+  connector: NixlConnector
+  session_affinity: true
+  prefix_cache_expected: true
+  notes:
+    - "FP8 KV cache recommended to halve transfer size and double concurrent sequences"
+    - "Prefix caching expected to deliver 50-80% hit rate on coding workloads"
+metrics_targets:
+  - name: primary
+    role: primary
+    endpoint_source: metrics_endpoint
+    expected_engine: vllm
+  - name: router
+    role: router
+    endpoint_source: named_override
+    override_key: router
+    expected_engine: dynamo
+    required: false
+  - name: prefill
+    role: prefill
+    endpoint_source: named_override
+    override_key: prefill
+    expected_engine: vllm
+  - name: decode
+    role: decode
+    endpoint_source: named_override
+    override_key: decode
+    expected_engine: vllm
+tags: [dynamo, disagg, nixl, rdma, production]

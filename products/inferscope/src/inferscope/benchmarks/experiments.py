@@ -17,6 +17,11 @@ TopologyMode = Literal["single_endpoint", "prefill_decode_split", "router_prefil
 SessionRoutingMode = Literal["unknown", "none", "sticky", "hash"]
 CacheStrategy = Literal["unknown", "none", "prefix_only", "lmcache", "hicache", "offloading_connector", "nixl"]
 CacheTier = Literal["gpu_hbm", "grace_coherent", "cpu_dram", "local_ssd", "remote_cache"]
+# Legacy read-compat: "simm" is accepted for historical artifact deserialization but
+# no longer actively supported.  Use Dynamo + NIXL or local KV tiers instead.
+CacheRemoteBackend = Literal["unknown", "none", "simm"]
+# Legacy read-compat: compression metadata exists for historical artifacts only.
+CacheCompressionAlgorithm = Literal["none", "lz4", "fp8", "kvtc", "turboquant", "mxfp4", "cachegen"]
 
 
 class MetricCaptureTargetSpec(BaseModel):
@@ -66,17 +71,56 @@ class BenchmarkTopologyMetadata(BaseModel):
     notes: list[str] = Field(default_factory=list)
 
 
+class BenchmarkCacheCompressionMetadata(BaseModel):
+    """Compression overlay for KV cache data in transit or at rest.
+
+    Tracks which compression algorithm is applied and to which tiers.
+    For v1, compression is only supported when remote_backend is 'simm'.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    enabled: bool = False
+    algorithm: CacheCompressionAlgorithm = "none"
+    applies_to: list[CacheTier] = Field(default_factory=lambda: ["remote_cache"])
+    notes: list[str] = Field(default_factory=list)
+
+
 class BenchmarkCacheMetadata(BaseModel):
-    """Cache/offload metadata for a benchmark run."""
+    """Cache/offload metadata for a benchmark run.
+
+    The 'strategy' field selects the cache policy (nixl, lmcache, hicache, etc.).
+    Production disaggregated serving uses Dynamo + NIXL for KV transfer.
+
+    The 'remote_backend' and 'compression' fields exist for legacy artifact
+    compatibility only — SiMM is no longer an actively supported backend.
+    """
 
     model_config = ConfigDict(extra="forbid")
 
     strategy: CacheStrategy = "unknown"
     tiers: list[CacheTier] = Field(default_factory=list)
     connector: str | None = None
+    # Legacy read-compat only — no new experiment specs should use "simm"
+    remote_backend: CacheRemoteBackend = "unknown"
+    # Legacy read-compat only — compression overlay removed from active product
+    compression: BenchmarkCacheCompressionMetadata = Field(default_factory=BenchmarkCacheCompressionMetadata)
     session_affinity: bool | None = None
     prefix_cache_expected: bool | None = None
     notes: list[str] = Field(default_factory=list)
+
+    @model_validator(mode="after")
+    def validate_cache_metadata(self) -> BenchmarkCacheMetadata:
+        # Legacy compression validation — kept for artifact read-compat
+        if self.compression.enabled and self.compression.algorithm == "none":
+            raise ValueError("Compression is enabled but no algorithm specified")
+        if self.compression.enabled:
+            for tier in self.compression.applies_to:
+                if tier not in self.tiers:
+                    raise ValueError(
+                        f"Compression applies_to tier '{tier}' is not in cache tiers {self.tiers}"
+                    )
+        return self
 
 
 class BenchmarkGoodputSLO(BaseModel):
@@ -283,6 +327,7 @@ def build_run_plan(
     cache_strategy: str | None = None,
     cache_tiers: list[str] | None = None,
     cache_connector: str | None = None,
+    cache_remote_backend: str | None = None,
     session_affinity: bool | None = None,
     metrics_targets: list[ResolvedMetricCaptureTarget] | None = None,
     execution: BenchmarkExecutionProfile | None = None,
@@ -325,6 +370,8 @@ def build_run_plan(
         cache_payload["tiers"] = cache_tiers
     if cache_connector is not None:
         cache_payload["connector"] = cache_connector
+    if cache_remote_backend is not None:
+        cache_payload["remote_backend"] = cache_remote_backend
     if session_affinity is not None:
         cache_payload["session_affinity"] = session_affinity
     cache = BenchmarkCacheMetadata.model_validate(cache_payload)
