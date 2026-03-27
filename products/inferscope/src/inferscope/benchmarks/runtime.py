@@ -842,10 +842,12 @@ async def run_benchmark_runtime(
 
     validated_endpoint = validate_endpoint(endpoint, allow_private=allow_private)
 
-    # Pre-flight: verify endpoint is reachable before committing to the full run
-    await _preflight_check(
-        validated_endpoint, workload, request_auth, extra_headers,
-    )
+    # Pre-flight: verify endpoint is reachable before committing to the full run.
+    # Skip when caller supplies their own client (e.g. test mocks).
+    if client is None:
+        await _preflight_check(
+            validated_endpoint, workload, request_auth, extra_headers,
+        )
 
     benchmark_id = f"{slugify(workload.name)}-{uuid4().hex[:12]}"
     backend = _detect_backend(run_plan, workload)
