@@ -1,12 +1,14 @@
 """Cross-engine metric normalization.
 
-Converts vLLM, SGLang, and ATOM metrics into a common InferScope format
+Converts vLLM, SGLang, ATOM, and Dynamo metrics into a common InferScope format
 so audit checks and diagnostics work regardless of engine.
 """
 
 from __future__ import annotations
 
 from dataclasses import dataclass
+
+from typing import Any
 
 from inferscope.telemetry.prometheus import ScrapeResult
 
@@ -46,6 +48,11 @@ class NormalizedMetrics:
     # Generation throughput (gauge, tokens/sec — SGLang only)
     gen_throughput_tps: float = 0.0
 
+    # Dynamo orchestration metrics (populated only for Dynamo router targets).
+    # Values are either scalar floats (unlabeled) or lists of {"labels": ..., "value": ...}
+    # dicts (labeled, preserving per-worker/per-route dimensions).
+    orchestration: dict[str, dict[str, Any]] | None = None
+
     # Scrape metadata
     scrape_time_ms: float = 0.0
     scrape_error: str = ""
@@ -84,6 +91,9 @@ class NormalizedMetrics:
                 "time_ms": round(self.scrape_time_ms, 1),
                 "error": self.scrape_error,
             },
+            **({
+                "orchestration": self.orchestration,
+            } if self.orchestration else {}),
         }
 
 
@@ -135,5 +145,38 @@ def normalize(scrape: ScrapeResult) -> NormalizedMetrics:
         m.kv_cache_usage = scrape.get("atom:kv_cache_usage_perc")
         m.ttft_avg_s = scrape.get_histogram_avg("atom:time_to_first_token_seconds")
         m.itl_avg_s = scrape.get_histogram_avg("atom:inter_token_latency_seconds")
+
+    elif scrape.engine == "dynamo":
+        # Dynamo router/orchestration metrics — grouped by prefix family.
+        # Uses samples (not raw_metrics) to preserve per-worker/per-route label dimensions.
+        _dynamo_prefixes = {
+            "router": "dynamo_component_router_",
+            "router_overhead": "dynamo_router_overhead_",
+            "frontend_workers": "dynamo_frontend_worker_",
+        }
+        orchestration: dict[str, dict[str, Any]] = {}
+        for group_name, prefix in _dynamo_prefixes.items():
+            # Collect all samples in this family, keyed by stripped metric name
+            metric_entries: dict[str, list[tuple[dict[str, str], float]]] = {}
+            for sample in scrape.samples:
+                if sample.name.startswith(prefix):
+                    key = sample.name[len(prefix):]
+                    metric_entries.setdefault(key, []).append((dict(sample.labels), sample.value))
+            if not metric_entries:
+                continue
+            group: dict[str, Any] = {}
+            for key, entries in sorted(metric_entries.items()):
+                if len(entries) == 1 and not entries[0][0]:
+                    # Single unlabeled sample — store as scalar for simplicity
+                    group[key] = entries[0][1]
+                else:
+                    # Multiple samples or labeled — preserve full label dimensions
+                    group[key] = [
+                        {"labels": labels, "value": value}
+                        for labels, value in sorted(entries, key=lambda e: sorted(e[0].items()))
+                    ]
+            orchestration[group_name] = group
+        if orchestration:
+            m.orchestration = orchestration
 
     return m

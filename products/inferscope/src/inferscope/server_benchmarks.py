@@ -10,6 +10,7 @@ from fastmcp import FastMCP
 from inferscope.benchmarks import (
     BenchmarkExecutionProfile,
     BenchmarkGoodputSLO,
+    DatasetLoadOptions,
     ProceduralWorkloadOptions,
     assess_benchmark_support,
     build_benchmark_matrix,
@@ -23,6 +24,7 @@ from inferscope.benchmarks import (
     list_builtin_workloads,
     load_benchmark_artifact,
     load_experiment,
+    load_trace_dataset,
     materialize_benchmark_stack_plan,
     materialize_workload,
     plan_benchmark_strategy_with_runtime,
@@ -160,15 +162,7 @@ def _resolve_benchmark_plan(
             engine_name=(engine or (experiment_spec.engine if experiment_spec else "")),
             workload=workload_pack,
             experiment=experiment_spec,
-            prompt_tokens=max(
-                (
-                    int(request.metadata.get("approx_context_tokens"))
-                    for request in workload_pack.requests
-                    if isinstance(request.metadata.get("approx_context_tokens"), int)
-                ),
-                default=0,
-            )
-            or None,
+            prompt_tokens=workload_pack.max_target_context_tokens() or workload_pack.max_actual_context_tokens(),
         )
         if strict_support and support.status == "unsupported":
             error_messages = [issue.message for issue in support.issues if issue.severity == "error"]
@@ -232,7 +226,7 @@ def register_benchmark_tools(mcp: FastMCP) -> None:
 
     @mcp.tool()
     async def tool_list_benchmark_experiments() -> dict[str, Any]:
-        """List packaged experiments for colocated and disaggregated cache-aware deployments."""
+        """List packaged experiments for colocated and disaggregated cache-aware deployments (vLLM, SGLang, Dynamo, TRT-LLM)."""
         experiments = list_builtin_experiments()
         return {
             "summary": f"{len(experiments)} built-in benchmark experiment(s) available",
@@ -280,6 +274,7 @@ def register_benchmark_tools(mcp: FastMCP) -> None:
         avg_prompt_tokens: int = 4096,
         request_rate_per_sec: float = 10.0,
         has_rdma: bool = False,
+        multi_node: bool = False,
         host: str = "127.0.0.1",
         endpoint: str = "",
         current_engine: str = "",
@@ -297,8 +292,12 @@ def register_benchmark_tools(mcp: FastMCP) -> None:
         current_cache: dict[str, Any] | None = None,
         provider: str = "",
         metrics_auth: dict | None = None,
+        allow_private: bool = False,
     ) -> dict[str, Any]:
-        """Plan the right benchmark suite and optionally bridge it to a live runtime profile."""
+        """Plan the right benchmark suite and optionally bridge it to a live runtime profile.
+
+        Set allow_private=True for localhost/private IP endpoints (local development).
+        """
         result = await plan_benchmark_strategy_with_runtime(
             model,
             gpu,
@@ -310,6 +309,7 @@ def register_benchmark_tools(mcp: FastMCP) -> None:
             avg_prompt_tokens=avg_prompt_tokens,
             request_rate_per_sec=request_rate_per_sec,
             has_rdma=has_rdma,
+            multi_node=multi_node,
             host=host,
             endpoint=endpoint,
             current_engine=current_engine,
@@ -325,7 +325,7 @@ def register_benchmark_tools(mcp: FastMCP) -> None:
             current_split_prefill_decode=current_split_prefill_decode,
             current_scheduler=current_scheduler,
             current_cache=current_cache,
-            allow_private=False,
+            allow_private=allow_private,
             metrics_auth=resolve_auth_payload(metrics_auth, provider=provider),
             include_identity=True,
         )
@@ -344,7 +344,7 @@ def register_benchmark_tools(mcp: FastMCP) -> None:
         otlp_endpoint: str = "",
         vllm_proxy_command: str = "",
     ) -> dict[str, Any]:
-        """Generate live launch commands for a packaged vLLM or SGLang benchmark stack."""
+        """Generate live launch commands for a packaged vLLM, SGLang, Dynamo, or TRT-LLM benchmark stack."""
         available_experiments = list_builtin_experiments()
         if experiment not in available_experiments:
             return {
@@ -499,8 +499,11 @@ def register_benchmark_tools(mcp: FastMCP) -> None:
 
     @mcp.tool()
     async def tool_run_benchmark(
-        workload: str,
         endpoint: str,
+        workload: str = "",
+        dataset: str = "",
+        dataset_sample_size: int = 128,
+        dataset_seed: int = 42,
         experiment: str = "",
         model: str = "",
         gpu: str = "",
@@ -526,33 +529,113 @@ def register_benchmark_tools(mcp: FastMCP) -> None:
         metrics_provider: str = "",
         request_auth: dict | None = None,
         metrics_auth: dict | None = None,
+        allow_private: bool = False,
     ) -> dict[str, Any]:
-        """Replay a workload reference against an OpenAI-compatible endpoint."""
-        error, workload_reference, workload_pack, run_plan, support = _resolve_benchmark_plan(
-            workload,
-            endpoint,
-            experiment=experiment,
-            model=model,
-            gpu=gpu,
-            num_gpus=num_gpus,
-            engine=engine,
-            metrics_endpoint=metrics_endpoint,
-            concurrency=concurrency,
-            metrics_target_overrides=metrics_target_overrides,
-            request_rate=request_rate,
-            arrival_model=arrival_model,
-            arrival_shape=arrival_shape,
-            warmup_requests=warmup_requests,
-            goodput_slo=goodput_slo,
-            strict_support=strict_support,
-            synthetic_requests=synthetic_requests,
-            synthetic_input_tokens=synthetic_input_tokens,
-            synthetic_output_tokens=synthetic_output_tokens,
-            synthetic_seed=synthetic_seed,
-            context_file=context_file,
-        )
-        if error is not None:
-            return cast(dict[str, Any], error)
+        """Replay a workload or production trace dataset against an OpenAI-compatible endpoint.
+
+        Provide either `workload` (built-in name/path) or `dataset` (production trace source).
+        Dataset accepts: 'sharegpt', local .json/.jsonl path, or HuggingFace ref (org/name[@config][#split]).
+        Set allow_private=True for localhost/private IP endpoints (local development).
+        """
+        if not workload and not dataset:
+            return {
+                "error": "Either 'workload' or 'dataset' must be provided",
+                "summary": "❌ Missing workload source",
+                "confidence": 1.0,
+                "evidence": "benchmark_plan_resolution",
+            }
+        if workload and dataset:
+            return {
+                "error": "Provide either 'workload' or 'dataset', not both",
+                "summary": "❌ Conflicting workload sources",
+                "confidence": 1.0,
+                "evidence": "benchmark_plan_resolution",
+            }
+
+        if dataset:
+            # Dataset mode: load real production traces
+            try:
+                dataset_options = DatasetLoadOptions(
+                    sample_size=dataset_sample_size,
+                    seed=dataset_seed,
+                    concurrency=max(concurrency, 1),
+                )
+                workload_pack = load_trace_dataset(dataset, options=dataset_options)
+                workload_reference = f"dataset:{dataset}"
+
+                if concurrency:
+                    workload_pack = workload_pack.model_copy(update={"concurrency": concurrency})
+
+                execution = _build_execution_profile(
+                    request_rate=request_rate,
+                    arrival_model=arrival_model,
+                    arrival_shape=arrival_shape,
+                    warmup_requests=warmup_requests,
+                    goodput_slo=goodput_slo,
+                )
+                support = assess_benchmark_support(
+                    model_name=model or workload_pack.model or "",
+                    gpu_name=gpu,
+                    num_gpus=(num_gpus or None),
+                    engine_name=engine,
+                    workload=workload_pack,
+                    experiment=None,
+                    prompt_tokens=workload_pack.max_target_context_tokens()
+                    or workload_pack.max_actual_context_tokens(),
+                )
+                if strict_support and support.status == "unsupported":
+                    error_messages = [issue.message for issue in support.issues if issue.severity == "error"]
+                    return {
+                        "error": "; ".join(error_messages) or "Unsupported benchmark configuration",
+                        "support": support.model_dump(mode="json"),
+                        "summary": "❌ Unsupported benchmark configuration",
+                        "confidence": 1.0,
+                        "evidence": "benchmark_plan_resolution",
+                    }
+                run_plan = build_run_plan(
+                    workload_pack,
+                    endpoint,
+                    workload_ref=workload_reference,
+                    model=(model or None),
+                    concurrency=concurrency,
+                    metrics_endpoint=(metrics_endpoint or None),
+                    metrics_target_overrides=metrics_target_overrides,
+                    execution=execution,
+                    support=support,
+                )
+            except Exception as exc:  # noqa: BLE001
+                return {
+                    "error": str(exc),
+                    "summary": f"❌ Failed to load dataset: {dataset}",
+                    "confidence": 1.0,
+                    "evidence": "dataset_loading",
+                }
+        else:
+            error, workload_reference, workload_pack, run_plan, support = _resolve_benchmark_plan(
+                workload,
+                endpoint,
+                experiment=experiment,
+                model=model,
+                gpu=gpu,
+                num_gpus=num_gpus,
+                engine=engine,
+                metrics_endpoint=metrics_endpoint,
+                concurrency=concurrency,
+                metrics_target_overrides=metrics_target_overrides,
+                request_rate=request_rate,
+                arrival_model=arrival_model,
+                arrival_shape=arrival_shape,
+                warmup_requests=warmup_requests,
+                goodput_slo=goodput_slo,
+                strict_support=strict_support,
+                synthetic_requests=synthetic_requests,
+                synthetic_input_tokens=synthetic_input_tokens,
+                synthetic_output_tokens=synthetic_output_tokens,
+                synthetic_seed=synthetic_seed,
+                context_file=context_file,
+            )
+            if error is not None:
+                return cast(dict[str, Any], error)
 
         try:
             request_auth_config = resolve_auth_payload(request_auth, provider=provider)
@@ -577,7 +660,7 @@ def register_benchmark_tools(mcp: FastMCP) -> None:
                 metrics_auth_header_name=(metrics_auth_config.auth_header_name if metrics_auth_config else ""),
                 metrics_headers=metrics_auth_config.headers if metrics_auth_config else None,
                 capture_metrics=capture_metrics,
-                allow_private=False,
+                allow_private=allow_private,
             )
             artifact_path = ""
             if save_artifact:

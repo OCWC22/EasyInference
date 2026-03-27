@@ -27,6 +27,8 @@ InferScope extends beyond the public InferenceX-style matrix by shipping operato
 - **single-endpoint offload studies**
 - **LMCache-backed disaggregated serving**
 - **Grace-coherent overflow modeling**
+- **Dynamo disaggregated serving** — Dynamo 1.0 orchestrated prefill/decode with NIXL KV transfer and KV-aware routing
+- **KV cache compression** — FP8 KV quantization, prefix caching hit rates, chunked prefill tuning
 
 ## Serving runtime
 
@@ -66,6 +68,24 @@ The CLI and MCP benchmark tools can validate:
 - topology compatibility
 - cache / transport compatibility
 
+### NVIDIA ISA reference (Hopper / Blackwell)
+
+| GPU | ISA | Architecture | Key Formats |
+|-----|-----|-------------|-------------|
+| H100 PCIe | `sm_90` | Hopper | FP8 (E4M3/E5M2), FP16, BF16 |
+| H100 SXM / H200 / GH200 | `sm_90a` | Hopper | FP8 (E4M3/E5M2), FP16, BF16, DPX |
+| B100 / B200 / GB200 | `sm_100` | Blackwell | FP8, MXFP6, MXFP4, NVFP4, FP16, BF16 |
+| B300 / GB300 | `sm_103` | Blackwell Ultra | FP8, MXFP6, MXFP4, NVFP4, FP16, BF16 |
+
+**Cross-architecture compatibility**: PTX compiled for `compute_90a` is **not** forward-compatible with Blackwell. Blackwell adds microscaling formats (MXFP6/MXFP4) and NVFP4 that require native compilation.
+
+### AMD ISA reference (CDNA3 / CDNA4)
+
+| GPU | ISA | Architecture |
+|-----|-----|-------------|
+| MI300X | `gfx942` | CDNA3 |
+| MI355X | `gfx950` | CDNA4 |
+
 Support states:
 
 - `supported`
@@ -79,7 +99,7 @@ Examples:
 - `OffloadingConnector` lanes require single-endpoint vLLM
 - `LMCache` lanes require split topology
 - `NIXL` lanes degrade when neither RDMA nor a high-speed interconnect is available
-- preview engines such as TRT-LLM and Dynamo surface as degraded rather than silently passing
+- TRT-LLM and Dynamo are supported engines with validated gating (Dynamo is RECOMMENDED for multi-node NVIDIA)
 
 ## Built-in benchmark assets
 
@@ -279,7 +299,7 @@ Common issues when running benchmarks:
 | `Model not found` in plan resolution | Model name doesn't match registry | Use `inferscope benchmark-plan <workload> <endpoint> --model <name>` with an exact registry name, or check `inferscope recommend --list-models` |
 | `unsupported` status in support payload | GPU/topology/engine combination is gated | Check the `issues` array in the support response — each issue has a `code` and `reason` explaining the gate |
 | `degraded` status for NIXL transport | No RDMA / high-speed interconnect detected | Expected on commodity networks — benchmark still runs but results may not reflect production performance |
-| `preview_engine` degraded warning | TRT-LLM or Dynamo selected | These are preview planning targets — switch to `vllm` or `sglang` for production benchmarks |
+| `preview_engine` degraded warning | Engine is in preview tier | Switch to a supported engine (`vllm`, `sglang`, `trtllm`, `dynamo`) for production benchmarks |
 | Prometheus metrics empty | Endpoint doesn't expose `/metrics` | Verify engine metrics are enabled (vLLM: enabled by default, SGLang: `--enable-metrics`) |
 | `tool_parse_success_rate: 0.0` | Model not producing valid JSON tool calls | Check model supports structured output; try a larger model or adjust `--synthetic-output-tokens` |
 | Permission denied writing artifacts | `~/.inferscope/benchmarks/` not writable | Set `INFERSCOPE_CACHE_DIR` to a writable path, or `mkdir -p ~/.inferscope/benchmarks` |
@@ -294,15 +314,71 @@ Legacy repo-style references continue to resolve for packaged built-ins, for exa
 
 Use the short built-in names for new automation and docs.
 
-## Recommended comparison matrix
+## Recommended comparison matrices
 
-For long-context inference work, use these experiments together:
+### Long-context inference (standard)
 
 1. `vllm-single-endpoint-baseline`
 2. `vllm-single-endpoint-offloading-connector`
 3. `vllm-disagg-prefill-lmcache-grace`
 
-This gives a practical progression from GPU-resident baseline → host spill → LMCache/disaggregated overflow.
+Progression: GPU-resident baseline → host spill → LMCache/disaggregated overflow.
+
+### Dynamo disaggregated (NIXL KV transfer)
+
+1. `dynamo-disagg-prefill-nixl` — coding workload, Dynamo-orchestrated P/D split with NIXL
+2. `dynamo-disagg-prefill-nixl-rag` — long-context RAG (32K–128K), document-switch patterns
+3. `dynamo-disagg-prefill-nixl-grace` — Grace Blackwell (GB200/GB300) with HBM + Grace coherent tiers
+
+Each Dynamo experiment spec defines multiple metrics targets:
+
+| Target | Role | Engine | Required | Description |
+|--------|------|--------|----------|-------------|
+| `primary` | primary | vllm | yes | Decode worker — main latency/throughput metrics |
+| `router` | router | dynamo | no | Smart Router — orchestration telemetry |
+| `prefill` | prefill | vllm | yes | Prefill worker — KV generation metrics |
+| `decode` | decode | vllm | yes | Decode worker — token generation metrics |
+
+The decode worker is the primary metrics endpoint for benchmark results. Router metrics are supplemental orchestration telemetry captured alongside worker snapshots.
+
+### Dynamo end-to-end benchmark workflow
+
+```bash
+# 1. Plan the strategy — auto-selects Dynamo lanes for NVIDIA multi-GPU
+inferscope benchmark-strategy Qwen3.5-72B h100 \
+  --workload coding \
+  --num-gpus 4 \
+  --has-rdma \
+  --multi-node  # optional: promotes Dynamo to RECOMMENDED tier
+
+# 2. Inspect the Dynamo stack plan
+inferscope benchmark-stack-plan dynamo-disagg-prefill-nixl h100 --num-gpus 4
+
+# 3. Run the benchmark against a live Dynamo deployment
+inferscope benchmark coding-long-context http://localhost:9000 \
+  --experiment dynamo-disagg-prefill-nixl \
+  --model Qwen3.5-72B \
+  --gpu h100 \
+  --num-gpus 4
+
+# 4. Compare against a baseline
+inferscope benchmark-compare baseline.json dynamo-run.json
+```
+
+The stack plan generates launch commands for all Dynamo components:
+- **Smart Router** — routes requests based on KV cache state and SLO targets
+- **vLLM prefill worker** — handles prompt processing (port 7100)
+- **vLLM decode worker** — handles token generation (port 7200)
+- **NIXL env wiring** — configures zero-copy RDMA KV transfer between workers
+
+### Multi-node vs multi-GPU semantics
+
+InferScope distinguishes between multi-GPU (single host, multiple GPUs) and multi-node (multiple hosts):
+
+- **Multi-GPU, single host** (e.g., 8×H100 SXM on one node): Dynamo tier = `supported`
+- **Multi-node** (e.g., 2+ hosts with RDMA interconnect): Dynamo tier = `recommended`
+
+The `--multi-node` flag is explicit — it is **not** inferred from GPU count or topology mode. This prevents false promotions on single-host multi-GPU systems where Dynamo orchestration overhead may not be justified.
 
 ## Artifact location
 

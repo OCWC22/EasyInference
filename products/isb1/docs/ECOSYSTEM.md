@@ -60,12 +60,25 @@ Important donor concepts absorbed into EasyInference:
 
 These concepts should be translated into the public EasyInference products, not exposed as a third first-class product.
 
+## KV cache benchmarking extension
+
+InferScope extends the ISB-1 workload families with KV-cache-aware benchmark lanes that no public benchmark covers today:
+
+- **KV offloading** — cold-session spill to host DRAM or SSD
+- **Disaggregated KV** — prefill/decode split with LMCache or SGLang HiCache
+- **Disaggregated serving (Dynamo + NIXL)** — orchestrated prefill/decode with KV-aware routing
+- **KV compression** — lz4, fp8, kvtc, turboquant, mxfp4, cachegen overlays
+- **Grace-coherent overflow** — 3-tier HBM → Grace LPDDR5X → remote cache
+
+These extensions sit on top of the canonical families without fragmenting the benchmark standard. A Dynamo-orchestrated RAG experiment still belongs to the `rag` family; the cache topology is orthogonal metadata.
+
 ## Canonical family mapping
 
 Specific scenarios should map back to stable ISB-1 families.
 
 - `tool-agent` → `agent`
 - `coding-long-context` → `coding`
+- `long-context-kv-offload-rag` → `rag`
 - chat-oriented packaged workloads → `chat`
 - retrieval-heavy packaged workloads → `rag`
 

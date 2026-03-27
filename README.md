@@ -23,6 +23,8 @@ The extension path is explicit:
   - tool-agent / MCP workloads
   - realistic KV-cache overflow and cold-session reuse
   - LMCache / disaggregated-prefill studies
+  - Dynamo 1.0 disaggregated serving with NIXL KV transfer
+  - KV cache compression benchmarking (lz4, fp8, kvtc, turboquant, mxfp4, cachegen)
   - Grace-coherent overflow modeling for GH200 / GB200 / GB300 systems
 
 This repo also absorbs workload ideas from the local `inferscope-bench/` donor harness — especially **MCP/tool-call** and **long-context coding** patterns — without turning that subtree into a third public product.
@@ -64,7 +66,7 @@ Start here:
 ### InferScope
 
 Use `products/inferscope/` if you need to:
-- recommend serving configs for vLLM, SGLang, or ATOM on NVIDIA (and vLLM on AMD), with preview planning for TRT-LLM and Dynamo
+- recommend serving configs for vLLM, SGLang, TRT-LLM, Dynamo, or ATOM on NVIDIA (and vLLM on AMD)
 - expose optimization and diagnostics through MCP
 - replay packaged benchmark workloads against a real endpoint
 - procedurally expand **tool-agent** and **coding-long-context** workloads from the benchmark bridge

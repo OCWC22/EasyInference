@@ -15,15 +15,19 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from inferscope.telemetry.models import MetricSampleRecord, MetricSnapshot
 
+HydrationMode = Literal["hydrated", "template", "synthetic"]
+
 __all__ = [
     "BenchmarkArtifact",
     "BenchmarkRequestResult",
     "BenchmarkSummary",
     "ChatMessage",
+    "HydrationMode",
     "MetricSampleRecord",
     "MetricSnapshot",
     "WorkloadPack",
     "WorkloadRequest",
+    "estimate_tokens",
 ]
 
 
@@ -47,6 +51,19 @@ def sanitize_for_json(value: Any) -> Any:
     if isinstance(value, list):
         return [sanitize_for_json(item) for item in value]
     return value
+
+
+def estimate_tokens(value: object) -> int:
+    """Estimate token count from text/message content (~4 chars per token)."""
+    if value is None:
+        return 0
+    if isinstance(value, str):
+        return max(1, math.ceil(len(value) / 4))
+    if isinstance(value, list):
+        return sum(estimate_tokens(item) for item in value)
+    if isinstance(value, dict):
+        return sum(estimate_tokens(item) for item in value.values())
+    return max(1, math.ceil(len(str(value)) / 4))
 
 
 class ChatMessage(BaseModel):
@@ -83,6 +100,27 @@ class WorkloadRequest(BaseModel):
             raise ValueError("WorkloadRequest.messages must contain at least one message")
         return self
 
+    @property
+    def target_context_tokens(self) -> int | None:
+        """Operator-intended target context size (may far exceed actual payload)."""
+        val = self.metadata.get("target_context_tokens")
+        if isinstance(val, int) and val > 0:
+            return val
+        # Legacy fallback
+        val = self.metadata.get("approx_context_tokens")
+        if isinstance(val, int) and val > 0:
+            return val
+        return None
+
+    @property
+    def actual_context_tokens(self) -> int:
+        """Estimated token count of the actual message payload that will be sent."""
+        total = 0
+        for message in self.messages:
+            total += estimate_tokens(message.role)
+            total += estimate_tokens(message.content)
+        return max(1, total)
+
 
 class WorkloadPack(BaseModel):
     """A replayable workload pack."""
@@ -111,6 +149,27 @@ class WorkloadPack(BaseModel):
         if not self.endpoint_path.startswith("/"):
             raise ValueError("WorkloadPack.endpoint_path must start with '/'")
         return self
+
+    @property
+    def hydration_mode(self) -> HydrationMode:
+        """Determine workload hydration status from reserved tags."""
+        for tag in self.tags:
+            if tag == "hydration:template":
+                return "template"
+            if tag == "hydration:synthetic":
+                return "synthetic"
+            if tag == "hydration:hydrated":
+                return "hydrated"
+        return "hydrated"  # Default: assume user-supplied workloads are hydrated
+
+    def max_target_context_tokens(self) -> int | None:
+        """Maximum target context tokens across all requests, or None."""
+        targets = [r.target_context_tokens for r in self.requests if r.target_context_tokens is not None]
+        return max(targets) if targets else None
+
+    def max_actual_context_tokens(self) -> int:
+        """Maximum actual (payload-estimated) context tokens across all requests."""
+        return max((r.actual_context_tokens for r in self.requests), default=1)
 
     @classmethod
     def from_file(cls, path: str | Path) -> WorkloadPack:

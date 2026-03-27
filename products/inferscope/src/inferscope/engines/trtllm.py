@@ -21,12 +21,11 @@ class TRTLLMCompiler(ConfigCompiler):
 
     def compile(self, profile: ServingProfile, inventory: DeploymentInventory) -> EngineConfig:
         cfg = EngineConfig(engine="trtllm")
-        cfg.support_tier = "preview"
+        cfg.support_tier = "supported"
         cfg.support_reason = (
-            "TensorRT-LLM is exposed as a preview planning target in InferScope; "
-            "validate manually before production use."
+            "TensorRT-LLM v1.2+ delivers the highest compiled throughput on NVIDIA hardware; "
+            "requires a compilation step and is NVIDIA-only."
         )
-        cfg.warnings.append(f"Preview engine: {cfg.support_reason}")
         cfg.cli_flags["model_dir"] = profile.model
 
         # --- Parallelism ---

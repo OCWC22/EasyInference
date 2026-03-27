@@ -30,6 +30,69 @@ from inferscope.endpoint_auth import EndpointAuthConfig, build_auth_headers
 from inferscope.logging import get_logger, sanitize_log_text
 from inferscope.security import validate_endpoint
 
+
+class BenchmarkConnectionError(RuntimeError):
+    """Raised when the benchmark endpoint is unreachable or returns an auth error."""
+
+
+def _classify_error(exc: Exception) -> str:
+    """Return an actionable error message for common failure modes."""
+    msg = str(exc)
+    if isinstance(exc, httpx.ConnectError):
+        return (
+            f"Connection refused: {msg}. "
+            "Verify the endpoint is running and the URL is correct. "
+            "For localhost endpoints, ensure the server has finished loading the model."
+        )
+    if isinstance(exc, httpx.ConnectTimeout):
+        return (
+            f"Connection timed out: {msg}. "
+            "The endpoint may be overloaded or unreachable. "
+            "Check network connectivity and firewall rules."
+        )
+    if isinstance(exc, httpx.ReadTimeout):
+        return (
+            f"Read timed out: {msg}. "
+            "The model may be too slow for the configured timeout, or the request is too large. "
+            "Try increasing --request-timeout or reducing prompt size."
+        )
+    if isinstance(exc, httpx.HTTPStatusError):
+        status = exc.response.status_code
+        if status == 401:
+            return (
+                "Authentication failed (401). "
+                "Provide a valid API key via --api-key or OPENAI_API_KEY."
+            )
+        if status == 403:
+            return (
+                "Access forbidden (403). "
+                "The API key may lack permissions for this model or endpoint."
+            )
+        if status == 404:
+            return (
+                f"Endpoint not found (404): {exc.request.url}. "
+                "Check the endpoint URL and model name. "
+                "Common issue: the model may not be loaded on this server."
+            )
+        if status == 429:
+            return (
+                "Rate limited (429). "
+                "Reduce concurrency or request rate."
+            )
+        if status >= 500:
+            return (
+                f"Server error ({status}). "
+                "The inference server encountered an internal error. "
+                "Check server logs for details."
+            )
+    if isinstance(exc, asyncio.TimeoutError):
+        return (
+            "Benchmark total timeout exceeded. "
+            "The full benchmark run took longer than the configured total_timeout_seconds. "
+            "Try fewer requests or higher concurrency."
+        )
+    return sanitize_log_text(msg)
+
 log = get_logger(component="benchmarks.runtime")
 
 
@@ -133,14 +196,8 @@ def _approx_token_count_from_text(value: object) -> int:
 
 
 def _approx_prompt_tokens(request: WorkloadRequest) -> int:
-    approx = request.metadata.get("approx_context_tokens")
-    if isinstance(approx, int) and approx > 0:
-        return approx
-    total = 0
-    for message in request.messages:
-        total += _approx_token_count_from_text(message.role)
-        total += _approx_token_count_from_text(message.content)
-    return max(1, total)
+    """Estimate actual prompt tokens from message content (not target/planning values)."""
+    return request.actual_context_tokens
 
 
 def _extract_output_payload(payload: dict[str, Any]) -> object | None:
@@ -321,9 +378,8 @@ def _threshold_from_value(value: Any, prompt_tokens: int | None) -> float | None
 
 
 def _request_slo(request: WorkloadRequest, execution: BenchmarkExecutionProfile) -> tuple[float | None, float | None]:
-    prompt_tokens = request.metadata.get("approx_context_tokens")
-    if not isinstance(prompt_tokens, int) or prompt_tokens < 1:
-        prompt_tokens = _approx_prompt_tokens(request)
+    # Use actual payload size for SLO bucketing, not target/planning values
+    prompt_tokens = request.actual_context_tokens
     ttft_threshold = _threshold_from_value(execution.goodput_slo.ttft_p95_ms, prompt_tokens)
     tpot_threshold = _threshold_from_value(execution.goodput_slo.tpot_p95_ms, prompt_tokens)
     return ttft_threshold, tpot_threshold
@@ -604,11 +660,11 @@ async def _run_request(
             completed_at=utc_now_iso(),
             elapsed_ms=elapsed_ms,
             ttft_ms=None,
-            status_code=None,
+            status_code=getattr(getattr(exc, "response", None), "status_code", None),
             prompt_tokens=None,
             completion_tokens=None,
             total_tokens=None,
-            error=sanitize_log_text(str(exc)),
+            error=_classify_error(exc),
         )
 
 
@@ -704,12 +760,70 @@ def _observed_runtime(
             {*workload.tags, *(str(request.metadata.get("bridge_source", "")) for request in workload.requests)} - {""}
         ),
         "timing_granularity": "stream_chunk" if workload.stream else "e2e_only",
-        "warnings": [
-            "ITL is approximated from streamed output chunks rather than token-level traces."
-            if workload.stream
-            else "ITL is unavailable for non-streaming runs."
-        ],
+        "context_tokens": {
+            "hydration_mode": workload.hydration_mode,
+            "target_max": workload.max_target_context_tokens(),
+            "actual_max": workload.max_actual_context_tokens(),
+        },
+        "warnings": _build_runtime_warnings(workload),
     }
+
+
+def _build_runtime_warnings(workload: WorkloadPack) -> list[str]:
+    """Build runtime warnings including hydration and measurement caveats."""
+    warnings: list[str] = []
+    if workload.stream:
+        warnings.append("ITL is approximated from streamed output chunks rather than token-level traces.")
+    else:
+        warnings.append("ITL is unavailable for non-streaming runs.")
+    if workload.hydration_mode == "template":
+        target = workload.max_target_context_tokens()
+        actual = workload.max_actual_context_tokens()
+        warnings.append(
+            f"Template workload: actual payload ~{actual} tokens vs target {target} tokens. "
+            "Latency and throughput reflect the inline template, not the target corpus size. "
+            "Use --context-file or procedural expansion for benchmark-grade runs."
+        )
+    return warnings
+
+
+async def _preflight_check(
+    endpoint: str,
+    workload: WorkloadPack,
+    request_auth: EndpointAuthConfig | None,
+    extra_headers: dict[str, str] | None,
+    *,
+    timeout_seconds: float = 10.0,
+) -> None:
+    """Verify the endpoint is reachable before starting the benchmark."""
+    url = f"{endpoint}{workload.endpoint_path}"
+    headers = build_auth_headers(request_auth, include={"Content-Type": "application/json"})
+    if extra_headers:
+        headers.update(extra_headers)
+    # Send a minimal request to verify connectivity and auth.
+    # Use a GET to the base endpoint or a lightweight POST.
+    async with httpx.AsyncClient(timeout=timeout_seconds) as probe_client:
+        try:
+            # Try GET on the models endpoint first (standard OpenAI-compatible)
+            models_url = f"{endpoint}/v1/models"
+            response = await probe_client.get(models_url, headers=headers)
+            if response.status_code == 401:
+                raise BenchmarkConnectionError(
+                    "Authentication failed (401) during pre-flight check. "
+                    "Provide a valid API key via --api-key or OPENAI_API_KEY."
+                )
+            if response.status_code == 403:
+                raise BenchmarkConnectionError(
+                    "Access forbidden (403) during pre-flight check. "
+                    "The API key may lack permissions for this endpoint."
+                )
+            # Any other response (200, 404, 405) means the server is reachable
+        except (httpx.ConnectError, httpx.ConnectTimeout) as exc:
+            raise BenchmarkConnectionError(
+                f"Cannot reach endpoint {endpoint}: {exc}. "
+                "Verify the server is running and the URL is correct. "
+                "For local servers, ensure model loading is complete."
+            ) from exc
 
 
 async def run_benchmark_runtime(
@@ -727,6 +841,14 @@ async def run_benchmark_runtime(
     """Execute a packaged benchmark run with request scheduling and rich serving metrics."""
 
     validated_endpoint = validate_endpoint(endpoint, allow_private=allow_private)
+
+    # Pre-flight: verify endpoint is reachable before committing to the full run.
+    # Skip when caller supplies their own client (e.g. test mocks).
+    if client is None:
+        await _preflight_check(
+            validated_endpoint, workload, request_auth, extra_headers,
+        )
+
     benchmark_id = f"{slugify(workload.name)}-{uuid4().hex[:12]}"
     backend = _detect_backend(run_plan, workload)
     run_log = log.bind(
@@ -738,6 +860,13 @@ async def run_benchmark_runtime(
         concurrency=run_plan.concurrency,
         topology_mode=run_plan.topology.mode,
         cache_strategy=run_plan.cache.strategy,
+    )
+    run_log.info(
+        "benchmark_starting",
+        total_requests=len(workload.requests),
+        stream=workload.stream,
+        request_rate_rps=run_plan.execution.request_rate_rps,
+        warmup_requests=run_plan.execution.warmup_requests,
     )
 
     metrics_before_targets: list[MetricSnapshot] = []
@@ -787,6 +916,10 @@ async def run_benchmark_runtime(
     arrival_offsets_ms = _arrival_offsets_ms(len(workload.requests), execution, seed)
     request_groups = _group_requests(workload.requests, arrival_offsets_ms)
     semaphore = asyncio.Semaphore(run_plan.concurrency)
+    total_requests = len(workload.requests)
+    completed_count = 0
+    failed_count = 0
+    progress_interval = max(1, total_requests // 10)  # Log every ~10%
 
     async def run_group(group: list[tuple[int, WorkloadRequest, float]]) -> list[tuple[int, RuntimeRequestResult]]:
         async with semaphore:
@@ -833,8 +966,19 @@ async def run_benchmark_runtime(
                     keep_output=keep_output,
                 )
                 group_results.append((index, result))
+                nonlocal completed_count, failed_count
+                completed_count += 1
                 if result.status != "ok":
+                    failed_count += 1
                     prior_failed = True
+                if completed_count % progress_interval == 0 or completed_count == total_requests:
+                    run_log.info(
+                        "benchmark_progress",
+                        completed=completed_count,
+                        total=total_requests,
+                        failed=failed_count,
+                        pct=round(100.0 * completed_count / total_requests, 1),
+                    )
             return group_results
 
     try:

@@ -54,6 +54,8 @@ The test suite should cover the following areas. If your change touches any of t
 - [ ] Benchmark catalog: packaged descriptor metadata and filtered matrix generation across CLI, MCP, and Python entrypoints
 - [ ] Benchmark strategy: suite planning and runtime-bridge prioritization
 - [ ] Benchmark support: GPU/model/ISA-aware gating, preview/degraded paths, AMD ISA recognition
+- [ ] Benchmark support: deprecated remote backend gating — `deprecated_remote_backend` rejects SiMM with migration message
+- [ ] Benchmark cache metadata: `BenchmarkCacheMetadata` validation (remote backend, compression, tier consistency)
 - [ ] Benchmark runtime: TTFT / TPOT / ITL / throughput / session-failure semantics
 
 ## Validation report cross-references
@@ -71,5 +73,5 @@ The test suite should cover the following areas. If your change touches any of t
 - If docs drift from code, trust the current packaged CLI and MCP surfaces.
 - Procedural benchmark generation is limited to selected packaged built-ins, not arbitrary YAML file paths.
 - Runtime profiling is Prometheus-first in v1 and does not persist profiles to disk by default.
-- TRT-LLM and Dynamo are still preview planning targets in InferScope even when InferenceX publishes results for them.
+- TRT-LLM is a supported NVIDIA engine; Dynamo 1.0 is recommended for multi-node NVIDIA disaggregated serving.
 - AMD MI300X / MI355X are day-one supported for planning and benchmark gating; NVIDIA Hopper/Blackwell is the primary validated path.

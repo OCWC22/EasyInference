@@ -85,7 +85,20 @@ Current mapping:
 
 - `tool-agent` in InferScope maps into the ISB-1 **agent** family.
 - `coding-long-context` in InferScope maps into the ISB-1 **coding** family.
+- `long-context-kv-offload-rag` in InferScope maps into the ISB-1 **rag** family.
 - RAG and chat scenarios remain available as neutral benchmark families in ISB-1 and as packaged evaluation assets in InferScope.
+
+## KV cache and distributed memory
+
+InferScope extends the benchmark surface with KV-cache-aware experiment lanes:
+
+- **Cache metadata**: `BenchmarkCacheMetadata` carries tier, strategy, connector, and compression fields
+- **Dynamo integration**: Launcher generates Dynamo declarative YAML, vLLM worker commands for prefill/decode pools, and Smart Router wiring; NIXL handles KV transfer
+- **Compression overlay**: `BenchmarkCacheCompressionMetadata` supports lz4, fp8, kvtc, turboquant, mxfp4, and cachegen algorithms
+- **Support gating**: RDMA requirements, strategy compatibility, and tier consistency are enforced before benchmark execution
+- **Telemetry**: vLLM/SGLang worker metrics scraped per-component; Dynamo orchestration metrics from Smart Router endpoint
+
+This layer is the primary way EasyInference extends beyond the public benchmark frontier into operator-relevant KV cache studies.
 
 ## Root ownership
 

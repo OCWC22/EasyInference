@@ -26,7 +26,7 @@ Those public references confirm that InferenceX currently tracks hardware famili
 
 - fixed **B200 vs GB200** differentiation in the vLLM compiler
 - fixed TRT-LLM scheduler field selection
-- marked TRT-LLM and Dynamo as preview planning targets in public outputs
+- marked TRT-LLM as supported and Dynamo as recommended (multi-node) / supported (single-node) in public outputs
 
 ### Memory / KV path
 

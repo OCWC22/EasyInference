@@ -13,6 +13,7 @@ import typer
 from inferscope.benchmarks import (
     BenchmarkExecutionProfile,
     BenchmarkGoodputSLO,
+    DatasetLoadOptions,
     ProceduralWorkloadOptions,
     assess_benchmark_support,
     build_benchmark_matrix,
@@ -26,6 +27,7 @@ from inferscope.benchmarks import (
     list_builtin_workloads,
     load_benchmark_artifact,
     load_experiment,
+    load_trace_dataset,
     materialize_benchmark_stack_plan,
     materialize_workload,
     parse_metrics_target_overrides,
@@ -156,15 +158,7 @@ def _resolve_benchmark_plan(
         engine_name=(engine or (experiment_spec.engine if experiment_spec else "")),
         workload=workload_pack,
         experiment=experiment_spec,
-        prompt_tokens=max(
-            (
-                int(request.metadata.get("approx_context_tokens"))
-                for request in workload_pack.requests
-                if isinstance(request.metadata.get("approx_context_tokens"), int)
-            ),
-            default=0,
-        )
-        or None,
+        prompt_tokens=workload_pack.max_target_context_tokens() or workload_pack.max_actual_context_tokens(),
     )
     if strict_support and support.status == "unsupported":
         messages = [issue.message for issue in support.issues if issue.severity == "error"]
@@ -262,6 +256,7 @@ def register_benchmark_commands(
         avg_prompt_tokens: Annotated[int, typer.Option(help="Average prompt tokens", min=1)] = 4096,
         request_rate_per_sec: Annotated[float, typer.Option(help="Requests per second", min=0.0)] = 10.0,
         has_rdma: Annotated[bool, typer.Option(help="RDMA available between nodes")] = False,
+        multi_node: Annotated[bool, typer.Option(help="Deployment spans multiple hosts (enables Dynamo RECOMMENDED tier)")] = False,
         host: Annotated[str, typer.Option(help="Host/IP for generated stack plans")] = "127.0.0.1",
         endpoint: Annotated[str, typer.Option(help="Optional live endpoint to profile and bridge into the plan")] = "",
         current_engine: Annotated[
@@ -327,6 +322,7 @@ def register_benchmark_commands(
                 avg_prompt_tokens=avg_prompt_tokens,
                 request_rate_per_sec=request_rate_per_sec,
                 has_rdma=has_rdma,
+                multi_node=multi_node,
                 host=host,
                 endpoint=endpoint,
                 current_engine=current_engine,
@@ -553,8 +549,25 @@ def register_benchmark_commands(
 
     @app.command(name="benchmark")
     def benchmark_cmd(
-        workload: Annotated[str, typer.Argument(help="Workload file path or built-in workload name")],
-        endpoint: Annotated[str, typer.Argument(help="OpenAI-compatible request endpoint base URL")],
+        workload: Annotated[str, typer.Argument(help="Workload name/path, or endpoint URL when using --dataset")] = "",
+        endpoint: Annotated[str, typer.Argument(help="OpenAI-compatible request endpoint base URL")] = "",
+        dataset: Annotated[
+            str,
+            typer.Option(
+                help=(
+                    "Load a production trace dataset instead of a built-in workload. "
+                    "Accepts: 'sharegpt', local .json/.jsonl path, or HuggingFace ref (org/name[@config][#split])"
+                ),
+            ),
+        ] = "",
+        dataset_sample_size: Annotated[
+            int,
+            typer.Option(help="Number of conversations to sample from dataset", min=1),
+        ] = 128,
+        dataset_seed: Annotated[
+            int,
+            typer.Option(help="Random seed for deterministic dataset sampling"),
+        ] = 42,
         experiment: Annotated[str, typer.Option(help="Optional built-in or file-backed experiment spec")] = "",
         model: Annotated[str, typer.Option(help="Override model name from the workload/experiment")] = "",
         gpu: Annotated[str, typer.Option(help="Concrete GPU SKU for support validation")] = "",
@@ -659,37 +672,124 @@ def register_benchmark_commands(
         ] = True,
     ):
         """Replay a workload pack against an OpenAI-compatible endpoint and save an artifact."""
+        # Resolve positional args: with --dataset, first positional is the endpoint
+        if dataset:
+            if endpoint:
+                raise typer.BadParameter(
+                    "When using --dataset, pass only one positional argument (the endpoint URL). "
+                    "Example: inferscope benchmark --dataset sharegpt http://localhost:8000"
+                )
+            if not workload:
+                raise typer.BadParameter("Endpoint URL is required")
+            effective_endpoint = workload
+            effective_workload = ""
+
+            # Reject incompatible procedural options
+            for flag_name, flag_val in [
+                ("experiment", experiment),
+                ("synthetic-requests", synthetic_requests),
+                ("synthetic-input-tokens", synthetic_input_tokens),
+                ("synthetic-output-tokens", synthetic_output_tokens),
+                ("context-file", context_file),
+            ]:
+                if flag_val:
+                    raise typer.BadParameter(f"--{flag_name} cannot be used with --dataset")
+        else:
+            if not workload or not endpoint:
+                raise typer.BadParameter(
+                    "Usage: inferscope benchmark <workload> <endpoint>, or "
+                    "inferscope benchmark --dataset <ref> <endpoint>"
+                )
+            effective_endpoint = endpoint
+            effective_workload = workload
+
         try:
-            workload_reference, workload_pack, run_plan, support = _resolve_benchmark_plan(
-                workload,
-                endpoint,
-                experiment=experiment,
-                model=model,
-                gpu=gpu,
-                num_gpus=num_gpus,
-                engine=engine,
-                concurrency=concurrency,
-                metrics_endpoint=metrics_endpoint,
-                metrics_target=metrics_target,
-                topology_mode=topology_mode,
-                session_routing=session_routing,
-                session_header_name=session_header_name,
-                cache_strategy=cache_strategy,
-                cache_tier=cache_tier,
-                cache_connector=cache_connector,
-                session_affinity=session_affinity,
-                request_rate=request_rate,
-                arrival_model=arrival_model,
-                arrival_shape=arrival_shape,
-                warmup_requests=warmup_requests,
-                goodput_slo=_parse_json_option(goodput_slo, option_name="goodput_slo"),
-                strict_support=strict_support,
-                synthetic_requests=synthetic_requests,
-                synthetic_input_tokens=synthetic_input_tokens,
-                synthetic_output_tokens=synthetic_output_tokens,
-                synthetic_seed=synthetic_seed,
-                context_file=context_file,
-            )
+            if dataset:
+                # Dataset mode: load real production traces
+                dataset_options = DatasetLoadOptions(
+                    sample_size=dataset_sample_size,
+                    seed=dataset_seed,
+                    stream=(True),
+                    concurrency=(concurrency or 1),
+                )
+                workload_pack = load_trace_dataset(dataset, options=dataset_options)
+                workload_reference = f"dataset:{dataset}"
+
+                # Override concurrency if specified
+                if concurrency:
+                    workload_pack = workload_pack.model_copy(update={"concurrency": concurrency})
+
+                execution = _build_execution_profile(
+                    request_rate=request_rate,
+                    arrival_model=arrival_model,
+                    arrival_shape=arrival_shape,
+                    warmup_requests=warmup_requests,
+                    goodput_slo=_parse_json_option(goodput_slo, option_name="goodput_slo"),
+                )
+                metrics_target_overrides = parse_metrics_target_overrides(metrics_target)
+                support = assess_benchmark_support(
+                    model_name=model or workload_pack.model or "",
+                    gpu_name=gpu,
+                    num_gpus=num_gpus,
+                    engine_name=engine,
+                    workload=workload_pack,
+                    experiment=None,
+                    prompt_tokens=workload_pack.max_target_context_tokens()
+                    or workload_pack.max_actual_context_tokens(),
+                )
+                if strict_support and support.status == "unsupported":
+                    messages = [issue.message for issue in support.issues if issue.severity == "error"]
+                    raise ValueError("; ".join(messages) or "Unsupported benchmark configuration")
+                run_plan = build_run_plan(
+                    workload_pack,
+                    effective_endpoint,
+                    workload_ref=workload_reference,
+                    model=(model or None),
+                    concurrency=concurrency,
+                    metrics_endpoint=metrics_endpoint,
+                    metrics_target_overrides=metrics_target_overrides,
+                    topology_mode=(topology_mode or None),
+                    session_routing=(session_routing or None),
+                    session_header_name=(session_header_name or None),
+                    cache_strategy=(cache_strategy or None),
+                    cache_tiers=(cache_tier or None),
+                    cache_connector=(cache_connector or None),
+                    session_affinity=session_affinity,
+                    execution=execution,
+                    support=support,
+                )
+            else:
+                # Standard workload mode
+                workload_reference, workload_pack, run_plan, support = _resolve_benchmark_plan(
+                    effective_workload,
+                    effective_endpoint,
+                    experiment=experiment,
+                    model=model,
+                    gpu=gpu,
+                    num_gpus=num_gpus,
+                    engine=engine,
+                    concurrency=concurrency,
+                    metrics_endpoint=metrics_endpoint,
+                    metrics_target=metrics_target,
+                    topology_mode=topology_mode,
+                    session_routing=session_routing,
+                    session_header_name=session_header_name,
+                    cache_strategy=cache_strategy,
+                    cache_tier=cache_tier,
+                    cache_connector=cache_connector,
+                    session_affinity=session_affinity,
+                    request_rate=request_rate,
+                    arrival_model=arrival_model,
+                    arrival_shape=arrival_shape,
+                    warmup_requests=warmup_requests,
+                    goodput_slo=_parse_json_option(goodput_slo, option_name="goodput_slo"),
+                    strict_support=strict_support,
+                    synthetic_requests=synthetic_requests,
+                    synthetic_input_tokens=synthetic_input_tokens,
+                    synthetic_output_tokens=synthetic_output_tokens,
+                    synthetic_seed=synthetic_seed,
+                    context_file=context_file,
+                )
         except Exception as exc:  # noqa: BLE001
             raise typer.BadParameter(str(exc)) from exc
 
@@ -702,7 +802,7 @@ def register_benchmark_commands(
         artifact = asyncio.run(
             run_openai_replay(
                 workload_pack,
-                endpoint,
+                effective_endpoint,
                 metrics_endpoint=metrics_endpoint,
                 run_plan=run_plan,
                 workload_ref=workload_reference,

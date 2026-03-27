@@ -78,6 +78,65 @@ v1 is intentionally Prometheus-first.
 
 Future trace and kernel work belongs under `src/inferscope/profiling/`.
 
+## Dynamo / NIXL telemetry
+
+When Dynamo orchestrates a disaggregated deployment, InferScope captures metrics at two levels:
+
+**Worker-level metrics** (scraped from vLLM/SGLang endpoints):
+- Standard vLLM/SGLang Prometheus metrics (TTFT, ITL, KV cache utilization, prefix cache hit rate, etc.)
+- Each prefill and decode worker is scraped independently
+- The decode worker serves as the primary benchmark metrics endpoint
+
+**Orchestration-layer metrics** (from Dynamo Smart Router):
+- Router request latency, routing decisions, SLO compliance rates
+- NIXL KV transfer throughput and latency
+- KV Block Manager utilization and eviction counters
+
+### Dynamo metric prefix families
+
+InferScope groups Dynamo orchestration metrics by prefix family:
+
+| Prefix | Group Key | Description |
+|--------|-----------|-------------|
+| `dynamo_component_router_` | `router` | Per-request KV-aware routing decisions and latency |
+| `dynamo_router_overhead_` | `router_overhead` | Router scheduling and dispatch overhead |
+| `dynamo_frontend_worker_` | `frontend_workers` | Per-worker load, queue depth, and health gauges |
+
+These metrics are exposed via the `/metrics` endpoint on the Dynamo Smart Router (typically port 9100) when `DYN_SYSTEM_PORT` is set.
+
+### Engine detection
+
+The telemetry normalizer auto-detects engines from metric text:
+- `vllm:` prefix → vLLM worker
+- `sglang:` prefix → SGLang worker
+- `dynamo_component_router_`, `dynamo_router_overhead_`, or `dynamo_frontend_worker_` → Dynamo orchestration
+
+Note: vLLM detection takes precedence. A combined endpoint exposing both vLLM worker and Dynamo orchestration metrics will be classified as `"vllm"`. Dynamo detection fires only on the dedicated router endpoint.
+
+### Normalized orchestration output
+
+For `engine="dynamo"` scrapes, the normalizer produces an `orchestration` dict grouped by prefix family:
+
+```json
+{
+  "orchestration": {
+    "router": {
+      "requests_total": 100.0,
+      "latency_seconds_sum": 2.5
+    },
+    "router_overhead": {
+      "scheduling_ms": 0.4
+    },
+    "frontend_workers": {
+      "queue_depth": 3.0,
+      "active_connections": 8.0
+    }
+  }
+}
+```
+
+This is supplemental telemetry — it does **not** replace the shared worker metrics (TTFT, ITL, KV cache, etc.) which come from the vLLM/SGLang worker endpoints.
+
 ## GPU platform notes
 
 - NVIDIA Hopper/Blackwell: primary validated path. Prometheus metrics from vLLM and SGLang are fully normalized.

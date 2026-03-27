@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-import math
+
 from typing import TYPE_CHECKING, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -66,33 +66,16 @@ def _normalize(value: str) -> str:
     return value.strip().lower().replace("-", "_").replace(" ", "_")
 
 
-def _approx_token_count_from_text(value: object) -> int:
-    if value is None:
-        return 0
-    if isinstance(value, str):
-        return max(1, math.ceil(len(value) / 4))
-    if isinstance(value, list):
-        return sum(_approx_token_count_from_text(item) for item in value)
-    if isinstance(value, dict):
-        return sum(_approx_token_count_from_text(item) for item in value.values())
-    return max(1, math.ceil(len(str(value)) / 4))
-
-
 def _estimate_prompt_tokens(workload: WorkloadPack | None) -> int | None:
+    """Estimate prompt tokens using the best available source.\n\n    Prefers target_context_tokens (planning-grade) over actual payload estimation.\n    This is for support gating, which needs the operator's intent, not just the\n    literal inline payload (which may be a template stub).\n    """
     if workload is None or not workload.requests:
         return None
-    estimates: list[int] = []
-    for request in workload.requests:
-        approx = request.metadata.get("approx_context_tokens")
-        if isinstance(approx, int) and approx > 0:
-            estimates.append(approx)
-            continue
-        total = 0
-        for message in request.messages:
-            total += _approx_token_count_from_text(message.role)
-            total += _approx_token_count_from_text(message.content)
-        estimates.append(max(1, total))
-    return max(estimates) if estimates else None
+    # Use target (planning) tokens if available — these reflect operator intent
+    target = workload.max_target_context_tokens()
+    if target is not None:
+        return target
+    # Fall back to actual payload estimation
+    return workload.max_actual_context_tokens()
 
 
 def _append_issue(
@@ -165,6 +148,7 @@ def assess_benchmark_support(
     experiment: BenchmarkExperimentSpec | None = None,
     prompt_tokens: int | None = None,
     has_rdma: bool | None = None,
+    multi_node: bool = False,
 ) -> BenchmarkSupportProfile:
     """Resolve concrete GPU/model/engine compatibility for a benchmark lane or run."""
 
@@ -183,9 +167,13 @@ def assess_benchmark_support(
     elif model_variant is None:
         _append_issue(
             issues,
-            severity="error",
+            severity="warning",
             code="unknown_model",
-            message=f"Unknown model '{model_name}'.",
+            message=(
+                f"Model '{model_name}' is not in the InferScope registry. "
+                "Benchmark will proceed but GPU/context/architecture checks are skipped. "
+                "This does not affect measurement accuracy."
+            ),
             component="model",
         )
 
@@ -329,6 +317,18 @@ def assess_benchmark_support(
                 message="Grace-coherent cache tiers require GH200/GB200/GB300-class Grace systems.",
                 component="cache",
             )
+        # --- Deprecated remote backend rejection ---
+        if experiment.cache.remote_backend == "simm":
+            _append_issue(
+                issues,
+                severity="error",
+                code="deprecated_remote_backend",
+                message=(
+                    "SiMM remote backend has been removed from supported benchmark backends. "
+                    "Use Dynamo + NIXL for disaggregated serving or local KV tiers (gpu_hbm, grace_coherent)."
+                ),
+                component="cache",
+            )
 
     if workload is not None and traits is not None and not _matches_gpu_family(workload.target_gpu_families, traits):
         _append_issue(
@@ -370,6 +370,22 @@ def assess_benchmark_support(
             component="context",
         )
 
+    if workload is not None and workload.hydration_mode == "template":
+        target = workload.max_target_context_tokens()
+        actual = workload.max_actual_context_tokens()
+        _append_issue(
+            issues,
+            severity="info",
+            code="template_workload_requires_hydration",
+            message=(
+                f"Workload '{workload.name}' is a template (actual payload ~{actual} tokens, "
+                f"target {target} tokens). Support gating uses target_context_tokens for planning, "
+                "but runtime measurements will reflect the actual inline payload unless hydrated "
+                "via --context-file or procedural expansion."
+            ),
+            component="context",
+        )
+
     if num_gpus is not None and num_gpus < 1:
         _append_issue(
             issues,
@@ -400,7 +416,11 @@ def assess_benchmark_support(
         model_context_length=(model_variant.context_length if model_variant is not None else None),
         engine=(selected_engine or None),
         engine_support_tier=(
-            resolve_engine_support(selected_engine, gpu_profile).tier.value
+            resolve_engine_support(
+                selected_engine,
+                gpu_profile,
+                multi_node=multi_node,
+            ).tier.value
             if selected_engine and gpu_profile is not None
             else None
         ),

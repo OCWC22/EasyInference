@@ -50,6 +50,56 @@ Two built-ins matter most today:
 
 Use them when validating coding agents, MCP servers, or long-context tuning changes.
 
+## Dynamo / disaggregated deployments
+
+For deployments using NVIDIA Dynamo 1.0 for disaggregated prefill/decode serving:
+
+- Ensure RDMA or NVLink connectivity between prefill and decode GPU pools for NIXL KV transfer
+- Use the packaged Dynamo experiment specs (3 available) to benchmark disaggregated throughput and KV transfer latency
+- The benchmark strategy layer auto-selects Dynamo lanes for multi-GPU NVIDIA deployments
+- Dynamo is RECOMMENDED for multi-node NVIDIA and SUPPORTED for single-node configurations
+- The Smart Router provides KV-aware scheduling and SLO-driven autoscaling out of the box
+- Compression overlays (lz4, fp8, kvtc, turboquant, mxfp4, cachegen) are available for bandwidth-constrained environments
+
+### Dynamo component architecture
+
+A Dynamo disaggregated deployment consists of:
+
+| Component | Port (default) | Role |
+|-----------|---------------|------|
+| Smart Router | 9000 (API), 9100 (metrics) | KV-aware request routing, SLO planning |
+| vLLM Prefill Worker | 7100 | Prompt processing, KV cache generation |
+| vLLM Decode Worker | 7200 | Token generation from cached KV state |
+| NIXL | (internal) | Zero-copy RDMA/NVLink KV transfer between workers |
+
+### Single-host vs multi-node
+
+| Scenario | Example | Dynamo Tier | Notes |
+|----------|---------|-------------|-------|
+| Single-host, 4×H100 | DGX H100 | `supported` | Dynamo works but overhead may not be justified |
+| Single-host, 8×H100 SXM | DGX H100 | `supported` | NVSwitch provides fast intra-node KV transfer |
+| Multi-node, 2×DGX H100 | 16×H100 across nodes | `recommended` | RDMA enables cross-node NIXL KV transfer |
+| Multi-node, GB200 NVL72 | 72×GB200 rack | `recommended` | Production target — 7× perf boost with disaggregation |
+
+Use `--multi-node` explicitly in strategy/recommend commands. GPU count alone does not imply multi-node.
+
+### ISA targets for Dynamo benchmarks
+
+Dynamo benchmarks validate against specific GPU ISAs:
+
+| GPU | ISA | Platform Family | Dynamo Support |
+|-----|-----|----------------|----------------|
+| H100 PCIe | `sm_90` | hopper | supported |
+| H100 SXM | `sm_90a` | hopper | supported |
+| H200 | `sm_90a` | hopper | supported |
+| GH200 | `sm_90a` | hopper_grace | supported |
+| B200 | `sm_100` | blackwell | supported |
+| GB200 | `sm_100` | blackwell_grace | supported (recommended multi-node) |
+| B300 | `sm_103` | blackwell_ultra | supported |
+| GB300 | `sm_103` | blackwell_ultra_grace | supported (recommended multi-node) |
+
+**Important**: PTX compiled for `compute_90a` (Hopper) is **not** compatible with Blackwell (`sm_100`/`sm_103`). Blackwell introduces MXFP6/MXFP4 microscaling formats and NVFP4 that are not available on Hopper.
+
 ## Runtime storage
 
 Artifacts default to `~/.inferscope/benchmarks/`. Keep this path writable and treat it as operational evidence, not disposable scratch space.
