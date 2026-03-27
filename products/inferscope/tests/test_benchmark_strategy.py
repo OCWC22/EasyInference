@@ -7,12 +7,12 @@ import pytest
 from inferscope.benchmarks.strategy import plan_benchmark_strategy, plan_benchmark_strategy_with_runtime
 
 
-def test_plan_benchmark_strategy_selects_long_context_rag_suite_on_grace() -> None:
+def test_plan_benchmark_strategy_selects_kimi_long_context_suite() -> None:
     result = plan_benchmark_strategy(
-        "Qwen3.5-72B",
-        "gb200",
-        workload="long_context_rag",
-        num_gpus=4,
+        "Kimi-K2.5",
+        "b200",
+        workload="coding",
+        num_gpus=8,
         avg_prompt_tokens=32768,
         concurrent_sessions=32,
         has_rdma=True,
@@ -20,14 +20,13 @@ def test_plan_benchmark_strategy_selects_long_context_rag_suite_on_grace() -> No
     )
 
     assert result["evidence"] == "benchmark_strategy_planner"
-    assert result["benchmark_strategy"]["primary_workload"]["name"] == "long-context-kv-offload-rag"
-    assert result["benchmark_strategy"]["selected_engine"] == "vllm"
+    assert result["benchmark_strategy"]["primary_workload"]["name"] == "kimi-k2-long-context-coding"
+    assert result["benchmark_strategy"]["selected_engine"] == "dynamo"
     assert [lane["experiment"] for lane in result["benchmark_strategy"]["suite"]] == [
-        "vllm-single-endpoint-long-context-rag-baseline",
-        "vllm-single-endpoint-offloading-connector",
-        "vllm-disagg-prefill-lmcache-grace",
+        "dynamo-aggregated-lmcache-kimi-k2",
+        "vllm-disagg-prefill-lmcache",
+        "dynamo-disagg-lmcache-kimi-k2",
     ]
-    assert result["benchmark_strategy"]["suite"][2]["required"] is True
     assert result["benchmark_strategy"]["ready"] is True
     assert result["benchmark_strategy"]["support"]["gpu_isa"] == "sm_100"
     assert result["benchmark_strategy"]["suite"][2]["support"]["status"] == "supported"
@@ -59,10 +58,10 @@ async def test_plan_benchmark_strategy_with_runtime_prioritizes_cache_pressure(m
     monkeypatch.setattr("inferscope.benchmarks.strategy.profile_runtime", fake_profile_runtime)
 
     result = await plan_benchmark_strategy_with_runtime(
-        "Qwen3.5-72B",
-        "gb200",
-        workload="long_context_rag",
-        num_gpus=4,
+        "Kimi-K2.5",
+        "b200",
+        workload="coding",
+        num_gpus=8,
         avg_prompt_tokens=32768,
         concurrent_sessions=32,
         has_rdma=True,
@@ -71,7 +70,7 @@ async def test_plan_benchmark_strategy_with_runtime_prioritizes_cache_pressure(m
     )
 
     assert result["evidence"] == "benchmark_strategy_runtime_bridge"
-    assert result["benchmark_strategy"]["suite"][0]["phase"] == "offload"
+    assert result["benchmark_strategy"]["suite"][0]["experiment"] == "dynamo-disagg-lmcache-kimi-k2"
     assert captured["model_name"] == ""
     assert captured["quantization"] == ""
     assert result["benchmark_strategy"]["runtime_bridge"]["active"] is True

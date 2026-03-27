@@ -1,60 +1,55 @@
-"""Regression tests for Hopper/Blackwell recommendation policy."""
+"""Regression tests for the narrowed Kimi production recommendation policy."""
 
 from __future__ import annotations
 
 from inferscope.tools.recommend import recommend_config, recommend_engine
 
 
-def test_recommend_h100_deepseek_chat_falls_back_to_memory_valid_awq_tp8() -> None:
-    result = recommend_config("DeepSeek-V3", "h100", workload="chat", num_gpus=8)
+def test_recommend_h100_kimi_coding_uses_dynamo_fp8_tp8() -> None:
+    result = recommend_config("Kimi-K2.5", "h100", workload="coding", num_gpus=8)
 
     profile = result["serving_profile"]
-    assert profile["engine"] == "vllm"
-    assert profile["precision"]["weights"] == "awq"
-    assert profile["topology"]["tp"] == 8
-    assert profile["topology"]["dp"] == 1
-    assert result["memory_plan"]["fits"] is True
-
-
-def test_recommend_h200_deepseek_chat_uses_vllm_fp8_tp8_when_tp4_hint_does_not_fit() -> None:
-    result = recommend_config("DeepSeek-V3", "h200", workload="chat", num_gpus=8)
-
-    profile = result["serving_profile"]
-    assert profile["engine"] == "vllm"
+    assert profile["engine"] == "dynamo"
     assert profile["precision"]["weights"] == "fp8"
     assert profile["topology"]["tp"] == 8
     assert profile["topology"]["dp"] == 1
-    assert profile["topology"]["ep"] == 1
     assert result["memory_plan"]["fits"] is True
 
 
-def test_recommend_b200_deepseek_chat_uses_blackwell_fp4_without_grace_note() -> None:
-    result = recommend_config("DeepSeek-V3", "b200", workload="chat", num_gpus=4)
+def test_recommend_h200_kimi_coding_uses_dynamo_fp8_tp4() -> None:
+    result = recommend_config("Kimi-K2.5", "h200", workload="coding", num_gpus=4)
+
+    profile = result["serving_profile"]
+    assert profile["engine"] == "dynamo"
+    assert profile["precision"]["weights"] == "fp8"
+    assert profile["topology"]["tp"] == 4
+    assert profile["topology"]["dp"] == 1
+    assert result["memory_plan"]["fits"] is True
+
+
+def test_recommend_b200_kimi_coding_uses_blackwell_fp4_tp2() -> None:
+    result = recommend_config("Kimi-K2.5", "b200", workload="coding", num_gpus=4)
 
     profile = result["serving_profile"]
     engine_config = result["engine_config"]
-    assert profile["engine"] == "vllm"
+    assert profile["engine"] == "dynamo"
     assert profile["precision"]["weights"] == "fp4"
-    assert profile["topology"]["tp"] == 4
+    assert profile["topology"]["tp"] == 2
+    assert profile["topology"]["dp"] == 2
     assert result["memory_plan"]["fits"] is True
-    assert all("Grace" not in note for note in engine_config["notes"])
+    assert engine_config["env_vars"]["DYNAMO_ENABLE_NVCOMP"] == "1"
 
 
-def test_recommend_gb200_long_context_surfaces_grace_overflow() -> None:
-    result = recommend_config("DeepSeek-V3", "gb200", workload="long_context_rag", num_gpus=4)
+def test_recommend_gb200_is_rejected_outside_target_scope() -> None:
+    result = recommend_config("Kimi-K2.5", "gb200", workload="coding", num_gpus=4)
 
-    engine_config = result["engine_config"]
-    memory_plan = result["memory_plan"]
-    assert result["serving_profile"]["engine"] == "vllm"
-    assert any("Grace" in note for note in engine_config["notes"])
-    assert memory_plan["platform_overflow_tier"] == "gpu_grace_coherent"
-    assert memory_plan["overflow_memory_gb"] > 0
-    assert memory_plan["overflow_bandwidth_gb_s"] == 546.0
+    assert result["error"] == "Unsupported GPU: 'gb200'"
+    assert "H100/H200/B200/B300" in result["summary"]
 
 
-def test_recommend_engine_matches_recommend_config_for_nvidia_coding_workloads() -> None:
-    for gpu in ("h100", "h200", "b200", "gb200"):
-        config = recommend_config("DeepSeek-V3", gpu, workload="coding", num_gpus=8 if gpu != "b200" else 4)
-        engines = recommend_engine("DeepSeek-V3", gpu, workload="coding", num_gpus=8 if gpu != "b200" else 4)
+def test_recommend_engine_matches_recommend_config_for_supported_kimi_workloads() -> None:
+    for gpu, num_gpus in (("h100", 8), ("h200", 4), ("b200", 4), ("b300", 1)):
+        config = recommend_config("Kimi-K2.5", gpu, workload="coding", num_gpus=num_gpus)
+        engines = recommend_engine("Kimi-K2.5", gpu, workload="coding", num_gpus=num_gpus)
 
         assert engines["rankings"][0]["engine"] == config["engine_config"]["engine"]

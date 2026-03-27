@@ -62,6 +62,30 @@ def _profile() -> ServingProfile:
     )
 
 
+def _kimi_dynamo_profile() -> ServingProfile:
+    return ServingProfile(
+        model="Kimi-K2.5",
+        model_class=ModelClass.CLASSICAL_MOE,
+        engine=EngineType.DYNAMO,
+        gpu_type="B200",
+        num_gpus=4,
+        workload_mode=WorkloadMode.CODING,
+        topology=TopologySpec(tp=2, dp=2, ep=1),
+        scheduler=SchedulerSpec(
+            batched_token_budget=32768,
+            prefill_chunk_tokens=32768,
+            max_num_seqs=64,
+        ),
+        cache=CacheSpec(
+            cache_backend="lmcache",
+            lmcache_mode="local",
+            session_affinity=True,
+            gpu_memory_utilization=0.94,
+        ),
+        precision=PrecisionSpec(weights="fp4", activations="fp8", kv_cache="fp8_e4m3"),
+    )
+
+
 def test_vllm_compiler_differentiates_b200_from_gb200() -> None:
     compiler = VLLMCompiler()
     profile = _profile()
@@ -96,9 +120,9 @@ def test_trtllm_compiler_uses_batched_token_budget_and_marks_preview() -> None:
 
 def test_dynamo_compiler_marks_supported() -> None:
     compiler = DynamoCompiler()
-    profile = _profile()
+    profile = _kimi_dynamo_profile()
 
-    cfg = compiler.compile(profile, _inventory("gb200"))
+    cfg = compiler.compile(profile, _inventory("b200"))
 
     assert cfg.support_tier == "supported"
-    assert "Dynamo 1.0" in cfg.support_reason
+    assert "Dynamo + LMCache" in cfg.support_reason

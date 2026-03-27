@@ -15,51 +15,72 @@ def test_map_workload_mode_recognizes_rag() -> None:
 
 def test_build_benchmark_stack_plan_uses_memory_valid_h200_layout_for_deepseek() -> None:
     plan = build_benchmark_stack_plan(
-        "vllm-single-endpoint-baseline",
+        "dynamo-aggregated-lmcache-kimi-k2",
         "h200",
         8,
-        model="DeepSeek-V3",
+        model="Kimi-K2.5",
     )
 
-    primary = next(component for component in plan.components if component.role == "primary")
-    tokens = shlex.split(primary.command.replace("\\\n", " "))
-    assert tokens[tokens.index("--tensor-parallel-size") + 1] == "8"
+    worker = next(component for component in plan.components if component.name == "dynamo-worker")
+    tokens = shlex.split(worker.command)
+    assert "--model" in tokens
+    assert worker.env_vars["DYN_SYSTEM_PORT"] == "8081"
 
 
 def test_build_benchmark_stack_plan_injects_offloading_connector_for_long_context_lane() -> None:
     plan = build_benchmark_stack_plan(
-        "vllm-single-endpoint-offloading-connector",
-        "h200",
-        1,
+        "dynamo-aggregated-lmcache-kimi-k2",
+        "h100",
+        8,
     )
 
-    primary = next(component for component in plan.components if component.role == "primary")
-    assert "OffloadingConnector" in primary.command
-    assert any("cold/idle KV offload" in note for note in primary.notes)
+    frontend = next(component for component in plan.components if component.name == "dynamo-frontend")
+    assert "--router-mode kv" in frontend.command
+    assert frontend.metrics_endpoint == "http://127.0.0.1:8000"
 
 
-def test_build_benchmark_stack_plan_generates_lmcache_bundle_for_grace_lane() -> None:
+def test_build_benchmark_stack_plan_generates_dynamo_disagg_bundle_for_kimi() -> None:
     plan = build_benchmark_stack_plan(
-        "vllm-disagg-prefill-lmcache-grace",
-        "gb200",
-        4,
+        "dynamo-disagg-lmcache-kimi-k2",
+        "b200",
+        8,
     )
 
-    generated_paths = {generated.path for generated in plan.generated_files}
-    assert generated_paths == {"lmcache-prefiller-config.yaml", "lmcache-decoder-config.yaml"}
+    component_names = {component.name for component in plan.components}
+    prefill = next(component for component in plan.components if component.name == "dynamo-prefill")
+    decode = next(component for component in plan.components if component.name == "dynamo-decode")
+    assert component_names == {"dynamo-frontend", "dynamo-decode", "dynamo-prefill"}
+    assert len(prefill.gpu_ids) >= 2
+    assert len(decode.gpu_ids) >= 2
+    assert len(prefill.gpu_ids) + len(decode.gpu_ids) == 8
     assert not plan.warnings
     assert plan.support is not None
     assert plan.support["gpu_isa"] == "sm_100"
 
 
-def test_build_benchmark_stack_plan_rejects_grace_lane_on_non_grace_gpu() -> None:
+def test_build_benchmark_stack_plan_generates_vllm_disagg_bundle_for_kimi() -> None:
+    plan = build_benchmark_stack_plan(
+        "vllm-disagg-prefill-lmcache",
+        "b200",
+        8,
+        model="Kimi-K2.5",
+    )
+
+    component_names = {component.name for component in plan.components}
+    assert component_names == {"vllm-prefill", "vllm-decode", "vllm-disagg-proxy"}
+    assert len(plan.generated_files) == 2
+    assert plan.support is not None
+    assert plan.support["gpu_isa"] == "sm_100"
+
+
+def test_build_benchmark_stack_plan_rejects_non_target_blackwell_grace_gpu() -> None:
     try:
         build_benchmark_stack_plan(
-            "vllm-disagg-prefill-lmcache-grace",
-            "h100",
-            4,
+            "dynamo-disagg-lmcache-kimi-k2",
+            "gb200",
+            8,
         )
     except ValueError as exc:
-        assert "Grace-coherent cache tiers require" in str(exc)
+        assert "H100, H200, B200, B300" in str(exc)
     else:
-        raise AssertionError("Expected Grace-only benchmark lane to be rejected on H100")
+        raise AssertionError("Expected unsupported Grace GPU family to be rejected")

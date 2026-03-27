@@ -27,6 +27,29 @@ def _make_scrape(*, engine: str = "vllm") -> ScrapeResult:
     )
 
 
+def _make_dynamo_scrape() -> ScrapeResult:
+    return ScrapeResult(
+        endpoint="http://localhost:8000/metrics",
+        engine="dynamo",
+        raw_metrics={
+            "dynamo_frontend_inflight_requests": 3.0,
+            "dynamo_frontend_queued_requests": 2.0,
+            "dynamo_frontend_model_migration_total": 1.0,
+            "dynamo_frontend_time_to_first_token_seconds_sum": 1.2,
+            "dynamo_frontend_time_to_first_token_seconds_count": 3.0,
+            "dynamo_component_kvstats_gpu_cache_usage_percent": 0.82,
+            "dynamo_component_kvstats_gpu_prefix_cache_hit_rate": 0.71,
+            "dynamo_component_kvstats_active_blocks": 820.0,
+            "dynamo_component_kvstats_total_blocks": 1000.0,
+        },
+        samples=[
+            MetricSample(name="dynamo_frontend_inflight_requests", labels={}, value=3.0),
+            MetricSample(name="dynamo_component_kvstats_gpu_cache_usage_percent", labels={}, value=0.82),
+        ],
+        scrape_time_ms=9.5,
+    )
+
+
 @pytest.mark.asyncio
 async def test_capture_endpoint_snapshot_preserves_benchmark_schema(monkeypatch: pytest.MonkeyPatch) -> None:
     async def fake_scrape_metrics(endpoint: str, allow_private: bool = True, auth=None) -> ScrapeResult:
@@ -88,3 +111,19 @@ async def test_capture_metrics_targets_preserves_declared_order(monkeypatch: pyt
     snapshots = await capture_metrics_targets(targets)
 
     assert [snapshot.target_name for snapshot in snapshots] == ["router", "primary"]
+
+
+@pytest.mark.asyncio
+async def test_capture_endpoint_snapshot_normalizes_dynamo_metrics(monkeypatch: pytest.MonkeyPatch) -> None:
+    async def fake_scrape_metrics(endpoint: str, allow_private: bool = True, auth=None) -> ScrapeResult:
+        del endpoint, allow_private, auth
+        return _make_dynamo_scrape()
+
+    monkeypatch.setattr("inferscope.telemetry.capture.scrape_metrics", fake_scrape_metrics)
+
+    snapshot = await capture_endpoint_snapshot("http://localhost:8000")
+
+    assert snapshot.engine == "dynamo"
+    assert snapshot.normalized_metrics["request_state"]["running"] == 3.0
+    assert snapshot.normalized_metrics["cache"]["kv_usage"] == 0.82
+    assert snapshot.normalized_metrics["reliability"]["request_migrations_total"] == 1.0

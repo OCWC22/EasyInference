@@ -45,10 +45,10 @@ def test_assess_benchmark_support_marks_nixl_transport_degraded_without_rdma() -
 
 def test_assess_benchmark_support_marks_preview_engine_degraded() -> None:
     support = assess_benchmark_support(
-        model_name="Qwen3.5-32B",
+        model_name="Kimi-K2.5",
         gpu_name="b200",
         num_gpus=1,
-        engine_name="trtllm",
+        engine_name="vllm",
         prompt_tokens=4_096,
     )
 

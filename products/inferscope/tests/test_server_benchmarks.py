@@ -11,25 +11,25 @@ from inferscope.server_benchmarks import _resolve_benchmark_plan, register_bench
 
 def test_resolve_benchmark_plan_supports_procedural_workloads() -> None:
     error, workload_reference, workload_pack, run_plan, support = _resolve_benchmark_plan(
-        "tool-agent",
+        "kimi-k2-long-context-coding",
         "http://localhost:8000",
         synthetic_requests=4,
         synthetic_input_tokens=2048,
         synthetic_output_tokens=256,
     )
     assert error is None
-    assert workload_reference == "tool-agent"
+    assert workload_reference == "kimi-k2-long-context-coding"
     assert workload_pack is not None
     assert run_plan is not None
     assert support is not None
     assert len(workload_pack.requests) == 4
-    assert run_plan.workload_ref == "tool-agent"
+    assert run_plan.workload_ref == "kimi-k2-long-context-coding"
     assert support.status == "unknown"
 
 
 def test_resolve_benchmark_plan_rejects_context_file_for_mcp() -> None:
     error, workload_reference, workload_pack, run_plan, support = _resolve_benchmark_plan(
-        "coding-long-context",
+        "kimi-k2-long-context-coding",
         "http://localhost:8000",
         synthetic_requests=2,
         context_file="repo_context.txt",
@@ -50,17 +50,19 @@ async def test_tool_get_benchmark_matrix_returns_filtered_catalog() -> None:
     result = await mcp.call_tool(
         "tool_get_benchmark_matrix",
         {
-            "gpu_family": "blackwell-grace",
-            "model_class": "qwen35-hybrid",
-            "focus_area": "kv_offload",
+            "gpu_family": "blackwell",
+            "model_class": "classical_moe",
+            "engine": "",
         },
     )
     payload = result.structured_content
 
     assert payload["evidence"] == "benchmark_matrix_catalog"
-    assert {descriptor["name"] for descriptor in payload["matrix"]["workloads"]} == {"long-context-kv-offload-rag"}
-    assert "vllm-disagg-prefill-lmcache-grace" in {
-        descriptor["name"] for descriptor in payload["matrix"]["experiments"]
+    assert {descriptor["name"] for descriptor in payload["matrix"]["workloads"]} == {"kimi-k2-long-context-coding"}
+    assert {descriptor["name"] for descriptor in payload["matrix"]["experiments"]} == {
+        "dynamo-aggregated-lmcache-kimi-k2",
+        "vllm-disagg-prefill-lmcache",
+        "dynamo-disagg-lmcache-kimi-k2",
     }
 
 
@@ -71,13 +73,18 @@ async def test_tool_list_benchmark_experiments_exposes_descriptors() -> None:
 
     result = await mcp.call_tool("tool_list_benchmark_experiments")
     payload = result.structured_content
-    router = next(
-        descriptor for descriptor in payload["descriptors"] if descriptor["name"] == "sglang-router-prefill-decode"
+    comparison = next(
+        descriptor for descriptor in payload["descriptors"] if descriptor["name"] == "vllm-disagg-prefill-lmcache"
     )
 
     assert payload["evidence"] == "packaged_experiment_catalog"
-    assert router["workload_class"] == "tool_agent"
-    assert "router" in router["focus_areas"]
+    assert set(payload["experiments"]) == {
+        "dynamo-aggregated-lmcache-kimi-k2",
+        "vllm-disagg-prefill-lmcache",
+        "dynamo-disagg-lmcache-kimi-k2",
+    }
+    assert comparison["workload_class"] == "coding"
+    assert "observability" in comparison["focus_areas"]
 
 
 @pytest.mark.asyncio
@@ -88,10 +95,10 @@ async def test_tool_plan_benchmark_strategy_returns_suite() -> None:
     result = await mcp.call_tool(
         "tool_plan_benchmark_strategy",
         {
-            "model": "Qwen3.5-72B",
-            "gpu": "gb200",
-            "workload": "long_context_rag",
-            "num_gpus": 4,
+            "model": "Kimi-K2.5",
+            "gpu": "b200",
+            "workload": "coding",
+            "num_gpus": 8,
             "avg_prompt_tokens": 32768,
             "has_rdma": True,
         },
@@ -99,9 +106,14 @@ async def test_tool_plan_benchmark_strategy_returns_suite() -> None:
     payload = result.structured_content
 
     assert payload["evidence"] == "benchmark_strategy_planner"
-    assert payload["benchmark_strategy"]["primary_workload"]["name"] == "long-context-kv-offload-rag"
-    assert payload["benchmark_strategy"]["suite"][0]["experiment"] == "vllm-single-endpoint-long-context-rag-baseline"
+    assert payload["benchmark_strategy"]["primary_workload"]["name"] == "kimi-k2-long-context-coding"
+    assert [lane["experiment"] for lane in payload["benchmark_strategy"]["suite"]] == [
+        "dynamo-aggregated-lmcache-kimi-k2",
+        "vllm-disagg-prefill-lmcache",
+        "dynamo-disagg-lmcache-kimi-k2",
+    ]
     assert payload["benchmark_strategy"]["suite"][0]["support"]["gpu_isa"] == "sm_100"
+    assert payload["benchmark_strategy"]["selected_engine"] == "dynamo"
 
 
 @pytest.mark.asyncio
@@ -112,19 +124,19 @@ async def test_tool_resolve_benchmark_plan_rejects_unsupported_grace_lane() -> N
     result = await mcp.call_tool(
         "tool_resolve_benchmark_plan",
         {
-            "workload": "long-context-kv-offload-rag",
+            "workload": "kimi-k2-long-context-coding",
             "endpoint": "http://localhost:8000",
-            "experiment": "vllm-disagg-prefill-lmcache-grace",
+            "experiment": "dynamo-disagg-lmcache-kimi-k2",
             "model": "Qwen3.5-72B",
-            "gpu": "h100",
+            "gpu": "b200",
             "num_gpus": 4,
         },
     )
     payload = result.structured_content
 
     assert "error" in payload
-    assert payload["support"]["status"] == "unsupported"
-    assert any(issue["code"] == "grace_tier_requires_grace" for issue in payload["support"]["issues"])
+    assert payload["evidence"] == "production_target_validation"
+    assert "Kimi-K2.5" in payload["error"]
 
 
 @pytest.mark.asyncio
@@ -132,10 +144,10 @@ async def test_tool_run_benchmark_returns_observed_runtime(monkeypatch: pytest.M
     async def fake_run_openai_replay(*args, **kwargs):
         del args, kwargs
         return BenchmarkArtifact(
-            pack_name="tool-agent",
-            workload_class="tool_agent",
+            pack_name="kimi-k2-long-context-coding",
+            workload_class="coding",
             endpoint="http://localhost:8000",
-            model="Qwen3.5-32B",
+            model="Kimi-K2.5",
             concurrency=2,
             started_at="2026-03-25T00:00:00Z",
             completed_at="2026-03-25T00:00:01Z",
@@ -157,16 +169,17 @@ async def test_tool_run_benchmark_returns_observed_runtime(monkeypatch: pytest.M
     result = await mcp.call_tool(
         "tool_run_benchmark",
         {
-            "workload": "tool-agent",
+            "workload": "kimi-k2-long-context-coding",
             "endpoint": "http://localhost:8000",
             "synthetic_requests": 2,
             "synthetic_input_tokens": 2048,
             "synthetic_output_tokens": 256,
             "gpu": "b200",
-            "engine": "sglang",
+            "engine": "dynamo",
         },
     )
     payload = result.structured_content
 
     assert payload["observed_runtime"]["request_throughput_rps"] == 2.5
     assert payload["support"]["gpu_isa"] == "sm_100"
+    assert payload["production_readiness"]["ready"] is True
