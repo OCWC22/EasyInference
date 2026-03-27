@@ -65,7 +65,8 @@ class ModelVariant:
 
         if self.attention_type == "MLA":
             # MLA compresses KV ~32x — use latent_dim instead of full dim
-            latent_dim = self.serving.get("mla_latent_dim", 512)
+            latent_dim_raw = self.serving.get("mla_latent_dim", 512)
+            latent_dim = int(latent_dim_raw) if isinstance(latent_dim_raw, int | float) else 512
             return 2 * latent_dim * bpt  # K + V latent vectors
         else:
             # Standard GQA: 2 * kv_heads * head_dim * bytes
@@ -98,6 +99,10 @@ class ModelVariant:
 # =============================================================================
 
 _MODELS: dict[str, ModelVariant] = {}
+
+
+def _compact_model_key(value: str) -> str:
+    return "".join(ch for ch in value.lower() if ch.isalnum())
 
 
 def _register(model: ModelVariant) -> ModelVariant:
@@ -263,29 +268,43 @@ _register(
     )
 )
 
-# --- Kimi K2.5 (Frontier MLA MoE) ---
+# --- Kimi K2.5 (GQA MoE) ---
 
 _register(
     ModelVariant(
         name="Kimi-K2.5",
         family="Kimi K2/K2.5",
-        model_class=ModelClass.FRONTIER_MLA_MOE,
-        params_total_b=1040,
-        params_active_b=32,
+        model_class=ModelClass.CLASSICAL_MOE,
+        params_total_b=400,
+        params_active_b=50,
         model_type="moe",
-        context_length=256000,
-        attention_type="MLA",
-        kv_heads=64,
-        head_dim=192,
+        context_length=131072,
+        attention_type="GQA",
+        kv_heads=8,
+        head_dim=128,
         layers=61,
-        experts_total=384,
+        experts_total=128,
         experts_active=8,
         vocab_size=160000,
         serving={
+            "target_profile": "dynamo_long_context_coding",
+            "dynamo_backend": "vllm",
+            "tp_fp8_h100": 8,
+            "tp_fp8_h200": 4,
+            "tp_fp8_b200": 4,
+            "tp_fp8_b300": 2,
+            "tp_fp4_b200": 2,
+            "tp_fp4_b300": 1,
+            "recommended_topology": {
+                "fp8": {"h100": "tp8", "h200": "tp4", "b200": "tp4", "b300": "tp2"},
+                "fp4": {"b200": "tp2", "b300": "tp1"},
+            },
+            "dynamo_notes": [
+                "Long-context coding lane expects sticky session routing and LMCache namespace isolation.",
+                "Disaggregated plans should use shared LMCache with explicit prefill/decode observability targets.",
+            ],
             "vllm_flags": "--trust-remote-code --enforce-eager --tool-call-parser kimi_k2 --reasoning-parser kimi_k2",
             "nvidia_nvfp4": "moonshotai/Kimi-K2.5-NVFP4 -tp 4",
-            "amd_mxfp4": "amd/Kimi-K2.5-MXFP4 -tp 4 --mm-encoder-tp-mode data",
-            "tp_min": 4,
             "eagle3_speculative": '{"model": "lightseekorg/kimi-k2.5-eagle3", "method": "eagle3"}',
             "decode_context_parallel": "--decode-context-parallel-size 8",
         },
@@ -293,6 +312,33 @@ _register(
 )
 
 # --- GLM family ---
+
+_register(
+    ModelVariant(
+        name="GLM-5",
+        family="GLM",
+        model_class=ModelClass.DENSE_GQA,
+        params_total_b=70,
+        params_active_b=70,
+        model_type="dense",
+        context_length=131072,
+        attention_type="GQA",
+        kv_heads=8,
+        head_dim=128,
+        serving={
+            "available": False,
+            "min_gpus": {
+                "bf16": {"h100": 2, "h200": 1, "b200": 1, "b300": 1},
+                "fp8": {"h100": 1, "h200": 1, "b200": 1, "b300": 1},
+            },
+            "recommended_topology": {
+                "fp8": {"h100": "tp1", "h200": "tp1", "b200": "tp1", "b300": "tp1"},
+                "bf16": {"h100": "tp2", "h200": "tp1", "b200": "tp1", "b300": "tp1"},
+            },
+            "vllm_flags": "--trust-remote-code",
+        },
+    )
+)
 
 _register(
     ModelVariant(
@@ -309,6 +355,19 @@ _register(
         experts_total=160,
         experts_active=8,
         serving={
+            "target_profile": "dynamo_long_context_coding",
+            "dynamo_backend": "vllm",
+            "tp_fp8_h100": 8,
+            "tp_fp8_h200": 4,
+            "tp_fp8_b200": 4,
+            "tp_fp8_b300": 2,
+            "recommended_topology": {
+                "fp8": {"h100": "tp8", "h200": "tp4", "b200": "tp4", "b300": "tp2"},
+            },
+            "dynamo_notes": [
+                "GLM-4.7 targets long-context coding with LMCache rather than generic chat.",
+                "Benchmark disaggregation should preserve session routing for prefix reuse.",
+            ],
             "vllm_flags": "--trust-remote-code",
             "mtp_speculative": "--speculative-config.method mtp --speculative-config.num_speculative_tokens 1",
             "mtp_acceptance_rate": ">90%",
@@ -424,18 +483,33 @@ _register(
 def get_model_variant(name: str) -> ModelVariant | None:
     """Look up a model by name (case-insensitive, flexible matching)."""
     key = name.lower().strip()
+    if not key:
+        return None
+
+    normalized = key.replace("/", "-").replace("_", "-")
+    compact = _compact_model_key(normalized)
 
     # Direct match
     if key in _MODELS:
         return _MODELS[key]
+    if normalized in _MODELS:
+        return _MODELS[normalized]
+
+    # Compact match: ignore punctuation like -, _, ., /
+    if compact:
+        for model_key, model in _MODELS.items():
+            if compact == _compact_model_key(model_key):
+                return model
 
     # Fuzzy match: try removing vendor prefixes, hyphens, etc.
-    normalized = key.replace("/", "-").replace("_", "-")
     for model_key, model in _MODELS.items():
+        model_compact = _compact_model_key(model_key)
         if normalized in model_key or model_key in normalized:
             return model
         # Check against the full HuggingFace-style name
         if normalized.endswith(model_key):
+            return model
+        if compact and (compact in model_compact or model_compact in compact):
             return model
 
     return None
