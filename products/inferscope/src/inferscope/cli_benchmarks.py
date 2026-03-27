@@ -6,7 +6,7 @@ import asyncio
 import json
 from collections.abc import Callable
 from pathlib import Path
-from typing import Annotated, Any
+from typing import Annotated, Any, Literal, cast
 
 import typer
 
@@ -74,6 +74,14 @@ def _build_procedural_options(
     )
 
 
+def _request_context_tokens(request: Any) -> int | None:
+    metadata = getattr(request, "metadata", {})
+    if not isinstance(metadata, dict):
+        return None
+    value = metadata.get("approx_context_tokens")
+    return value if isinstance(value, int) else None
+
+
 def _build_execution_profile(
     *,
     request_rate: float | None = None,
@@ -82,9 +90,12 @@ def _build_execution_profile(
     warmup_requests: int = 0,
     goodput_slo: dict[str, Any] | None = None,
 ) -> BenchmarkExecutionProfile:
+    resolved_arrival_model: Literal["immediate", "poisson", "gamma"] = "immediate"
+    if request_rate not in (None, 0.0) and arrival_model in {"immediate", "poisson", "gamma"}:
+        resolved_arrival_model = cast(Literal["immediate", "poisson", "gamma"], arrival_model)
     return BenchmarkExecutionProfile(
         request_rate_rps=request_rate,
-        arrival_model=("immediate" if request_rate in (None, 0.0) else arrival_model),
+        arrival_model=resolved_arrival_model,
         arrival_shape=arrival_shape,
         warmup_requests=warmup_requests,
         goodput_slo=BenchmarkGoodputSLO.model_validate(goodput_slo or {}),
@@ -157,11 +168,7 @@ def _resolve_benchmark_plan(
         workload=workload_pack,
         experiment=experiment_spec,
         prompt_tokens=max(
-            (
-                int(request.metadata.get("approx_context_tokens"))
-                for request in workload_pack.requests
-                if isinstance(request.metadata.get("approx_context_tokens"), int)
-            ),
+            (value for request in workload_pack.requests if (value := _request_context_tokens(request)) is not None),
             default=0,
         )
         or None,

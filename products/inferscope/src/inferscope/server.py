@@ -26,39 +26,18 @@ from inferscope.tools.recommend import (
 
 mcp = FastMCP(
     "inferscope",
-    instructions="""InferScope is a hardware-aware inference optimization toolkit for
-    LLM serving on NVIDIA (Ampere/Hopper/Blackwell) and AMD (CDNA3/CDNA4) GPUs.
+    instructions="""InferScope is currently narrowed to one production target:
+    Kimi-K2.5 on NVIDIA Dynamo for long-context coding workloads on H100, H200, B200, and B300.
 
-    All recommendations are grounded in ISA-level hardware knowledge — not generic advice.
-    Recommendations produce exact engine-specific launch commands.
+    The MCP surface is intentionally biased toward reliability and observability:
+    - Kimi-targeted benchmark planning for aggregated Dynamo, split vLLM, and split Dynamo LMCache lanes
+    - Runtime profiling from frontend plus worker Prometheus metrics
+    - Production-target contract output for MCP clients that need stable provisioning rules
+    - Benchmark artifact summaries that explain what failed, what saturated, and what observability was missing
 
-    Core product capabilities:
-    - recommend_config: Optimal serving config per model + GPU + workload (with launch command)
-    - validate_serving_config: Pre-flight checks (TP divisibility, memory fit, format compat)
-    - recommend_engine: Best engine per deployment scenario
-    - suggest_parallelism: TP/PP/DP/EP strategy per model + hardware
-    - estimate_capacity: Max concurrent users, context length, KV cache budget
-    - recommend_kv_strategy: KV cache tiering and connector selection
-    - recommend_disaggregation: Prefill/decode split decision with connector recommendation
-    - compare_quantization: FP16/FP8/FP4/INT8/AWQ options ranked per GPU
-    - get_gpu_specs / compare_gpus: ISA-level GPU hardware reference
-    - get_model_profile: Model architecture, memory requirements, serving commands
-
-    Runtime profiling capabilities:
-    - tool_profile_runtime: unified Prometheus-based runtime profile for a live endpoint
-    - tool_audit_deployment / tool_check_deployment / tool_check_memory_pressure / tool_get_cache_effectiveness
-    - tool_auto_tune_deployment: preview scheduling and cache adjustments from live findings
-
-    Evaluation subsystem capabilities:
-    - packaged workload and experiment catalogs
-    - benchmark plan resolution and OpenAI-compatible replay
-    - artifact comparison and benchmark stack planning/materialization
-
-    On NVIDIA, InferScope currently auto-selects vLLM or SGLang for supported deployments.
-    TRT-LLM and Dynamo are exposed as preview planning targets and are not auto-promoted.
-
-    Runtime profiling is first-class today through Prometheus scraping and normalized metrics.
-    Direct trace and kernel execution remain future work behind the profiling boundary.
+    The supported MCP contract should be treated as Kimi on Hopper/Blackwell, with Dynamo as
+    the serving target and vLLM plus Dynamo as the benchmark engines, until the production lane
+    expands again.
     """,
 )
 
@@ -93,7 +72,7 @@ async def tool_validate_serving_config(
     gpu: str,
     tp: int = 1,
     quantization: str = "auto",
-    engine: str = "vllm",
+    engine: str = "dynamo",
 ) -> dict:
     """Pre-flight check: does this serving config work?"""
     return validate_serving_config(model, gpu, tp, quantization, engine)
@@ -118,9 +97,9 @@ async def tool_estimate_capacity(
 async def tool_recommend_config(
     model: str,
     gpu: str,
-    workload: str = "chat",
+    workload: str = "coding",
     num_gpus: int = 1,
-    engine: str = "auto",
+    engine: str = "dynamo",
 ) -> dict:
     """Generate optimal serving config for a model+GPU+workload combination."""
     return recommend_config(model, gpu, workload, num_gpus, engine=engine)
@@ -130,7 +109,7 @@ async def tool_recommend_config(
 async def tool_recommend_engine(
     model: str,
     gpu: str,
-    workload: str = "chat",
+    workload: str = "coding",
     num_gpus: int = 1,
     multi_node: bool = False,
 ) -> dict:
@@ -162,7 +141,7 @@ async def tool_calculate_kv_budget(
 async def tool_recommend_kv_strategy(
     model: str,
     gpu: str,
-    workload: str = "chat",
+    workload: str = "coding",
     max_context: int = 32768,
     concurrent_sessions: int = 100,
 ) -> dict:

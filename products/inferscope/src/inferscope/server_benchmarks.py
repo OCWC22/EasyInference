@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any, cast
+from typing import Any, Literal, cast
 
 from fastmcp import FastMCP
 
@@ -19,8 +19,6 @@ from inferscope.benchmarks import (
     compare_benchmark_artifacts,
     describe_builtin_experiments,
     describe_builtin_workloads,
-    list_builtin_experiments,
-    list_builtin_workloads,
     load_benchmark_artifact,
     load_experiment,
     materialize_benchmark_stack_plan,
@@ -30,6 +28,13 @@ from inferscope.benchmarks import (
 )
 from inferscope.config import settings
 from inferscope.endpoint_auth import resolve_auth_payload
+from inferscope.production_target import (
+    SUPPORTED_EXPERIMENTS,
+    SUPPORTED_WORKLOAD_PACK,
+    build_benchmark_readiness_summary,
+    build_production_contract,
+    validate_production_target,
+)
 
 
 def _resolve_artifact_path_for_mcp(path_or_name: str) -> Path:
@@ -49,6 +54,16 @@ def _default_stack_bundle_dir(experiment: str, gpu: str, num_gpus: int, model: s
     raw_name = f"{experiment}-{gpu}-{num_gpus}gpus{model_part}"
     safe_name = "".join(char if char.isalnum() or char in {"-", "_"} else "-" for char in raw_name)
     return settings.benchmark_dir / "stacks" / safe_name
+
+
+def _production_error(errors: list[str]) -> dict[str, Any]:
+    return {
+        "error": "; ".join(errors),
+        "summary": "❌ Unsupported production target",
+        "production_target": build_production_contract(),
+        "confidence": 1.0,
+        "evidence": "production_target_validation",
+    }
 
 
 def _build_procedural_options(
@@ -79,13 +94,24 @@ def _build_execution_profile(
     warmup_requests: int = 0,
     goodput_slo: dict[str, Any] | None = None,
 ) -> BenchmarkExecutionProfile:
+    resolved_arrival_model: Literal["immediate", "poisson", "gamma"] = "immediate"
+    if request_rate and arrival_model in {"immediate", "poisson", "gamma"}:
+        resolved_arrival_model = cast(Literal["immediate", "poisson", "gamma"], arrival_model)
     return BenchmarkExecutionProfile(
         request_rate_rps=(request_rate or None),
-        arrival_model=("immediate" if not request_rate else arrival_model),
+        arrival_model=resolved_arrival_model,
         arrival_shape=(arrival_shape or None),
         warmup_requests=warmup_requests,
         goodput_slo=BenchmarkGoodputSLO.model_validate(goodput_slo or {}),
     )
+
+
+def _request_context_tokens(request: Any) -> int | None:
+    metadata = getattr(request, "metadata", {})
+    if not isinstance(metadata, dict):
+        return None
+    value = metadata.get("approx_context_tokens")
+    return value if isinstance(value, int) else None
 
 
 def _resolve_benchmark_plan(
@@ -100,6 +126,7 @@ def _resolve_benchmark_plan(
     metrics_endpoint: str = "",
     concurrency: int = 0,
     metrics_target_overrides: dict[str, str] | None = None,
+    prefix_caching: bool | None = None,
     request_rate: float = 0.0,
     arrival_model: str = "immediate",
     arrival_shape: float = 0.0,
@@ -121,7 +148,25 @@ def _resolve_benchmark_plan(
             context_file=context_file,
         )
         input_workload_pack = materialize_workload(workload, options=procedural_options)
+        if input_workload_pack.name != SUPPORTED_WORKLOAD_PACK:
+            return (
+                _production_error(["InferScope MCP exposes only the Kimi-K2.5 long-context coding workload."]),
+                None,
+                None,
+                None,
+                None,
+            )
         experiment_spec = load_experiment(experiment) if experiment else None
+        if experiment and experiment_spec is not None and experiment_spec.name not in SUPPORTED_EXPERIMENTS:
+            return (
+                _production_error(
+                    ["InferScope MCP exposes only the Kimi-targeted vLLM and Dynamo benchmark experiments."]
+                ),
+                None,
+                None,
+                None,
+                None,
+            )
         if experiment_spec and input_workload_pack.name != experiment_spec.workload:
             return (
                 {
@@ -153,6 +198,14 @@ def _resolve_benchmark_plan(
             goodput_slo=goodput_slo,
         )
         selected_model_name = model or (experiment_spec.model if experiment_spec else None) or workload_pack.model or ""
+        production_errors = validate_production_target(
+            model_name=selected_model_name,
+            gpu_name=gpu,
+            workload=workload_pack.workload_class,
+            engine=(engine or (experiment_spec.engine if experiment_spec else "")),
+        )
+        if production_errors:
+            return (_production_error(production_errors), None, None, None, None)
         support = assess_benchmark_support(
             model_name=selected_model_name,
             gpu_name=gpu,
@@ -162,9 +215,9 @@ def _resolve_benchmark_plan(
             experiment=experiment_spec,
             prompt_tokens=max(
                 (
-                    int(request.metadata.get("approx_context_tokens"))
+                    value
                     for request in workload_pack.requests
-                    if isinstance(request.metadata.get("approx_context_tokens"), int)
+                    if (value := _request_context_tokens(request)) is not None
                 ),
                 default=0,
             )
@@ -194,6 +247,7 @@ def _resolve_benchmark_plan(
             concurrency=(concurrency or None),
             metrics_endpoint=(metrics_endpoint or None),
             metrics_target_overrides=metrics_target_overrides or {},
+            prefix_caching=prefix_caching,
             execution=execution,
             support=support,
         )
@@ -218,26 +272,48 @@ def register_benchmark_tools(mcp: FastMCP) -> None:
     """Register evaluation and benchmark MCP tools."""
 
     @mcp.tool()
+    async def tool_get_production_contract() -> dict[str, Any]:
+        """Return the supported Kimi production contract for MCP clients."""
+        contract = build_production_contract()
+        return {
+            "summary": (
+                "InferScope MCP is currently scoped to Kimi-K2.5 on Hopper/Blackwell, "
+                "with Dynamo as the serving target and vLLM plus Dynamo as benchmark engines."
+            ),
+            "production_target": contract,
+            "confidence": 1.0,
+            "evidence": "production_target_contract",
+        }
+
+    @mcp.tool()
     async def tool_list_benchmark_workloads() -> dict[str, Any]:
-        """List packaged workload packs for coding, RAG, agents, and mixed tenancy."""
-        workloads = list_builtin_workloads()
+        """List the production workload pack exposed by the narrowed MCP surface."""
+        workloads = [SUPPORTED_WORKLOAD_PACK]
+        descriptors = [
+            descriptor for descriptor in describe_builtin_workloads() if descriptor["name"] == SUPPORTED_WORKLOAD_PACK
+        ]
         return {
             "summary": f"{len(workloads)} built-in workload pack(s) available",
             "workloads": workloads,
-            "descriptors": describe_builtin_workloads(),
-            "procedural_workloads": ["tool-agent", "coding-long-context"],
+            "descriptors": descriptors,
+            "procedural_workloads": [SUPPORTED_WORKLOAD_PACK],
+            "production_target": build_production_contract(),
             "confidence": 1.0,
             "evidence": "packaged_workload_catalog",
         }
 
     @mcp.tool()
     async def tool_list_benchmark_experiments() -> dict[str, Any]:
-        """List packaged experiments for colocated and disaggregated cache-aware deployments."""
-        experiments = list_builtin_experiments()
+        """List the Kimi-targeted vLLM and Dynamo experiments exposed by MCP."""
+        experiments = list(SUPPORTED_EXPERIMENTS)
+        descriptors = [
+            descriptor for descriptor in describe_builtin_experiments() if descriptor["name"] in SUPPORTED_EXPERIMENTS
+        ]
         return {
             "summary": f"{len(experiments)} built-in benchmark experiment(s) available",
             "experiments": experiments,
-            "descriptors": describe_builtin_experiments(),
+            "descriptors": descriptors,
+            "production_target": build_production_contract(),
             "confidence": 1.0,
             "evidence": "packaged_experiment_catalog",
         }
@@ -251,6 +327,19 @@ def register_benchmark_tools(mcp: FastMCP) -> None:
         engine: str = "",
     ) -> dict[str, Any]:
         """Return the structured benchmark matrix filtered by GPU/model/workload intent."""
+        if engine and engine.strip().lower() not in {"", "auto", "dynamo", "vllm"}:
+            return {
+                "summary": "0 workload(s), 0 experiment(s), 0 suggested pairing(s)",
+                "matrix": {
+                    "filters": {"engine": engine},
+                    "workloads": [],
+                    "experiments": [],
+                    "suggested_pairs": [],
+                },
+                "production_target": build_production_contract(),
+                "confidence": 1.0,
+                "evidence": "benchmark_matrix_catalog",
+            }
         matrix = build_benchmark_matrix(
             gpu_family=gpu_family,
             model_class=model_class,
@@ -258,12 +347,22 @@ def register_benchmark_tools(mcp: FastMCP) -> None:
             focus_area=focus_area,
             engine=engine,
         )
+        matrix["workloads"] = [
+            descriptor for descriptor in matrix["workloads"] if descriptor["name"] == SUPPORTED_WORKLOAD_PACK
+        ]
+        matrix["experiments"] = [
+            descriptor for descriptor in matrix["experiments"] if descriptor["name"] in SUPPORTED_EXPERIMENTS
+        ]
+        matrix["suggested_pairs"] = [
+            pair for pair in matrix["suggested_pairs"] if pair["experiment"] in SUPPORTED_EXPERIMENTS
+        ]
         return {
             "summary": (
                 f"{len(matrix['workloads'])} workload(s), {len(matrix['experiments'])} experiment(s), "
                 f"{len(matrix['suggested_pairs'])} suggested pairing(s)"
             ),
             "matrix": matrix,
+            "production_target": build_production_contract(),
             "confidence": 1.0,
             "evidence": "benchmark_matrix_catalog",
         }
@@ -339,21 +438,33 @@ def register_benchmark_tools(mcp: FastMCP) -> None:
         gpu: str,
         num_gpus: int = 2,
         model: str = "",
+        prefix_caching: bool | None = None,
         host: str = "127.0.0.1",
         enable_trace: bool = False,
         otlp_endpoint: str = "",
         vllm_proxy_command: str = "",
     ) -> dict[str, Any]:
-        """Generate live launch commands for a packaged vLLM or SGLang benchmark stack."""
-        available_experiments = list_builtin_experiments()
-        if experiment not in available_experiments:
+        """Generate live launch commands for the supported Kimi benchmark stacks."""
+        if experiment not in SUPPORTED_EXPERIMENTS:
             return {
                 "error": f"Unknown built-in experiment '{experiment}'",
-                "available_experiments": available_experiments,
+                "available_experiments": list(SUPPORTED_EXPERIMENTS),
                 "summary": f"❌ Unknown built-in experiment: {experiment}",
+                "production_target": build_production_contract(),
                 "confidence": 1.0,
                 "evidence": "builtin_experiment_catalog",
             }
+        experiment_spec = load_experiment(experiment)
+        production_errors = validate_production_target(
+            model_name=(model or "Kimi-K2.5"),
+            gpu_name=gpu,
+            workload="coding",
+            engine=experiment_spec.engine,
+            num_gpus=num_gpus,
+            topology_mode=experiment_spec.topology.mode,
+        )
+        if production_errors:
+            return _production_error(production_errors)
         try:
             stack_plan = build_benchmark_stack_plan(
                 experiment,
@@ -378,6 +489,7 @@ def register_benchmark_tools(mcp: FastMCP) -> None:
             "stack_plan": stack_plan.model_dump(mode="json"),
             "support": stack_plan.support,
             "benchmark_command": stack_plan.benchmark_command,
+            "production_target": build_production_contract(),
             "confidence": 0.9,
             "evidence": "benchmark_stack_plan",
         }
@@ -388,6 +500,7 @@ def register_benchmark_tools(mcp: FastMCP) -> None:
         gpu: str,
         num_gpus: int = 2,
         model: str = "",
+        prefix_caching: bool | None = None,
         host: str = "127.0.0.1",
         enable_trace: bool = False,
         otlp_endpoint: str = "",
@@ -396,15 +509,26 @@ def register_benchmark_tools(mcp: FastMCP) -> None:
         overwrite: bool = False,
     ) -> dict[str, Any]:
         """Write a runnable benchmark stack bundle under the benchmark artifact directory."""
-        available_experiments = list_builtin_experiments()
-        if experiment not in available_experiments:
+        if experiment not in SUPPORTED_EXPERIMENTS:
             return {
                 "error": f"Unknown built-in experiment '{experiment}'",
-                "available_experiments": available_experiments,
+                "available_experiments": list(SUPPORTED_EXPERIMENTS),
                 "summary": f"❌ Unknown built-in experiment: {experiment}",
+                "production_target": build_production_contract(),
                 "confidence": 1.0,
                 "evidence": "builtin_experiment_catalog",
             }
+        experiment_spec = load_experiment(experiment)
+        production_errors = validate_production_target(
+            model_name=(model or "Kimi-K2.5"),
+            gpu_name=gpu,
+            workload="coding",
+            engine=experiment_spec.engine,
+            num_gpus=num_gpus,
+            topology_mode=experiment_spec.topology.mode,
+        )
+        if production_errors:
+            return _production_error(production_errors)
         try:
             stack_plan = build_benchmark_stack_plan(
                 experiment,
@@ -435,6 +559,7 @@ def register_benchmark_tools(mcp: FastMCP) -> None:
             "materialized": materialized.model_dump(mode="json"),
             "support": stack_plan.support,
             "benchmark_command": stack_plan.benchmark_command,
+            "production_target": build_production_contract(),
             "confidence": 0.95,
             "evidence": "benchmark_stack_materialization",
         }
@@ -451,6 +576,7 @@ def register_benchmark_tools(mcp: FastMCP) -> None:
         metrics_endpoint: str = "",
         concurrency: int = 0,
         metrics_target_overrides: dict[str, str] | None = None,
+        prefix_caching: bool | None = None,
         request_rate: float = 0.0,
         arrival_model: str = "immediate",
         arrival_shape: float = 0.0,
@@ -475,6 +601,7 @@ def register_benchmark_tools(mcp: FastMCP) -> None:
             metrics_endpoint=metrics_endpoint,
             concurrency=concurrency,
             metrics_target_overrides=metrics_target_overrides,
+            prefix_caching=prefix_caching,
             request_rate=request_rate,
             arrival_model=arrival_model,
             arrival_shape=arrival_shape,
@@ -493,6 +620,7 @@ def register_benchmark_tools(mcp: FastMCP) -> None:
             "summary": f"Resolved benchmark plan for {workload_reference}",
             "run_plan": cast(dict[str, Any], run_plan.model_dump(mode="json")),
             "support": cast(dict[str, Any], support.model_dump(mode="json")) if support is not None else None,
+            "production_target": build_production_contract(),
             "confidence": 0.95,
             "evidence": "benchmark_plan_resolution",
         }
@@ -511,6 +639,7 @@ def register_benchmark_tools(mcp: FastMCP) -> None:
         capture_metrics: bool = True,
         save_artifact: bool = True,
         metrics_target_overrides: dict[str, str] | None = None,
+        prefix_caching: bool | None = None,
         request_rate: float = 0.0,
         arrival_model: str = "immediate",
         arrival_shape: float = 0.0,
@@ -539,6 +668,7 @@ def register_benchmark_tools(mcp: FastMCP) -> None:
             metrics_endpoint=metrics_endpoint,
             concurrency=concurrency,
             metrics_target_overrides=metrics_target_overrides,
+            prefix_caching=prefix_caching,
             request_rate=request_rate,
             arrival_model=arrival_model,
             arrival_shape=arrival_shape,
@@ -602,6 +732,8 @@ def register_benchmark_tools(mcp: FastMCP) -> None:
                 cast(dict[str, Any], artifact.run_plan.get("observed_runtime", {})) if artifact.run_plan else {}
             ),
             "benchmark_summary": cast(dict[str, Any], artifact.summary.model_dump(mode="json")),
+            "production_readiness": build_benchmark_readiness_summary(artifact),
+            "production_target": build_production_contract(),
             "confidence": 0.85,
             "evidence": "live_benchmark_replay",
         }
@@ -626,6 +758,8 @@ def register_benchmark_tools(mcp: FastMCP) -> None:
             "observed_runtime": (
                 cast(dict[str, Any], artifact.run_plan.get("observed_runtime", {})) if artifact.run_plan else {}
             ),
+            "production_readiness": build_benchmark_readiness_summary(artifact),
+            "production_target": build_production_contract(),
             "confidence": 1.0,
             "evidence": "saved_benchmark_artifact",
         }

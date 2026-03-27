@@ -119,6 +119,7 @@ class RuntimeProfileReport(BaseModel):
     health: dict[str, Any]
     memory_pressure: dict[str, Any]
     cache_effectiveness: dict[str, Any]
+    reliability: dict[str, Any]
     workload: dict[str, Any]
     identity: RuntimeIdentity | None = None
     audit: dict[str, Any]

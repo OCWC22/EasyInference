@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any
+from typing import Any, Literal, cast
 
 from inferscope.endpoint_auth import EndpointAuthConfig
 from inferscope.engines.registry import get_engine_adapter
@@ -66,6 +66,18 @@ _BOTTLENECK_METRICS: dict[BottleneckType, tuple[str, ...]] = {
 }
 
 
+def _severity_literal(value: str) -> Literal["critical", "warning", "info"]:
+    if value in {"critical", "warning", "info"}:
+        return cast(Literal["critical", "warning", "info"], value)
+    return "info"
+
+
+def _engine_source_literal(value: str) -> Literal["metrics", "adapter", "unknown"]:
+    if value in {"metrics", "adapter", "unknown"}:
+        return cast(Literal["metrics", "adapter", "unknown"], value)
+    return "unknown"
+
+
 @dataclass
 class RuntimeAnalysisBundle:
     """Typed intermediate bundle reused by runtime analysis surfaces."""
@@ -75,6 +87,7 @@ class RuntimeAnalysisBundle:
     health: dict[str, Any] = field(default_factory=dict)
     memory_pressure: dict[str, Any] = field(default_factory=dict)
     cache_effectiveness: dict[str, Any] = field(default_factory=dict)
+    reliability: dict[str, Any] = field(default_factory=dict)
     workload: WorkloadClassification | None = None
     identity: RuntimeIdentity | None = None
     deployment_context: DeploymentContext | None = None
@@ -121,6 +134,7 @@ async def analyze_runtime(
     bundle.health = assess_health(bundle.normalized)
     bundle.memory_pressure = build_memory_pressure_analysis(bundle.normalized)
     bundle.cache_effectiveness = build_cache_effectiveness_analysis(bundle.normalized)
+    bundle.reliability = build_reliability_analysis(bundle.normalized)
     bundle.reasoning.append(f"Scraped {bundle.normalized.engine} metrics from {bundle.normalized.endpoint}")
 
     if include_workload:
@@ -225,6 +239,7 @@ async def build_runtime_profile(
         health=bundle.health,
         memory_pressure=bundle.memory_pressure,
         cache_effectiveness=bundle.cache_effectiveness,
+        reliability=bundle.reliability,
         workload=workload_payload,
         identity=bundle.identity if include_identity else None,
         audit=audit_payload,
@@ -375,6 +390,47 @@ def build_memory_pressure_analysis(metrics: NormalizedMetrics) -> dict[str, Any]
         "cpu_cache_usage": round(metrics.cpu_cache_usage, 4),
         "findings": findings,
         "summary": f"Memory pressure: {pressure} (KV {kv_usage:.0%}, {len(findings)} findings)",
+    }
+
+
+def build_reliability_analysis(metrics: NormalizedMetrics) -> dict[str, Any]:
+    """Analyze request stability and observability-critical reliability counters."""
+    level = "healthy"
+    findings: list[str] = []
+
+    if metrics.request_migrations_total > 0:
+        level = "degraded"
+        findings.append(
+            f"Dynamo migrated {metrics.request_migrations_total:.0f} request(s) due to worker unavailability."
+        )
+
+    if metrics.disconnected_clients > 0:
+        level = "degraded"
+        findings.append(f"{metrics.disconnected_clients:.0f} disconnected client(s) observed during streaming.")
+
+    if metrics.requests_waiting >= 10:
+        level = "degraded" if level == "healthy" else level
+        findings.append(f"Frontend queue depth is {metrics.requests_waiting:.0f} request(s).")
+
+    if metrics.kv_total_blocks > 0:
+        findings.append(
+            f"KV block occupancy: {metrics.kv_active_blocks:.0f}/{metrics.kv_total_blocks:.0f} active blocks."
+        )
+
+    if not findings:
+        findings.append("No migration, disconnect, or queue-depth reliability signals detected.")
+
+    return {
+        "level": level,
+        "request_migrations_total": round(metrics.request_migrations_total, 4),
+        "disconnected_clients": round(metrics.disconnected_clients, 4),
+        "kv_active_blocks": round(metrics.kv_active_blocks, 4),
+        "kv_total_blocks": round(metrics.kv_total_blocks, 4),
+        "findings": findings,
+        "summary": (
+            f"Reliability: {level} (migrations={metrics.request_migrations_total:.0f}, "
+            f"disconnects={metrics.disconnected_clients:.0f})"
+        ),
     }
 
 
@@ -537,7 +593,7 @@ def derive_bottlenecks(findings: list[AuditFinding], metrics: NormalizedMetrics)
         bottlenecks.append(
             RuntimeBottleneck(
                 kind=kind,
-                severity=top.severity,
+                severity=_severity_literal(top.severity),
                 confidence=round(confidence, 2),
                 summary=top.title,
                 trigger_check_ids=[finding.check_id for finding in grouped_findings],
@@ -560,7 +616,7 @@ async def enrich_runtime_identity(
 ) -> RuntimeIdentity | None:
     """Best-effort runtime identity enrichment via engine adapters."""
     engine_candidate = metrics.engine
-    engine_source: str = "metrics"
+    engine_source: Literal["metrics", "adapter", "unknown"] = "metrics"
     if engine_candidate == "unknown":
         engine_candidate = hints.engine.strip().lower()
         engine_source = "adapter" if engine_candidate else "unknown"
@@ -583,7 +639,7 @@ async def enrich_runtime_identity(
     except Exception as exc:  # noqa: BLE001
         return RuntimeIdentity(
             engine=engine_candidate,
-            engine_source=engine_source if engine_source in {"metrics", "adapter"} else "unknown",
+            engine_source=_engine_source_literal(engine_source),
             adapter_name=adapter.engine_name(),
             config_error=str(exc),
             notes=["Adapter config lookup failed during runtime profiling."],
@@ -614,7 +670,7 @@ async def enrich_runtime_identity(
 
     return RuntimeIdentity(
         engine=engine_candidate,
-        engine_source=engine_source if engine_source in {"metrics", "adapter"} else "unknown",
+        engine_source=_engine_source_literal(engine_source),
         adapter_name=adapter.engine_name(),
         served_models=served_models,
         config_snapshot=config_snapshot,
