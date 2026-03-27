@@ -7,14 +7,12 @@ for Mode A vs Mode B (or any two configuration sets).
 from __future__ import annotations
 
 import json
-from dataclasses import asdict, dataclass, field
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Sequence
 
-from analysis.metrics import CellMetrics
 from analysis.statistical import (
     PairedTTestResult,
-    bootstrap_ci,
     coefficient_of_variation,
     paired_ttest,
 )

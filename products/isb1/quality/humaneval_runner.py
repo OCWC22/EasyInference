@@ -11,13 +11,8 @@ Usage::
 from __future__ import annotations
 
 import argparse
-import contextlib
-import io
 import json
 import multiprocessing
-import signal
-import sys
-import tempfile
 import traceback
 from dataclasses import dataclass, field
 from pathlib import Path

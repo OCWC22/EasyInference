@@ -206,7 +206,7 @@ deployment:
 """
     return [
         GeneratedFile(
-            path="/tmp/dynamo-config.yaml",  # noqa: S108 - generated launcher path, not a runtime temp file write
+            path="/tmp/dynamo-config.yaml",  # noqa: S108  # nosec B108 - generated launcher path, not a runtime temp file write
             content=content,
             description="Dynamo 1.0 declarative configuration file with SLO Planner and KV-aware Router enabled.",
         )

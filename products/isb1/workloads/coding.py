@@ -13,7 +13,6 @@ from __future__ import annotations
 import uuid
 from typing import Any
 
-import numpy as np
 
 from workloads.base import Request, WorkloadGenerator, _new_request_id
 

@@ -7,7 +7,7 @@ coefficient of variation, and trial-sufficiency checks.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Optional, Sequence, Tuple
+from typing import Optional, Sequence
 
 import numpy as np
 from scipy import stats

@@ -20,9 +20,9 @@ import logging
 import aiohttp
 
 from workloads.arrivals import BurstGPTArrival, GammaArrival, PoissonArrival
+from workloads.base import Request
 
 logger = logging.getLogger(__name__)
-from workloads.base import Request
 
 _REQUEST_ENDPOINT = "/v1/chat/completions"
 _SESSION_HEADER = "X-Session-ID"

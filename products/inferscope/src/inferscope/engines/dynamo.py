@@ -28,7 +28,7 @@ from inferscope.engines.base import (
     EngineConfig,
 )
 from inferscope.logging import get_logger
-from inferscope.optimization.serving_profile import ModelClass, ServingProfile
+from inferscope.optimization.serving_profile import ServingProfile
 
 _adapter_log = get_logger(component="dynamo_adapter")
 
@@ -77,7 +77,7 @@ class DynamoCompiler(ConfigCompiler):
         topology["backend"] = backend
 
         # --- Disaggregated serving ---
-        disagg = {}
+        disagg: dict[str, Any] = {}
         if profile.topology.split_prefill_decode:
             disagg["enabled"] = True
             disagg["prefill_workers"] = max(1, profile.topology.tp)
@@ -106,7 +106,7 @@ class DynamoCompiler(ConfigCompiler):
                 )
 
         # --- KV cache management (Grove) ---
-        grove = {
+        grove: dict[str, Any] = {
             "gpu_memory_utilization": profile.cache.gpu_memory_utilization,
         }
         if profile.cache.kv_tiering == "gpu_cpu":
@@ -258,7 +258,7 @@ class DynamoAdapter(EngineAdapter):
                 # Check for Dynamo router headers
                 try:
                     models = await client.get(f"{url}/v1/models")
-                    if "x-dynamo" in {k.lower() for k in models.headers.keys()}:
+                    if "x-dynamo" in {k.lower() for k in models.headers}:
                         return True
                 except Exception:  # noqa: S110
                     pass

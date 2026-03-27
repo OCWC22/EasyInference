@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import csv
 import io
-from dataclasses import asdict, dataclass, field, fields
+from dataclasses import asdict, dataclass, fields
 from typing import Any, Dict, List, Optional, Sequence
 
 import numpy as np

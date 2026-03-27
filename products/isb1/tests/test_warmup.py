@@ -1,7 +1,6 @@
 """Tests for harness.warmup.WarmupValidator."""
 
 import numpy as np
-import pytest
 
 from harness.warmup import WarmupValidator, WarmupResult
 
@@ -112,7 +111,6 @@ class TestUnstableExtendsWarmup:
 
     def test_permanently_unstable_uses_extensions(self):
         """Wildly varying throughput should exhaust extensions."""
-        rng = np.random.default_rng(99)
         reqs = []
         for i in range(1000):
             # Alternate between very different token counts

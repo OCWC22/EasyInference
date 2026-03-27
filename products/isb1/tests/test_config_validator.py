@@ -1,7 +1,5 @@
 """Tests for harness.config_validator.ConfigValidator."""
 
-import os
-import tempfile
 from pathlib import Path
 
 import pytest
@@ -11,7 +9,6 @@ from harness.config_validator import (
     ConfigValidator,
     ValidationResult,
     _BYTES_PER_PARAM,
-    _KV_OVERHEAD_FACTOR,
 )
 
 

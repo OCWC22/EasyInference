@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import json
 import logging
-import sys
 from pathlib import Path
 
 import click
@@ -189,7 +188,7 @@ def run(
     else:
         summary = orchestrator.execute()
 
-    click.echo(f"\nSweep complete:")
+    click.echo("\nSweep complete:")
     click.echo(f"  Total cells:  {summary.total_cells}")
     click.echo(f"  Completed:    {summary.completed}")
     click.echo(f"  Failed:       {summary.failed}")
@@ -341,7 +340,7 @@ def run_cell(
 )
 def analyze(results_dir: str, output_path: str | None) -> None:
     """Analyze benchmark results and compute metrics."""
-    from analysis.metrics import CellMetrics, MetricComputer, get_gpu_hourly_cost
+    from analysis.metrics import MetricComputer
 
     results_path = Path(results_dir)
 

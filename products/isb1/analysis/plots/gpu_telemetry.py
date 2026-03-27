@@ -7,7 +7,6 @@ from pathlib import Path
 
 import click
 import matplotlib.pyplot as plt
-import numpy as np
 
 
 def plot_gpu_telemetry(

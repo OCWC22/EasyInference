@@ -11,8 +11,6 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Any, Dict, List, Optional
 
-import numpy as np
-
 
 class ClaimVerdict(str, Enum):
     """Possible outcomes for a claim evaluation."""

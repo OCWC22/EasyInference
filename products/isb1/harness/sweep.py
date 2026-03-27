@@ -5,10 +5,9 @@ from __future__ import annotations
 import itertools
 import json
 import logging
-import sys
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 import numpy as np
 import yaml
@@ -95,7 +94,7 @@ class SweepOrchestrator:
 
         trials_cfg = sweep.get("trials", {})
         default_trials: int = trials_cfg.get("default", 3)
-        high_variance_max: int = trials_cfg.get("high_variance_max", 5)
+        high_variance_max: int = trials_cfg.get("high_variance_max", 5)  # noqa: F841 — used in execute()
         bf16_trials: int = trials_cfg.get("bf16_reference", 1)
 
         measurement_cfg = sweep.get("measurement", {})
@@ -472,10 +471,6 @@ class SweepOrchestrator:
         remaining: list[CellConfig] = []
 
         for cell in self._cells:
-            run_id_prefix = (
-                f"isb1-*-{cell.gpu}-{cell.model}-{cell.workload}-"
-                f"{cell.mode}-{cell.quantization}-{cell.trial_number:03d}"
-            )
             # Check if any completed run matches this cell
             matched = False
             for cid in completed_ids:
@@ -639,7 +634,7 @@ def _cli() -> None:
         else:
             summary = orchestrator.execute()
 
-        click.echo(f"\nSweep complete:")
+        click.echo("\nSweep complete:")
         click.echo(f"  Total cells:  {summary.total_cells}")
         click.echo(f"  Completed:    {summary.completed}")
         click.echo(f"  Failed:       {summary.failed}")

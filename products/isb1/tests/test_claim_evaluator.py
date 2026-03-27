@@ -2,7 +2,7 @@
 
 import pytest
 
-from analysis.claim_evaluator import ClaimEvaluator, ClaimVerdict, ClaimResult, _CLAIMS
+from analysis.claim_evaluator import ClaimEvaluator, ClaimVerdict, _CLAIMS
 
 
 def _good_metrics() -> dict:

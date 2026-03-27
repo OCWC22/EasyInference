@@ -19,10 +19,10 @@ import yaml
 _INFERSCOPE_SRC = Path(__file__).resolve().parents[2] / "inferscope" / "src"
 sys.path.insert(0, str(_INFERSCOPE_SRC))
 
-from inferscope.hardware.gpu_profiles import get_gpu_profile
-from inferscope.models.registry import get_model_variant
-from inferscope.optimization.recommender import recommend
-from inferscope.optimization.serving_profile import ObjectiveSpec, WorkloadMode
+from inferscope.hardware.gpu_profiles import get_gpu_profile  # noqa: E402
+from inferscope.models.registry import get_model_variant  # noqa: E402
+from inferscope.optimization.recommender import recommend  # noqa: E402
+from inferscope.optimization.serving_profile import ObjectiveSpec, WorkloadMode  # noqa: E402
 
 _MODE_A_DIR = Path(__file__).resolve().parents[1] / "configs" / "modes" / "mode_a"
 _MODE_B_DIR = Path(__file__).resolve().parents[1] / "configs" / "modes" / "mode_b"

@@ -10,12 +10,11 @@ from __future__ import annotations
 import argparse
 import csv
 import json
-import os
 import sys
 from collections import defaultdict
 from dataclasses import fields
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Tuple
 
 import numpy as np
 
