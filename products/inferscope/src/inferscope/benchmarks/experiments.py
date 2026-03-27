@@ -75,8 +75,15 @@ class BenchmarkCacheMetadata(BaseModel):
     tiers: list[CacheTier] = Field(default_factory=list)
     connector: str | None = None
     session_affinity: bool | None = None
+    prefix_caching: bool | None = None
     prefix_cache_expected: bool | None = None
     notes: list[str] = Field(default_factory=list)
+
+    @model_validator(mode="after")
+    def validate_prefix_caching(self) -> BenchmarkCacheMetadata:
+        if self.prefix_caching is False and self.prefix_cache_expected is True:
+            raise ValueError("prefix_caching=False cannot be combined with prefix_cache_expected=True")
+        return self
 
 
 class BenchmarkGoodputSLO(BaseModel):
@@ -283,6 +290,7 @@ def build_run_plan(
     cache_strategy: str | None = None,
     cache_tiers: list[str] | None = None,
     cache_connector: str | None = None,
+    prefix_caching: bool | None = None,
     session_affinity: bool | None = None,
     metrics_targets: list[ResolvedMetricCaptureTarget] | None = None,
     execution: BenchmarkExecutionProfile | None = None,
@@ -325,6 +333,8 @@ def build_run_plan(
         cache_payload["tiers"] = cache_tiers
     if cache_connector is not None:
         cache_payload["connector"] = cache_connector
+    if prefix_caching is not None:
+        cache_payload["prefix_caching"] = prefix_caching
     if session_affinity is not None:
         cache_payload["session_affinity"] = session_affinity
     cache = BenchmarkCacheMetadata.model_validate(cache_payload)

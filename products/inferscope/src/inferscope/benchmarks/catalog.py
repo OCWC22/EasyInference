@@ -13,6 +13,7 @@ from inferscope.benchmarks.procedural import (
     ProceduralWorkloadOptions,
     materialize_procedural_workload,
 )
+from inferscope.logging import get_logger
 
 _RESOURCE_EXTENSIONS = (".yaml", ".yml", ".json")
 _LEGACY_RESOURCE_PREFIXES: dict[str, tuple[str, ...]] = {
@@ -38,6 +39,8 @@ _MODEL_CLASS_ALIASES: dict[str, str] = {
     "qwen35_hybrid": "qwen35_hybrid",
     "classical_moe": "classical_moe",
 }
+
+_catalog_log = get_logger(component="benchmark_catalog")
 
 
 def _find_packaged_resource(package: str, builtin_name: str) -> Path | None:
@@ -173,18 +176,34 @@ def describe_builtin_workloads() -> list[dict[str, Any]]:
                 "target_model_classes": pack.target_model_classes,
                 "focus_areas": pack.focus_areas,
                 "tags": pack.tags,
-                "procedural": pack.name in {"tool-agent", "coding-long-context"},
+                "procedural": pack.name
+                in {
+                    "tool-agent",
+                    "coding-long-context",
+                    "kimi-k2-long-context-coding",
+                },
             }
         )
     return descriptors
+
+
+def _prefix_caching_enabled(cache_strategy: str, prefix_cache_expected: bool) -> bool:
+    normalized_strategy = _normalize_identifier(cache_strategy)
+    return prefix_cache_expected or "prefix" in normalized_strategy
 
 
 def describe_builtin_experiments() -> list[dict[str, Any]]:
     """Return structured descriptors for all packaged experiment specs."""
     descriptors: list[dict[str, Any]] = []
     for name in list_builtin_experiments():
-        spec = load_experiment(name)
-        workload = load_workload(spec.workload)
+        try:
+            spec = load_experiment(name)
+            workload = load_workload(spec.workload)
+        except Exception:  # noqa: BLE001
+            _catalog_log.warning("skipping_invalid_experiment_descriptor", experiment=name)
+            continue
+        prefix_cache_expected = bool(getattr(spec.cache, "prefix_cache_expected", False))
+        prefix_caching = getattr(spec.cache, "prefix_caching", None)
         descriptors.append(
             {
                 "name": spec.name,
@@ -199,6 +218,14 @@ def describe_builtin_experiments() -> list[dict[str, Any]]:
                 "topology_mode": spec.topology.mode,
                 "cache_strategy": spec.cache.strategy,
                 "cache_tiers": spec.cache.tiers,
+                "prefix_caching": (
+                    prefix_caching
+                    if isinstance(prefix_caching, bool)
+                    else _prefix_caching_enabled(spec.cache.strategy, prefix_cache_expected)
+                ),
+                "prefix_cache_expected": prefix_cache_expected,
+                "session_routing": getattr(spec.topology, "session_routing", None),
+                "session_header_name": getattr(spec.topology, "session_header_name", None),
                 "tags": spec.tags,
             }
         )
@@ -262,6 +289,10 @@ def build_benchmark_matrix(
             "engine": descriptor["engine"],
             "topology_mode": descriptor["topology_mode"],
             "cache_strategy": descriptor["cache_strategy"],
+            "prefix_caching": descriptor.get("prefix_caching"),
+            "prefix_cache_expected": descriptor.get("prefix_cache_expected"),
+            "session_routing": descriptor.get("session_routing"),
+            "session_header_name": descriptor.get("session_header_name"),
             "focus_areas": descriptor["focus_areas"],
         }
         for descriptor in experiments
@@ -352,6 +383,13 @@ def _runtime_metric(artifact: BenchmarkArtifact, *path: str) -> float | None:
     if isinstance(current, (int, float)):
         return float(current)
     return None
+
+
+def _cache_effectiveness_metric(artifact: BenchmarkArtifact, metric: str) -> float | None:
+    nested_metric = _runtime_metric(artifact, "cache_effectiveness", metric)
+    if nested_metric is not None:
+        return nested_metric
+    return _runtime_metric(artifact, metric)
 
 
 def _topology_mode(artifact: BenchmarkArtifact) -> str:
@@ -462,6 +500,14 @@ def compare_benchmark_artifacts(
             "tool_parse_success_rate": _delta(
                 _runtime_metric(candidate, "tool_parse_success_rate"),
                 _runtime_metric(baseline, "tool_parse_success_rate"),
+            ),
+            "prefix_cache_hit_rate": _delta(
+                _cache_effectiveness_metric(candidate, "prefix_cache_hit_rate"),
+                _cache_effectiveness_metric(baseline, "prefix_cache_hit_rate"),
+            ),
+            "prefix_cache_hits": _delta(
+                _cache_effectiveness_metric(candidate, "prefix_cache_hits"),
+                _cache_effectiveness_metric(baseline, "prefix_cache_hits"),
             ),
         },
         "ratios": {

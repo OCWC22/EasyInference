@@ -1,12 +1,13 @@
 version: "1"
 name: vllm-disagg-prefill-lmcache
-description: vLLM prefill/decode split benchmark with LMCache-style remote KV reuse.
+description: vLLM prefill/decode split comparison benchmark for Kimi-K2.5 with LMCache-backed KV reuse.
 engine: vllm
-workload: coding-long-context
-benchmark_role: topology_probe
-target_gpu_families: [hopper, hopper_grace, blackwell, blackwell_ultra, blackwell_grace, blackwell_ultra_grace]
-target_model_classes: [qwen35_hybrid, frontier_mla_moe, compact_agentic_moe]
-focus_areas: [disaggregation, lmcache, prefix_cache, long_context]
+workload: kimi-k2-long-context-coding
+benchmark_role: comparison
+model: Kimi-K2.5
+target_gpu_families: [hopper, blackwell, blackwell_ultra]
+target_model_classes: [classical_moe]
+focus_areas: [disaggregation, lmcache, prefix_cache, long_context, coding, observability]
 topology:
   mode: prefill_decode_split
   session_routing: sticky
@@ -15,7 +16,7 @@ topology:
 cache:
   strategy: lmcache
   tiers: [gpu_hbm, cpu_dram, remote_cache]
-  connector: LMCache
+  connector: LMCacheConnectorV1
   session_affinity: true
   prefix_cache_expected: true
 metrics_targets:
@@ -33,4 +34,4 @@ metrics_targets:
     endpoint_source: named_override
     override_key: decode
     expected_engine: vllm
-tags: [vllm, disagg, lmcache]
+tags: [vllm, disagg, lmcache, kimi, coding, comparison]

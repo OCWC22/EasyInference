@@ -1,4 +1,4 @@
-"""Prometheus metrics scraper for vLLM, SGLang, and ATOM endpoints.
+"""Prometheus metrics scraper for vLLM, SGLang, ATOM, and Dynamo endpoints.
 
 Parses the standard Prometheus text exposition format from /metrics endpoints.
 Metric names are sourced from official docs:
@@ -68,6 +68,25 @@ ATOM_METRICS = {
     "atom:inter_token_latency_seconds": "Inter-token latency (ITL)",
 }
 
+DYNAMO_METRICS = {
+    "dynamo_frontend_inflight_requests": "Inflight requests at the HTTP frontend",
+    "dynamo_frontend_queued_requests": "Queued requests at the HTTP frontend",
+    "dynamo_frontend_disconnected_clients": "Disconnected streaming clients",
+    "dynamo_frontend_output_tokens_total": "Total generated output tokens",
+    "dynamo_frontend_requests_total": "Total requests observed by the frontend",
+    "dynamo_frontend_time_to_first_token_seconds": "Frontend time to first token (TTFT)",
+    "dynamo_frontend_inter_token_latency_seconds": "Frontend inter-token latency (ITL)",
+    "dynamo_frontend_request_duration_seconds": "Frontend end-to-end request latency",
+    "dynamo_frontend_model_migration_total": "Total request migrations due to worker unavailability",
+    "dynamo_component_inflight_requests": "Requests currently processed by a backend component",
+    "dynamo_component_request_duration_seconds": "Backend component request duration",
+    "dynamo_component_requests_total": "Total requests processed by a backend component",
+    "dynamo_component_kvstats_active_blocks": "Active KV blocks on the worker",
+    "dynamo_component_kvstats_total_blocks": "Total KV blocks on the worker",
+    "dynamo_component_kvstats_gpu_cache_usage_percent": "Worker GPU KV cache utilization",
+    "dynamo_component_kvstats_gpu_prefix_cache_hit_rate": "Worker GPU prefix cache hit rate",
+}
+
 # Regex for Prometheus text format: metric_name{labels} value [timestamp]
 _METRIC_LINE_RE = re.compile(
     r"^([a-zA-Z_:][a-zA-Z0-9_:]*)"  # metric name
@@ -91,7 +110,7 @@ class ScrapeResult:
     """Result of scraping a Prometheus /metrics endpoint."""
 
     endpoint: str
-    engine: str  # "vllm" | "sglang" | "atom" | "unknown"
+    engine: str  # "vllm" | "sglang" | "atom" | "dynamo" | "unknown"
     raw_metrics: dict[str, float] = field(default_factory=dict)
     samples: list[MetricSample] = field(default_factory=list)
     error: str = ""
@@ -144,6 +163,8 @@ def parse_prometheus_text(text: str) -> list[MetricSample]:
 
 def detect_engine_from_metrics(text: str) -> str:
     """Detect which engine is running from its /metrics output."""
+    if "dynamo_" in text:
+        return "dynamo"
     if "vllm:" in text:
         return "vllm"
     if "sglang:" in text:

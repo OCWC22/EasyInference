@@ -244,6 +244,7 @@ def assess_benchmark_support(
         )
 
     if experiment is not None and traits is not None:
+        resolved_gpu_name = gpu_profile.name if gpu_profile is not None else (gpu_name or "unknown")
         if not _matches_gpu_family(experiment.target_gpu_families, traits):
             _append_issue(
                 issues,
@@ -251,7 +252,7 @@ def assess_benchmark_support(
                 code="experiment_gpu_family_mismatch",
                 message=(
                     f"Experiment '{experiment.name}' targets GPU families {experiment.target_gpu_families}, "
-                    f"but '{gpu_profile.name}' resolves to '{traits.family.value}'."
+                    f"but '{resolved_gpu_name}' resolves to '{traits.family.value}'."
                 ),
                 component="gpu",
             )
@@ -292,12 +293,19 @@ def assess_benchmark_support(
                     message="OffloadingConnector benchmark lanes require single-endpoint topology.",
                     component="topology",
                 )
-        if experiment.cache.strategy == "lmcache" and experiment.topology.mode == "single_endpoint":
+        if (
+            experiment.cache.strategy == "lmcache"
+            and experiment.topology.mode == "single_endpoint"
+            and selected_engine != "dynamo"
+        ):
             _append_issue(
                 issues,
                 severity="error",
                 code="lmcache_requires_split_topology",
-                message="LMCache benchmark lanes require split prefill/decode topology.",
+                message=(
+                    "LMCache benchmark lanes require split prefill/decode topology "
+                    "unless Dynamo manages the worker topology."
+                ),
                 component="cache",
             )
         if experiment.cache.strategy == "hicache" and selected_engine and selected_engine != "sglang":
@@ -331,13 +339,14 @@ def assess_benchmark_support(
             )
 
     if workload is not None and traits is not None and not _matches_gpu_family(workload.target_gpu_families, traits):
+        resolved_gpu_name = gpu_profile.name if gpu_profile is not None else (gpu_name or "unknown")
         _append_issue(
             issues,
             severity="warning",
             code="workload_gpu_family_mismatch",
             message=(
                 f"Workload '{workload.name}' targets GPU families {workload.target_gpu_families}, "
-                f"but '{gpu_profile.name}' resolves to '{traits.family.value}'."
+                f"but '{resolved_gpu_name}' resolves to '{traits.family.value}'."
             ),
             component="gpu",
         )

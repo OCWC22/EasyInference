@@ -17,9 +17,16 @@ from inferscope.hardware.gpu_profiles import get_gpu_profile
 from inferscope.models.registry import get_model_variant
 from inferscope.optimization.platform_policy import resolve_platform_traits
 from inferscope.optimization.serving_profile import WorkloadMode
+from inferscope.production_target import (
+    SUPPORTED_ENGINE,
+    SUPPORTED_EXPERIMENTS,
+    SUPPORTED_WORKLOAD_PACK,
+    build_production_contract,
+    required_gpus_for_topology,
+    validate_production_target,
+)
 from inferscope.tools.kv_cache import recommend_disaggregation, recommend_kv_strategy
 from inferscope.tools.profiling import profile_runtime
-from inferscope.tools.recommend import recommend_config
 
 
 def _normalize_workload_mode(value: str) -> WorkloadMode:
@@ -261,7 +268,13 @@ def _lane_priority(
     runtime_profile: dict[str, Any] | None,
     disaggregation: dict[str, Any],
 ) -> int:
-    priority = {"reference": 10, "cache_extension": 20, "offload": 30, "disaggregated": 40}.get(lane["phase"], 50)
+    priority = {
+        "reference": 10,
+        "cache_extension": 20,
+        "comparison": 30,
+        "offload": 30,
+        "disaggregated": 40,
+    }.get(lane["phase"], 50)
     if runtime_profile is None:
         return priority
 
@@ -279,6 +292,14 @@ def _lane_priority(
         "prefill_compute_bound" in bottleneck_kinds or disaggregation.get("recommended", False)
     ):
         priority -= 20
+    if lane["phase"] == "disaggregated" and memory_level in {"high", "critical"}:
+        priority -= 20
+    if lane["phase"] == "disaggregated" and cache_effectiveness in {"poor", "minimal", "disabled_or_no_data"}:
+        priority -= 15
+    if lane["phase"] == "comparison" and (
+        memory_level in {"high", "critical"} or cache_effectiveness in {"poor", "minimal", "disabled_or_no_data"}
+    ):
+        priority -= 5
     if lane["phase"] == "cache_extension" and cache_effectiveness in {"poor", "minimal", "disabled_or_no_data"}:
         priority -= 10
     return priority
@@ -325,6 +346,20 @@ def plan_benchmark_strategy(
     include_stack_plans: bool = True,
 ) -> dict[str, Any]:
     """Plan the right benchmark suite for this deployment target."""
+    target_errors = validate_production_target(
+        model_name=model,
+        gpu_name=gpu,
+        workload=workload,
+        engine=engine,
+    )
+    if target_errors:
+        return {
+            "error": "; ".join(target_errors),
+            "production_target": build_production_contract(),
+            "confidence": 0.0,
+            "evidence": "production_target_validation",
+        }
+
     model_variant = get_model_variant(model)
     if model_variant is None:
         return {"error": f"Unknown model: '{model}'", "confidence": 0.0}
@@ -332,23 +367,17 @@ def plan_benchmark_strategy(
     if gpu_profile is None:
         return {"error": f"Unknown GPU: '{gpu}'", "confidence": 0.0}
 
-    try:
-        workload_mode = _normalize_workload_mode(workload)
-    except ValueError:
-        return {"error": f"Unknown workload: '{workload}'", "confidence": 0.0}
-
-    recommendation = recommend_config(model, gpu, workload_mode.value, num_gpus, engine=engine)
-    if "error" in recommendation:
-        return recommendation
-    selected_engine = str(recommendation["engine_config"]["engine"])
-
-    kv_strategy = recommend_kv_strategy(
-        model,
-        gpu,
-        workload_mode.value,
-        max_context=max_context,
-        concurrent_sessions=concurrent_sessions,
+    workload_mode = WorkloadMode.CODING
+    selected_engine = SUPPORTED_ENGINE
+    traits = resolve_platform_traits(gpu_profile)
+    primary_workload = SUPPORTED_WORKLOAD_PACK
+    focus_area = "long_context"
+    production_contract = build_production_contract()
+    disagg_gpu_floor = required_gpus_for_topology(
+        model_name=model_variant.name,
+        topology_mode="prefill_decode_split",
     )
+
     disagg = recommend_disaggregation(
         model,
         gpu,
@@ -356,37 +385,84 @@ def plan_benchmark_strategy(
         request_rate_per_sec=request_rate_per_sec,
         has_rdma=has_rdma,
         num_gpus=num_gpus,
+    ).get("disaggregation", {})
+    disagg["connector"] = "LMCacheConnectorV1"
+    disagg.setdefault(
+        "rationale",
+        [],
     )
-    traits = resolve_platform_traits(gpu_profile)
-    primary_workload = _primary_workload_name(
-        workload_mode,
-        avg_prompt_tokens=avg_prompt_tokens,
-        concurrent_sessions=concurrent_sessions,
-    )
-    supplemental_workloads = _supplemental_workload_names(workload_mode, primary_workload)
-    focus_area = _focus_area_for_mode(workload_mode)
+    if disagg.get("recommended", False):
+        disagg["rationale"].append("Dynamo disaggregation is the production target for this Kimi coding lane.")
+    kv_strategy = {
+        "tiers": ["gpu_hbm", "remote_cache"] if num_gpus == 1 else ["gpu_hbm", "cpu_dram", "remote_cache"],
+        "connector": "LMCacheConnectorV1",
+        "engine_recommendation": "Dynamo frontend plus LMCache-backed workers, benchmarked against vLLM split serving",
+        "notes": [
+            "Track frontend queue depth and request migration counters as first-class reliability signals.",
+            "Scrape worker DYN_SYSTEM_PORT metrics for KV usage and prefix hit rate.",
+            (
+                f"Kimi-K2.5 split serving requires at least {disagg_gpu_floor} GPUs "
+                "so prefill and decode each meet TP floor."
+            ),
+        ],
+    }
 
     matrix = build_benchmark_matrix(
         gpu_family=traits.family.value,
         model_class=model_variant.model_class.value,
         focus_area=focus_area,
+        engine="",
     )
     workload_descriptors = describe_builtin_workloads()
     primary_descriptor = _find_descriptor(workload_descriptors, primary_workload)
-    supplemental_descriptors = [
-        descriptor for descriptor in workload_descriptors if descriptor["name"] in supplemental_workloads
+    matrix["workloads"] = [descriptor for descriptor in matrix["workloads"] if descriptor["name"] == primary_workload]
+    matrix["experiments"] = [
+        descriptor for descriptor in matrix["experiments"] if descriptor["name"] in SUPPORTED_EXPERIMENTS
+    ]
+    matrix["suggested_pairs"] = [
+        pair for pair in matrix["suggested_pairs"] if pair["experiment"] in SUPPORTED_EXPERIMENTS
     ]
 
-    suite_lanes = _select_suite_lanes(
-        workload_mode=workload_mode,
-        primary_workload=primary_workload,
-        selected_engine=selected_engine,
-        num_gpus=num_gpus,
-        avg_prompt_tokens=avg_prompt_tokens,
-        disaggregation=disagg.get("disaggregation", {}),
-        has_grace=traits.is_grace,
-        has_rdma=has_rdma,
-    )
+    suite_lanes = [
+        _make_lane(
+            phase="reference",
+            objective=(
+                "Measure production aggregated Dynamo behavior with LMCache and full frontend plus worker telemetry."
+            ),
+            experiment=SUPPORTED_EXPERIMENTS[0],
+            workload=primary_workload,
+            rationale=("Always establish the single-worker Dynamo control lane before splitting prefill and decode."),
+        )
+    ]
+    if num_gpus >= disagg_gpu_floor:
+        suite_lanes.append(
+            _make_lane(
+                phase="comparison",
+                objective=("Measure split prefill/decode vLLM serving with LMCache on the same Kimi coding workload."),
+                experiment=SUPPORTED_EXPERIMENTS[1],
+                workload=primary_workload,
+                rationale=(
+                    "Use the vLLM lane as the operator comparison point for LMCache behavior, "
+                    "KV transfer stability, and queue growth before locking in Dynamo-only conclusions."
+                ),
+                required=False,
+            )
+        )
+        suite_lanes.append(
+            _make_lane(
+                phase="disaggregated",
+                objective=(
+                    "Measure split prefill/decode Dynamo serving with LMCache, KV-aware routing, "
+                    "and request migration visibility."
+                ),
+                experiment=SUPPORTED_EXPERIMENTS[2],
+                workload=primary_workload,
+                rationale=(
+                    "This is the production topology for long-context coding once the aggregated control is stable."
+                ),
+                required=bool(disagg.get("recommended", False)),
+            )
+        )
 
     overall_support = assess_benchmark_support(
         model_name=model,
@@ -403,7 +479,9 @@ def plan_benchmark_strategy(
         lane_support = assess_benchmark_support(
             model_name=model,
             gpu_name=gpu,
-            num_gpus=max(num_gpus, 2) if lane["phase"] == "disaggregated" else num_gpus,
+            num_gpus=(
+                max(num_gpus, disagg_gpu_floor) if lane["phase"] in {"comparison", "disaggregated"} else num_gpus
+            ),
             engine_name=lane["engine"],
             workload=load_workload(lane["workload"]),
             experiment=experiment_spec,
@@ -413,12 +491,14 @@ def plan_benchmark_strategy(
         lane["support"] = lane_support.model_dump(mode="json")
         if lane["required"] and lane_support.status == "unsupported":
             required_unsupported_lanes.append(lane["experiment"])
-        if include_stack_plans and (lane["phase"] != "disaggregated" or num_gpus >= 2):
+        if include_stack_plans and (
+            lane["phase"] not in {"comparison", "disaggregated"} or num_gpus >= disagg_gpu_floor
+        ):
             try:
                 lane["stack_plan"] = build_benchmark_stack_plan(
                     lane["experiment"],
                     gpu,
-                    num_gpus=max(num_gpus, 2) if lane["phase"] == "disaggregated" else num_gpus,
+                    (max(num_gpus, disagg_gpu_floor) if lane["phase"] in {"comparison", "disaggregated"} else num_gpus),
                     model=model,
                     host=host,
                 ).model_dump(mode="json")
@@ -436,37 +516,35 @@ def plan_benchmark_strategy(
             "support": overall_support.model_dump(mode="json"),
             "ready": ready,
             "required_unsupported_lanes": required_unsupported_lanes,
-            "recommendation": recommendation,
+            "production_target": build_production_contract(),
             "primary_workload": primary_descriptor,
-            "supplemental_workloads": supplemental_descriptors,
+            "supplemental_workloads": [],
             "matrix": matrix,
             "suite": suite_lanes,
-            "kv_strategy": kv_strategy.get("strategy", {}),
-            "kv_budget": kv_strategy.get("kv_budget", {}),
-            "disaggregation": disagg.get("disaggregation", {}),
-            "recommendation_summary": recommendation.get("summary", ""),
-            "engine_alignment": {
-                "selected_engine": selected_engine,
-                "suite_engines": sorted({lane["engine"] for lane in suite_lanes}),
-                "summary": (
-                    "Packaged benchmark lanes can span different engines; the suite is curated "
-                    "for operator coverage, not forced to match a single optimizer pick."
-                ),
-            },
+            "kv_strategy": kv_strategy,
+            "kv_budget": recommend_kv_strategy(
+                model,
+                gpu,
+                workload_mode.value,
+                max_context=max_context,
+                concurrent_sessions=concurrent_sessions,
+            ).get("kv_budget", {}),
+            "disaggregation": disagg,
+            "observability_contract": production_contract["observability"],
+            "reliability_contract": production_contract["reliability"],
+            "recommendation_summary": (
+                f"Serve {model_variant.name} on {gpu_profile.name} with Dynamo and LMCache; "
+                "benchmark aggregated first, compare against split vLLM, then validate "
+                "split Dynamo when queueing or TTFT warrants it."
+            ),
             "rationale": [
-                f"Use our packaged benchmark lanes as the source of truth for {workload_mode.value} optimization.",
-                (
-                    f"Selected engine {selected_engine} on {gpu_profile.name} "
-                    f"using model class {model_variant.model_class.value}."
-                ),
-                (f"GPU ISA is {gpu_profile.compute_capability}; support gating is benchmark-lane specific."),
-                f"Primary focus area for this scenario is {focus_area}.",
+                "InferScope is intentionally narrowed to one production target: Kimi-K2.5 on Dynamo.",
+                f"Selected engine {selected_engine} on {gpu_profile.name} for long-context coding.",
+                "The benchmark suite keeps the vLLM comparison lane separate from the Dynamo production lane.",
+                "Reliability and observability are first-class outputs, not post-processing afterthoughts.",
             ],
         },
-        "summary": (
-            f"Planned {len(suite_lanes)} benchmark lane(s) for {model_variant.name} on "
-            f"{gpu_profile.name} ({workload_mode.value})"
-        ),
+        "summary": f"Planned {len(suite_lanes)} benchmark lane(s) for {model_variant.name} on {gpu_profile.name}",
         "confidence": 0.88 if ready else 0.72,
         "evidence": "benchmark_strategy_planner",
     }

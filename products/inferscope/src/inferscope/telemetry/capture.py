@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import Protocol
 
@@ -100,7 +101,7 @@ async def capture_endpoint_snapshot(
 
 
 async def capture_metrics_targets(
-    targets: list[MetricCaptureTarget],
+    targets: Sequence[MetricCaptureTarget],
     allow_private: bool = True,
     *,
     metrics_auth: EndpointAuthConfig | None = None,

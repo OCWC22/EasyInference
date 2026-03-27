@@ -1,6 +1,6 @@
 """Cross-engine metric normalization.
 
-Converts vLLM, SGLang, and ATOM metrics into a common InferScope format
+Converts vLLM, SGLang, ATOM, and Dynamo metrics into a common InferScope format
 so audit checks and diagnostics work regardless of engine.
 """
 
@@ -46,6 +46,12 @@ class NormalizedMetrics:
     # Generation throughput (gauge, tokens/sec — SGLang only)
     gen_throughput_tps: float = 0.0
 
+    # Dynamo reliability/observability signals
+    request_migrations_total: float = 0.0
+    disconnected_clients: float = 0.0
+    kv_active_blocks: float = 0.0
+    kv_total_blocks: float = 0.0
+
     # Scrape metadata
     scrape_time_ms: float = 0.0
     scrape_error: str = ""
@@ -70,6 +76,12 @@ class NormalizedMetrics:
                 "preemptions_total": self.preemptions_total,
                 "request_success_total": self.request_success_total,
                 "gen_throughput_tps": round(self.gen_throughput_tps, 1),
+            },
+            "reliability": {
+                "request_migrations_total": self.request_migrations_total,
+                "disconnected_clients": self.disconnected_clients,
+                "kv_active_blocks": self.kv_active_blocks,
+                "kv_total_blocks": self.kv_total_blocks,
             },
             "latency": {
                 "ttft_avg_ms": round(self.ttft_avg_s * 1000, 1) if self.ttft_avg_s else None,
@@ -135,5 +147,37 @@ def normalize(scrape: ScrapeResult) -> NormalizedMetrics:
         m.kv_cache_usage = scrape.get("atom:kv_cache_usage_perc")
         m.ttft_avg_s = scrape.get_histogram_avg("atom:time_to_first_token_seconds")
         m.itl_avg_s = scrape.get_histogram_avg("atom:inter_token_latency_seconds")
+
+    elif scrape.engine == "dynamo":
+        m.requests_running = scrape.get("dynamo_frontend_inflight_requests") or scrape.get(
+            "dynamo_component_inflight_requests"
+        )
+        m.requests_waiting = scrape.get("dynamo_frontend_queued_requests")
+        m.kv_cache_usage = scrape.get("dynamo_component_kvstats_gpu_cache_usage_percent") or scrape.get(
+            "vllm:gpu_cache_usage_perc"
+        )
+        m.prefix_cache_hit_rate = scrape.get("dynamo_component_kvstats_gpu_prefix_cache_hit_rate") or scrape.get(
+            "vllm:gpu_prefix_cache_hit_rate"
+        )
+        m.prompt_tokens_total = scrape.get("vllm:prompt_tokens_total")
+        m.generation_tokens_total = scrape.get("dynamo_frontend_output_tokens_total") or scrape.get(
+            "vllm:generation_tokens_total"
+        )
+        m.request_success_total = scrape.get("dynamo_frontend_requests_total") or scrape.get(
+            "dynamo_component_requests_total"
+        )
+        m.ttft_avg_s = scrape.get_histogram_avg(
+            "dynamo_frontend_time_to_first_token_seconds"
+        ) or scrape.get_histogram_avg("vllm:time_to_first_token_seconds")
+        m.itl_avg_s = scrape.get_histogram_avg(
+            "dynamo_frontend_inter_token_latency_seconds"
+        ) or scrape.get_histogram_avg("vllm:time_per_output_token_seconds")
+        m.e2e_avg_s = scrape.get_histogram_avg("dynamo_frontend_request_duration_seconds") or scrape.get_histogram_avg(
+            "dynamo_component_request_duration_seconds"
+        )
+        m.request_migrations_total = scrape.get("dynamo_frontend_model_migration_total")
+        m.disconnected_clients = scrape.get("dynamo_frontend_disconnected_clients")
+        m.kv_active_blocks = scrape.get("dynamo_component_kvstats_active_blocks")
+        m.kv_total_blocks = scrape.get("dynamo_component_kvstats_total_blocks")
 
     return m

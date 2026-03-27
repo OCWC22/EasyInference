@@ -11,7 +11,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from inferscope.benchmarks.models import ChatMessage, WorkloadPack, WorkloadRequest
 
-SUPPORTED_PROCEDURAL_WORKLOADS = {"tool-agent", "coding-long-context"}
+SUPPORTED_PROCEDURAL_WORKLOADS = {"tool-agent", "coding-long-context", "kimi-k2-long-context-coding"}
 
 _TOOL_DEFINITIONS: list[dict[str, Any]] = [
     {

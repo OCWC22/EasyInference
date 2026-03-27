@@ -6,7 +6,7 @@ import json
 import shlex
 import shutil
 from pathlib import Path
-from typing import Literal
+from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -19,6 +19,7 @@ from inferscope.models.registry import get_model_variant
 from inferscope.optimization.memory_planner import MemoryPlan
 from inferscope.optimization.recommender import recommend
 from inferscope.optimization.serving_profile import WorkloadMode
+from inferscope.production_target import SUPPORTED_EXPERIMENTS, validate_production_target
 
 
 class GeneratedFile(BaseModel):
@@ -108,11 +109,46 @@ def _map_workload_mode(workload_class: str) -> WorkloadMode:
     return WorkloadMode.CHAT
 
 
-def _gpu_slices(num_gpus: int, topology_mode: str) -> dict[str, list[int]]:
+def _gpu_slices(
+    num_gpus: int,
+    topology_mode: str,
+    *,
+    model_name: str = "",
+    gpu_name: str = "",
+) -> dict[str, list[int]]:
+    model_variant = get_model_variant(model_name) if model_name else None
+    gpu_profile = get_gpu_profile(gpu_name) if gpu_name else None
+    tp_min = 1
+    if model_variant is not None:
+        serving = model_variant.serving
+        if gpu_profile is not None:
+            if "h100" in gpu_profile.name.lower():
+                tp_min = int(serving.get("tp_fp8_h100", tp_min))
+            elif "h200" in gpu_profile.name.lower():
+                tp_min = int(serving.get("tp_fp8_h200", tp_min))
+            elif gpu_profile.name == "B200":
+                tp_min = int(serving.get("tp_fp4_b200", serving.get("tp_fp8_b200", tp_min)))
+            elif gpu_profile.name == "B300":
+                tp_min = int(serving.get("tp_fp4_b300", serving.get("tp_fp8_b300", tp_min)))
+        elif isinstance(serving.get("tp_min"), int):
+            tp_min = int(serving["tp_min"])
+
     if topology_mode == "single_endpoint":
+        if tp_min > 1 and num_gpus < tp_min:
+            raise ValueError(f"{model_name} requires at least {tp_min} GPUs for aggregated serving; got {num_gpus}.")
         return {"primary": list(range(num_gpus))}
     if num_gpus < 2:
         raise ValueError("Disaggregated benchmark experiments require at least 2 GPUs")
+    if tp_min > 1:
+        required = tp_min * 2
+        if num_gpus < required:
+            raise ValueError(
+                f"{model_name} requires at least {required} GPUs for split prefill/decode serving; got {num_gpus}."
+            )
+        return {
+            "prefill": list(range(tp_min)),
+            "decode": list(range(tp_min, num_gpus)),
+        }
     prefill_count = max(1, num_gpus // 3)
     decode_count = num_gpus - prefill_count
     if decode_count < 1:
@@ -121,6 +157,14 @@ def _gpu_slices(num_gpus: int, topology_mode: str) -> dict[str, list[int]]:
         "prefill": list(range(prefill_count)),
         "decode": list(range(prefill_count, prefill_count + decode_count)),
     }
+
+
+def _request_context_tokens(request: Any) -> int | None:
+    metadata = getattr(request, "metadata", {})
+    if not isinstance(metadata, dict):
+        return None
+    value = metadata.get("approx_context_tokens")
+    return value if isinstance(value, int) else None
 
 
 def _compile_engine(
@@ -155,6 +199,48 @@ def _cuda_env(gpu_ids: list[int]) -> dict[str, str]:
     if not gpu_ids:
         return {}
     return {"CUDA_VISIBLE_DEVICES": ",".join(str(gpu_id) for gpu_id in gpu_ids)}
+
+
+def _dynamo_trace_env(service_name: str, *, enable_trace: bool, otlp_endpoint: str) -> dict[str, str]:
+    if not enable_trace or not otlp_endpoint:
+        return {}
+    return {
+        "DYN_LOGGING_JSONL": "true",
+        "OTEL_EXPORT_ENABLED": "true",
+        "OTEL_EXPORTER_OTLP_TRACES_ENDPOINT": otlp_endpoint,
+        "OTEL_SERVICE_NAME": service_name,
+    }
+
+
+def _dedupe_flags(raw_flags: str, *required_flags: str) -> str:
+    tokens = shlex.split(raw_flags) if raw_flags else []
+    for flag in required_flags:
+        if flag and flag not in tokens:
+            tokens.append(flag)
+    return " ".join(tokens)
+
+
+def _dynamo_worker_command(
+    model_name: str,
+    base_command: str,
+    *,
+    prefill_worker: bool = False,
+    enable_trace: bool = False,
+    otlp_endpoint: str = "",
+) -> str:
+    model_variant = get_model_variant(model_name)
+    extra_flags = ""
+    if model_variant is not None:
+        extra_flags = str(model_variant.serving.get("vllm_flags", ""))
+    command = _append_command_args(
+        base_command,
+        _dedupe_flags(extra_flags, "--trust-remote-code", "--enforce-eager"),
+    )
+    if enable_trace and otlp_endpoint:
+        command = _append_command_args(command, "--otlp-traces-endpoint", otlp_endpoint)
+    if prefill_worker:
+        command = _append_command_args(command, "--is-prefill-worker")
+    return command
 
 
 def _lmcache_config_files(host: str) -> list[GeneratedFile]:
@@ -214,6 +300,19 @@ deployment:
 
 
 def _default_ports(experiment: BenchmarkExperimentSpec) -> dict[str, int]:
+    if experiment.engine == "dynamo" and experiment.topology.mode == "single_endpoint":
+        return {
+            "primary": 8000,
+            "worker_metrics": 8081,
+        }
+    if experiment.engine == "dynamo" and experiment.topology.mode == "prefill_decode_split":
+        return {
+            "primary": 8000,
+            "decode_metrics": 8081,
+            "prefill_metrics": 8082,
+            "prefill_kv_event": 20081,
+            "prefill_side_channel": 20097,
+        }
     if experiment.engine == "vllm" and experiment.topology.mode == "prefill_decode_split":
         return {
             "primary": 9000,
@@ -600,16 +699,47 @@ def build_benchmark_stack_plan(
     selected_model = model or experiment.model or workload_pack.model or ""
     if not selected_model:
         raise ValueError("A model must be provided by the workload, experiment, or override")
+    if experiment.name in SUPPORTED_EXPERIMENTS:
+        production_errors = validate_production_target(
+            model_name=selected_model,
+            gpu_name=gpu,
+            workload=workload_pack.workload_class,
+            engine=experiment.engine,
+            num_gpus=num_gpus,
+            topology_mode=experiment.topology.mode,
+        )
+        if production_errors:
+            raise ValueError("; ".join(production_errors))
     gpu_profile = get_gpu_profile(gpu)
     if gpu_profile is None:
         raise ValueError(f"Unknown GPU: {gpu}")
 
     workload_mode = _map_workload_mode(workload_pack.workload_class)
     ports = _default_ports(experiment)
-    gpu_layout = _gpu_slices(num_gpus, experiment.topology.mode)
+    gpu_layout = _gpu_slices(
+        num_gpus,
+        experiment.topology.mode,
+        model_name=selected_model,
+        gpu_name=gpu,
+    )
 
     metrics_target_overrides = {}
-    if experiment.engine == "vllm" and experiment.topology.mode == "prefill_decode_split":
+    request_endpoint = f"http://{host}:{ports['primary']}"
+
+    if experiment.engine == "dynamo" and experiment.topology.mode == "single_endpoint":
+        metrics_endpoint = request_endpoint
+        metrics_target_overrides = {
+            "frontend": request_endpoint,
+            "worker": f"http://{host}:{ports['worker_metrics']}",
+        }
+    elif experiment.engine == "dynamo" and experiment.topology.mode == "prefill_decode_split":
+        metrics_endpoint = request_endpoint
+        metrics_target_overrides = {
+            "frontend": request_endpoint,
+            "prefill": f"http://{host}:{ports['prefill_metrics']}",
+            "decode": f"http://{host}:{ports['decode_metrics']}",
+        }
+    elif experiment.engine == "vllm" and experiment.topology.mode == "prefill_decode_split":
         metrics_endpoint = f"http://{host}:{ports['decode']}"
         metrics_target_overrides = {
             "prefill": f"http://{host}:{ports['prefill']}",
@@ -624,8 +754,6 @@ def build_benchmark_stack_plan(
         }
     else:
         metrics_endpoint = f"http://{host}:{ports['primary']}"
-
-    request_endpoint = f"http://{host}:{ports['primary']}"
     run_plan = build_run_plan(
         workload_pack,
         request_endpoint,
@@ -644,11 +772,7 @@ def build_benchmark_stack_plan(
         workload=workload_pack,
         experiment=experiment,
         prompt_tokens=max(
-            (
-                int(request.metadata.get("approx_context_tokens"))
-                for request in workload_pack.requests
-                if isinstance(request.metadata.get("approx_context_tokens"), int)
-            ),
+            (value for request in workload_pack.requests if (value := _request_context_tokens(request)) is not None),
             default=0,
         )
         or None,
@@ -1091,7 +1215,6 @@ def build_benchmark_stack_plan(
             warnings.append("TRT-LLM primary slice does not fit the selected model/GPU plan")
         components.append(component)
     elif experiment.engine == "dynamo" and experiment.topology.mode == "single_endpoint":
-        generated_files.extend(_dynamo_config_files(host))
         engine_config, memory_plan = _compile_engine(
             selected_model,
             gpu,
@@ -1099,23 +1222,193 @@ def build_benchmark_stack_plan(
             workload_mode,
             "dynamo",
         )
-        component = LaunchComponent(
-            name="dynamo-primary",
-            role="primary",
-            kind="engine",
-            engine="dynamo",
-            command=engine_config.command,
-            env_vars={**engine_config.env_vars, **_cuda_env(gpu_layout["primary"])},
-            endpoint=request_endpoint,
-            metrics_endpoint=metrics_endpoint,
-            gpu_ids=gpu_layout["primary"],
-            notes=list(engine_config.notes),
-            warnings=list(engine_config.warnings),
+        components.extend(
+            [
+                LaunchComponent(
+                    name="dynamo-frontend",
+                    role="primary",
+                    kind="router",
+                    command=_append_command_args(
+                        "python -m dynamo.frontend",
+                        "--http-port",
+                        str(ports["primary"]),
+                        "--router-mode",
+                        "kv",
+                    ),
+                    env_vars=_dynamo_trace_env(
+                        "dynamo-frontend",
+                        enable_trace=enable_trace,
+                        otlp_endpoint=otlp_endpoint,
+                    ),
+                    endpoint=request_endpoint,
+                    metrics_endpoint=request_endpoint,
+                    notes=[
+                        "Scrape frontend metrics from the same HTTP port as the request endpoint.",
+                        "Preserve x-request-id and X-Session-ID headers for trace and session correlation.",
+                    ],
+                ),
+                LaunchComponent(
+                    name="dynamo-worker",
+                    role="worker",
+                    kind="engine",
+                    engine="dynamo",
+                    command=_dynamo_worker_command(
+                        selected_model,
+                        engine_config.command,
+                        enable_trace=enable_trace,
+                        otlp_endpoint=otlp_endpoint,
+                    ),
+                    env_vars={
+                        **engine_config.env_vars,
+                        **_cuda_env(gpu_layout["primary"]),
+                        "DYN_SYSTEM_PORT": str(ports["worker_metrics"]),
+                        **_dynamo_trace_env(
+                            "dynamo-worker",
+                            enable_trace=enable_trace,
+                            otlp_endpoint=otlp_endpoint,
+                        ),
+                    },
+                    endpoint=f"http://{host}:{ports['worker_metrics']}",
+                    metrics_endpoint=f"http://{host}:{ports['worker_metrics']}",
+                    gpu_ids=gpu_layout["primary"],
+                    notes=list(engine_config.notes)
+                    + [
+                        "Worker system metrics are exposed on DYN_SYSTEM_PORT.",
+                        "LMCache is enabled on the worker to preserve cross-session prefix reuse.",
+                    ],
+                    warnings=list(engine_config.warnings),
+                ),
+            ]
         )
         if not memory_plan.fits:
-            component.warnings.append("Model does not fit on the planned GPU slice")
-            warnings.append("Dynamo primary slice does not fit the selected model/GPU plan")
-        components.append(component)
+            components[1].warnings.append("Model does not fit on the planned GPU slice")
+            warnings.append("Dynamo worker slice does not fit the selected model/GPU plan")
+        notes.extend(
+            [
+                "Use the aggregated lane as the control for queue depth, TTFT, and migration-free serving.",
+                "Benchmark traffic is sent to the frontend; worker metrics come from the backend system port.",
+            ]
+        )
+    elif experiment.engine == "dynamo" and experiment.topology.mode == "prefill_decode_split":
+        prefill_config, prefill_memory = _compile_engine(
+            selected_model,
+            gpu,
+            len(gpu_layout["prefill"]),
+            workload_mode,
+            "dynamo",
+        )
+        decode_config, decode_memory = _compile_engine(
+            selected_model,
+            gpu,
+            len(gpu_layout["decode"]),
+            workload_mode,
+            "dynamo",
+        )
+        components.extend(
+            [
+                LaunchComponent(
+                    name="dynamo-frontend",
+                    role="primary",
+                    kind="router",
+                    command=_append_command_args(
+                        "python -m dynamo.frontend",
+                        "--http-port",
+                        str(ports["primary"]),
+                        "--router-mode",
+                        "kv",
+                    ),
+                    env_vars=_dynamo_trace_env(
+                        "dynamo-frontend",
+                        enable_trace=enable_trace,
+                        otlp_endpoint=otlp_endpoint,
+                    ),
+                    endpoint=request_endpoint,
+                    metrics_endpoint=request_endpoint,
+                    notes=[
+                        "Frontend metrics expose queue depth, TTFT, ITL, and request migration counters.",
+                        (
+                            "Route all benchmark traffic through the frontend to preserve "
+                            "migration and routing visibility."
+                        ),
+                    ],
+                ),
+                LaunchComponent(
+                    name="dynamo-decode",
+                    role="decode",
+                    kind="engine",
+                    engine="dynamo",
+                    command=_dynamo_worker_command(
+                        selected_model,
+                        decode_config.command,
+                        enable_trace=enable_trace,
+                        otlp_endpoint=otlp_endpoint,
+                    ),
+                    env_vars={
+                        **decode_config.env_vars,
+                        **_cuda_env(gpu_layout["decode"]),
+                        "DYN_SYSTEM_PORT": str(ports["decode_metrics"]),
+                        **_dynamo_trace_env(
+                            "dynamo-worker-decode",
+                            enable_trace=enable_trace,
+                            otlp_endpoint=otlp_endpoint,
+                        ),
+                    },
+                    endpoint=f"http://{host}:{ports['decode_metrics']}",
+                    metrics_endpoint=f"http://{host}:{ports['decode_metrics']}",
+                    gpu_ids=gpu_layout["decode"],
+                    notes=list(decode_config.notes)
+                    + [
+                        "Decode worker owns the steady-state token path and should stay under migration-free load.",
+                    ],
+                    warnings=list(decode_config.warnings),
+                ),
+                LaunchComponent(
+                    name="dynamo-prefill",
+                    role="prefill",
+                    kind="engine",
+                    engine="dynamo",
+                    command=_dynamo_worker_command(
+                        selected_model,
+                        prefill_config.command,
+                        prefill_worker=True,
+                        enable_trace=enable_trace,
+                        otlp_endpoint=otlp_endpoint,
+                    ),
+                    env_vars={
+                        **prefill_config.env_vars,
+                        **_cuda_env(gpu_layout["prefill"]),
+                        "DYN_SYSTEM_PORT": str(ports["prefill_metrics"]),
+                        "DYN_VLLM_KV_EVENT_PORT": str(ports["prefill_kv_event"]),
+                        "VLLM_NIXL_SIDE_CHANNEL_PORT": str(ports["prefill_side_channel"]),
+                        **_dynamo_trace_env(
+                            "dynamo-worker-prefill",
+                            enable_trace=enable_trace,
+                            otlp_endpoint=otlp_endpoint,
+                        ),
+                    },
+                    endpoint=f"http://{host}:{ports['prefill_metrics']}",
+                    metrics_endpoint=f"http://{host}:{ports['prefill_metrics']}",
+                    gpu_ids=gpu_layout["prefill"],
+                    notes=list(prefill_config.notes)
+                    + [
+                        "Prefill worker uses separate KV event and NIXL side-channel ports to avoid port collisions.",
+                    ],
+                    warnings=list(prefill_config.warnings),
+                ),
+            ]
+        )
+        if not decode_memory.fits:
+            components[1].warnings.append("Model does not fit on the decode GPU slice")
+            warnings.append("Dynamo decode slice does not fit the selected model/GPU plan")
+        if not prefill_memory.fits:
+            components[2].warnings.append("Model does not fit on the prefill GPU slice")
+            warnings.append("Dynamo prefill slice does not fit the selected model/GPU plan")
+        notes.extend(
+            [
+                "Use disaggregation only after the aggregated lane is stable enough to serve as the control.",
+                "Scrape frontend plus both worker system ports for a complete reliability picture.",
+            ]
+        )
     else:
         raise ValueError(
             f"Unsupported experiment topology for launch planning: {experiment.engine}/{experiment.topology.mode}"

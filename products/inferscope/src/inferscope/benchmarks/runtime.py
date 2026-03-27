@@ -33,6 +33,11 @@ from inferscope.security import validate_endpoint
 log = get_logger(component="benchmarks.runtime")
 
 
+def _request_metadata_int(request: WorkloadRequest, key: str) -> int | None:
+    value = request.metadata.get(key)
+    return value if isinstance(value, int) else None
+
+
 @dataclass(slots=True)
 class RuntimeRequestResult:
     name: str
@@ -756,9 +761,9 @@ async def run_benchmark_runtime(
     start_monotonic = time.monotonic()
     seed = next(
         (
-            int(request.metadata.get("synthetic_seed"))
+            value
             for request in workload.requests
-            if isinstance(request.metadata.get("synthetic_seed"), int)
+            if (value := _request_metadata_int(request, "synthetic_seed")) is not None
         ),
         42,
     )
