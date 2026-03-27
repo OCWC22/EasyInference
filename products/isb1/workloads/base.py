@@ -52,8 +52,15 @@ class Request:
         )
 
 
-def _new_request_id() -> str:
-    """Generate a short, unique request identifier."""
+def _new_request_id(rng=None) -> str:
+    """Generate a short request identifier.
+
+    When *rng* (a ``numpy.random.Generator``) is provided, the ID is
+    deterministic for a given RNG state.  Otherwise falls back to
+    ``uuid.uuid4`` for backwards compatibility.
+    """
+    if rng is not None:
+        return rng.bytes(8).hex()
     return uuid.uuid4().hex[:16]
 
 

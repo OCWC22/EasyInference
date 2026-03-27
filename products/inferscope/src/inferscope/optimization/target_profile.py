@@ -34,7 +34,7 @@ class ProductTargetProfile:
 PRODUCT_TARGET_PROFILE = ProductTargetProfile(
     name="dynamo_long_context_coding",
     engines=("dynamo",),
-    models=("Kimi-K2.5",),
+    models=("Kimi-K2.5", "GLM-4.7"),
     gpu_aliases=(
         "h100",
         "h100_sxm",
@@ -50,7 +50,7 @@ PRODUCT_TARGET_PROFILE = ProductTargetProfile(
         "b300",
         "b300_ultra",
     ),
-    workload_classes=("coding", "coding_long_context"),
+    workload_classes=("coding", "coding_long_context", "chat"),
     topology_modes=("single_endpoint", "prefill_decode_split"),
     cache_strategies=("lmcache",),
 )
@@ -79,6 +79,8 @@ def normalize_target_workload_class(value: str) -> str:
     normalized = _normalize(value)
     if normalized in {"coding_long_context", "coding"}:
         return "coding"
+    if normalized in {"chat", "conversational"}:
+        return "chat"
     return normalized
 
 

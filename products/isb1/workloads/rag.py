@@ -288,7 +288,7 @@ class RAGTraceGenerator(WorkloadGenerator):
 
             requests.append(
                 Request(
-                    request_id=_new_request_id(),
+                    request_id=_new_request_id(self.rng),
                     messages=messages,
                     expected_output_tokens=expected_output,
                     session_id=None,

@@ -88,11 +88,11 @@ class HardwareNode(DAGNode):
         )
 
         if not is_target_model(ctx.model):
-            raise ValueError("Supported models are limited to Kimi-K2.5.")
+            raise ValueError("Supported models are limited to Kimi-K2.5 and GLM-4.7.")
         if not is_target_gpu(ctx.gpu):
             raise ValueError("Supported GPUs are limited to H100, H200, B200, and B300 variants.")
-        if ctx.workload != WorkloadMode.CODING:
-            raise ValueError("Supported workload mode is coding for the long-context production lane.")
+        if ctx.workload not in {WorkloadMode.CODING, WorkloadMode.CHAT}:
+            raise ValueError("Supported workloads are coding and chat.")
         if ctx.forced_engine not in {"auto", "dynamo", "vllm"}:
             raise ValueError("InferScope's production lane supports Dynamo serving plus vLLM comparison benchmarks.")
 

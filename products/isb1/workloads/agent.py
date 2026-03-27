@@ -12,7 +12,6 @@ otherwise a built-in fallback set is used.
 from __future__ import annotations
 
 import json
-import uuid
 from pathlib import Path
 from typing import Any
 
@@ -348,7 +347,7 @@ class AgentTraceGenerator(WorkloadGenerator):
             elif schema.get("type") == "object":
                 args[key] = {}
 
-        call_id = f"call_{uuid.uuid4().hex[:12]}"
+        call_id = f"call_{self.rng.bytes(6).hex()}"
         return {
             "role": "assistant",
             "content": None,
@@ -403,7 +402,7 @@ class AgentTraceGenerator(WorkloadGenerator):
                     "body": {
                         "result": "success",
                         "data": {"items": int(self.rng.integers(1, 50))},
-                        "request_id": uuid.uuid4().hex[:8],
+                        "request_id": self.rng.bytes(4).hex(),
                     },
                 },
                 indent=2,
@@ -453,7 +452,7 @@ class AgentTraceGenerator(WorkloadGenerator):
     def _generate_session(self) -> list[Request]:
         """Create a single multi-turn agent conversation."""
         num_turns = int(self.rng.integers(self.min_turns, self.max_turns + 1))
-        session_id = uuid.uuid4().hex[:12]
+        session_id = self.rng.bytes(6).hex()
 
         messages: list[dict[str, Any]] = [
             {"role": "system", "content": self._system_prompt}
@@ -473,7 +472,7 @@ class AgentTraceGenerator(WorkloadGenerator):
             expected_tokens = int(self.rng.integers(150, 600))
             requests.append(
                 Request(
-                    request_id=_new_request_id(),
+                    request_id=_new_request_id(self.rng),
                     messages=list(messages),
                     expected_output_tokens=expected_tokens,
                     session_id=session_id,

@@ -10,7 +10,6 @@ the repository context is largely stable.
 
 from __future__ import annotations
 
-import uuid
 from typing import Any
 
 
@@ -761,7 +760,7 @@ class CodingTraceGenerator(WorkloadGenerator):
         """Create a single coding session with multiple turns."""
         num_files = int(self.rng.integers(self.min_files, self.max_files + 1))
         num_turns = int(self.rng.integers(self.min_turns, self.max_turns + 1))
-        session_id = uuid.uuid4().hex[:12]
+        session_id = self.rng.bytes(6).hex()
 
         repo_context, filenames, class_names = self._generate_repo_context(num_files)
 
@@ -808,7 +807,7 @@ class CodingTraceGenerator(WorkloadGenerator):
 
             requests.append(
                 Request(
-                    request_id=_new_request_id(),
+                    request_id=_new_request_id(self.rng),
                     messages=list(messages),
                     expected_output_tokens=expected_tokens,
                     session_id=session_id,

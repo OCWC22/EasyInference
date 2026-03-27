@@ -10,7 +10,6 @@ from __future__ import annotations
 
 import json
 import logging
-import uuid
 from pathlib import Path
 from typing import Any
 
@@ -263,7 +262,7 @@ class ChatWorkloadGenerator(WorkloadGenerator):
         """Create a session from a randomly sampled ShareGPT conversation."""
         idx = int(self.rng.integers(0, len(self._sharegpt_data)))  # type: ignore[arg-type]
         convo = self._sharegpt_data[idx]  # type: ignore[index]
-        session_id = uuid.uuid4().hex[:12]
+        session_id = self.rng.bytes(6).hex()
 
         messages: list[dict[str, Any]] = [
             {"role": "system", "content": _SYSTEM_PROMPT}
@@ -286,7 +285,7 @@ class ChatWorkloadGenerator(WorkloadGenerator):
 
                 requests.append(
                     Request(
-                        request_id=_new_request_id(),
+                        request_id=_new_request_id(self.rng),
                         messages=list(messages),
                         expected_output_tokens=expected,
                         session_id=session_id,
@@ -304,7 +303,7 @@ class ChatWorkloadGenerator(WorkloadGenerator):
     def _generate_synthetic(self) -> list[Request]:
         """Create a fully synthetic multi-turn conversation."""
         num_turns = int(self.rng.integers(self.min_turns, self.max_turns + 1))
-        session_id = uuid.uuid4().hex[:12]
+        session_id = self.rng.bytes(6).hex()
         topic = _TOPICS[int(self.rng.integers(0, len(_TOPICS)))]
 
         messages: list[dict[str, Any]] = [
@@ -336,7 +335,7 @@ class ChatWorkloadGenerator(WorkloadGenerator):
 
             requests.append(
                 Request(
-                    request_id=_new_request_id(),
+                    request_id=_new_request_id(self.rng),
                     messages=list(messages),
                     expected_output_tokens=expected_output_tokens,
                     session_id=session_id,

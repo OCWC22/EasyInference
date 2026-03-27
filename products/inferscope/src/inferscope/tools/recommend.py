@@ -88,9 +88,9 @@ def recommend_config(
     variant, gpu_profile = resolved
 
     normalized_workload = normalize_target_workload_class(workload)
-    if normalized_workload != "coding":
+    if normalized_workload not in {"coding", "chat"}:
         return {
-            "error": "Supported workload is coding (including coding-long-context).",
+            "error": "Supported workloads are coding and chat.",
             "summary": target_profile_summary(),
             "confidence": 0.0,
         }
@@ -101,11 +101,12 @@ def recommend_config(
         return {"error": str(e), "confidence": 0.0}
 
     try:
+        workload_mode = WorkloadMode.CHAT if normalized_workload == "chat" else WorkloadMode.CODING
         profile, engine_config, mem_plan = recommend(
             model=variant,
             gpu=gpu_profile,
             num_gpus=num_gpus,
-            workload=WorkloadMode.CODING,
+            workload=workload_mode,
             engine=engine,
         )
     except ValueError as e:
