@@ -266,10 +266,23 @@ def resolve_engine_support(engine: EngineType | str, gpu: GPUProfile, multi_node
                 tier=EngineSupportTier.UNSUPPORTED,
                 reason="NVIDIA Dynamo is NVIDIA-only.",
             )
-        reason = "Dynamo is a preview planning target in InferScope for disaggregated NVIDIA deployments."
-        if not multi_node:
-            reason += " It is not auto-selected for standard single-node recommendations."
-        return EngineSupport(engine="dynamo", tier=EngineSupportTier.PREVIEW, reason=reason)
+        if multi_node:
+            return EngineSupport(
+                engine="dynamo",
+                tier=EngineSupportTier.SUPPORTED,
+                reason=(
+                    "Dynamo 1.0 is production-ready for multi-node disaggregated NVIDIA deployments. "
+                    "Provides KV-aware routing, NIXL transfer, and Grove block management."
+                ),
+            )
+        return EngineSupport(
+            engine="dynamo",
+            tier=EngineSupportTier.SUPPORTED,
+            reason=(
+                "Dynamo 1.0 is production-ready. Recommended for disaggregated prefill/decode "
+                "topologies. For single-node colocated serving, vLLM or SGLang may be simpler."
+            ),
+        )
 
     return EngineSupport(
         engine=engine_name,

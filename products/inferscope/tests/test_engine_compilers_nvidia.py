@@ -94,11 +94,11 @@ def test_trtllm_compiler_uses_batched_token_budget_and_marks_preview() -> None:
     assert any("Preview engine" in warning for warning in cfg.warnings)
 
 
-def test_dynamo_compiler_marks_preview() -> None:
+def test_dynamo_compiler_marks_supported() -> None:
     compiler = DynamoCompiler()
     profile = _profile()
 
     cfg = compiler.compile(profile, _inventory("gb200"))
 
-    assert cfg.support_tier == "preview"
-    assert any("Preview engine" in warning for warning in cfg.warnings)
+    assert cfg.support_tier == "supported"
+    assert "Dynamo 1.0" in cfg.support_reason
