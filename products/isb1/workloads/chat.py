@@ -64,6 +64,8 @@ def _resolve_sharegpt_path(path: Path) -> Path:
         return cached
     except Exception:
         logger.warning("Failed to download ShareGPT dataset, falling back to synthetic", exc_info=True)
+        if tmp.exists():
+            tmp.unlink(missing_ok=True)
         return path  # Return original path — _try_load_sharegpt will see it doesn't exist
 
 # ---------------------------------------------------------------------------

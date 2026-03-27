@@ -7,10 +7,6 @@ from typing import Any
 
 import httpx
 
-from inferscope.logging import get_logger
-
-_adapter_log = get_logger(component="vllm_adapter")
-
 from inferscope.endpoint_auth import EndpointAuthConfig, build_auth_headers
 from inferscope.engines.base import (
     ConfigCompiler,
@@ -18,7 +14,10 @@ from inferscope.engines.base import (
     EngineAdapter,
     EngineConfig,
 )
+from inferscope.logging import get_logger
 from inferscope.optimization.serving_profile import ModelClass, ServingProfile
+
+_adapter_log = get_logger(component="vllm_adapter")
 
 
 class VLLMCompiler(ConfigCompiler):

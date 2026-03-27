@@ -143,6 +143,8 @@ def _resolve_burstgpt_path(path: Path | None = None) -> Path | None:
         return cached
     except Exception:
         logger.warning("Failed to download BurstGPT dataset", exc_info=True)
+        if tmp.exists():
+            tmp.unlink(missing_ok=True)
         return None
 
 

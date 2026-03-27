@@ -92,8 +92,10 @@ def generate_mode_b(mode_a_path: Path) -> dict | None:
         "mode": "mode_b",
         "description": (
             f"Mode B (InferScope-optimized) — {mode_a.get('model_name', model_short)} "
-            f"on {mode_a.get('gpu_name', gpu_short)} at {profile.precision.weights}"
+            f"on {mode_a.get('gpu_name', gpu_short)} "
+            f"(baseline {quant} -> optimized {profile.precision.weights})"
         ),
+        "baseline_quantization": quant,
         "gpu": gpu_short,
         "gpu_name": mode_a.get("gpu_name", gpu_short),
         "model": model_short,

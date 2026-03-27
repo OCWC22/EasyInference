@@ -180,10 +180,14 @@ def get_gpu_hourly_cost(gpu_name: str) -> float:
     key = gpu_name.lower().replace("-", "_").replace(" ", "_")
     if key in _GPU_HOURLY_COST:
         return _GPU_HOURLY_COST[key]
+    # Fuzzy match: prefer longest matching key to avoid h20-in-h200 collisions
+    best_match = ""
+    best_cost = 0.0
     for k, v in _GPU_HOURLY_COST.items():
-        if k in key or key in k:
-            return v
-    return 0.0
+        if k in key and len(k) > len(best_match):
+            best_match = k
+            best_cost = v
+    return best_cost
 
 
 # ── Main computer ────────────────────────────────────────────────────────

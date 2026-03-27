@@ -199,6 +199,7 @@ class BenchmarkRunner:
         telemetry: TelemetryCollector | None = None
         engine_metrics: EngineMetricsCollector | None = None
         trace_hash: str | None = None
+        base_url: str = f"http://localhost:{cell.port}"
 
         try:
             logger.info("[%s] Validating configuration", run_id)

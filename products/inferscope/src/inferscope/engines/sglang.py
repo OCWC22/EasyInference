@@ -6,10 +6,6 @@ from typing import Any
 
 import httpx
 
-from inferscope.logging import get_logger
-
-_adapter_log = get_logger(component="sglang_adapter")
-
 from inferscope.endpoint_auth import EndpointAuthConfig, build_auth_headers
 from inferscope.engines.base import (
     ConfigCompiler,
@@ -17,11 +13,14 @@ from inferscope.engines.base import (
     EngineAdapter,
     EngineConfig,
 )
+from inferscope.logging import get_logger
 from inferscope.optimization.serving_profile import (
     ModelClass,
     ServingProfile,
     WorkloadMode,
 )
+
+_adapter_log = get_logger(component="sglang_adapter")
 
 
 class SGLangCompiler(ConfigCompiler):
