@@ -128,19 +128,26 @@ def _compute_tpot(e2e: float, ttft: float, output_tokens: int) -> Optional[float
 
 
 def _compute_itl_gaps(token_timestamps: List[float]) -> List[float]:
-    """Compute inter-token latency gaps starting from token index 2.
+    """Compute inter-chunk latency gaps from SSE token timestamps.
+
+    vLLM and other engines batch multiple tokens into single SSE chunks,
+    producing sub-millisecond gaps between tokens in the same chunk.
+    This function filters out intra-chunk gaps (< 1ms) to measure the
+    actual inter-chunk delivery latency that users experience.
 
     token_timestamps[0] is the first token (TTFT boundary).
-    Gaps are computed between consecutive tokens from index 1 onward,
-    which means TTFT is excluded.
+    Gaps are computed from index 1 onward, excluding the TTFT boundary.
     """
     if len(token_timestamps) < 2:
         return []
-    # Gaps between token i and token i+1 for i >= 1 (skipping the TTFT gap)
-    return [
+    # Compute all gaps from index 1 onward (skip TTFT gap at index 0->1)
+    raw_gaps = [
         token_timestamps[i] - token_timestamps[i - 1]
         for i in range(2, len(token_timestamps))
     ]
+    # Filter out intra-chunk gaps (< 1ms) — these are multiple tokens
+    # batched into a single SSE event, not real decode latency
+    return [g for g in raw_gaps if g >= 0.001]
 
 
 # ── GPU cost table (per-GPU on-demand $/hr from public cloud pricing) ────

@@ -17,17 +17,28 @@ logger = logging.getLogger(__name__)
 _SCRAPE_INTERVAL = 5.0  # seconds
 
 # Prometheus metrics we care about (metric name -> friendly key)
+# Updated for vLLM v0.18+ which renamed several metrics.
 _METRIC_MAP: dict[str, str] = {
     "vllm:num_requests_running": "num_requests_running",
     "vllm:num_requests_waiting": "num_requests_waiting",
     "vllm:num_requests_swapped": "num_requests_swapped",
-    "vllm:gpu_cache_usage_perc": "gpu_cache_usage_perc",
+    # vLLM v0.18 renamed gpu_cache_usage_perc -> kv_cache_usage_perc
+    "vllm:kv_cache_usage_perc": "kv_cache_utilization",
+    "vllm:gpu_cache_usage_perc": "kv_cache_utilization",  # legacy fallback
     "vllm:cpu_cache_usage_perc": "cpu_cache_usage_perc",
-    "vllm:num_preemptions_total": "num_preemptions_total",
+    "vllm:num_preemptions_total": "preemptions",
     "vllm:avg_generation_throughput_toks_per_s": "avg_generation_throughput",
     "vllm:request_success_total": "request_success_total",
     "vllm:request_failure_total": "request_failure_total",
-    "vllm:prefix_cache_hit_rate": "prefix_cache_hit_rate",
+    # vLLM v0.18 replaced prefix_cache_hit_rate gauge with separate counters
+    "vllm:prefix_cache_hit_rate": "prefix_cache_hit_rate",  # legacy
+    "vllm:prefix_cache_hits_total": "_prefix_cache_hits",
+    "vllm:prefix_cache_queries_total": "_prefix_cache_queries",
+}
+
+# Also map num_requests_waiting -> queue_depth for MetricComputer compatibility
+_DERIVED_KEYS = {
+    "num_requests_waiting": "queue_depth",
 }
 
 # Regex to parse Prometheus text exposition format
@@ -118,6 +129,21 @@ class EngineMetricsCollector:
                 val = raw.get(alt_name)
             if val is not None:
                 snapshot[friendly_key] = val
+
+        # Derive prefix_cache_hit_rate from counters if not directly available
+        if "prefix_cache_hit_rate" not in snapshot:
+            hits = snapshot.pop("_prefix_cache_hits", 0)
+            queries = snapshot.pop("_prefix_cache_queries", 0)
+            if queries > 0:
+                snapshot["prefix_cache_hit_rate"] = hits / queries
+        else:
+            snapshot.pop("_prefix_cache_hits", None)
+            snapshot.pop("_prefix_cache_queries", None)
+
+        # Derive queue_depth from num_requests_waiting
+        for src_key, dst_key in _DERIVED_KEYS.items():
+            if src_key in snapshot and dst_key not in snapshot:
+                snapshot[dst_key] = snapshot[src_key]
 
         return snapshot
 
