@@ -16,6 +16,12 @@ from inferscope.optimization.platform_policy import (
     resolve_preferred_tp,
 )
 from inferscope.optimization.serving_profile import WorkloadMode
+from inferscope.optimization.target_profile import (
+    is_target_engine,
+    is_target_gpu,
+    is_target_model,
+    target_profile_summary,
+)
 
 
 @dataclass
@@ -41,7 +47,7 @@ def validate_config(
     gpu: GPUProfile,
     tp: int = 1,
     quantization: str = "auto",
-    engine: str = "vllm",
+    engine: str = "dynamo",
 ) -> ValidationResult:
     """Validate a serving configuration before deployment.
 
@@ -52,6 +58,17 @@ def validate_config(
     - Known engine/model/GPU incompatibilities
     """
     result = ValidationResult()
+
+    if not is_target_model(model):
+        result.valid = False
+        result.errors.append("Supported models are limited to Kimi-K2.5.")
+    if not is_target_gpu(gpu):
+        result.valid = False
+        result.errors.append("Supported GPUs are limited to H100, H200, B200, and B300 variants.")
+    if not is_target_engine(engine):
+        result.valid = False
+        result.errors.append("InferScope's production lane only supports the Dynamo engine.")
+    result.info.append(target_profile_summary())
 
     tp_min = model.serving.get("tp_min")
     if isinstance(tp_min, int) and tp < tp_min:
@@ -68,24 +85,14 @@ def validate_config(
 
     # --- Quantization compatibility ---
     if quantization == "auto":
-        quantization = "fp8" if gpu.fp8_support else "bf16"
+        quantization = "fp4" if model.name == "Kimi-K2.5" and gpu.fp4_support else "fp8" if gpu.fp8_support else "bf16"
     normalized_precision = "fp4" if quantization in ("nvfp4", "mxfp4") else quantization
 
     if normalized_precision in ("fp8", "fp8_e4m3") and not gpu.fp8_support:
-        # Ampere supports FP8 via W8A16 Marlin (weight-only dequant) — not native, but functional
-        if gpu.architecture == "Ampere":
-            result.warnings.append(
-                f"FP8 on {gpu.name} ({gpu.architecture}) uses W8A16 Marlin weight-only dequant, "
-                f"NOT native FP8 compute. Performance is lower than Hopper+/CDNA3+ native FP8. "
-                f"Consider INT8/AWQ/GPTQ for potentially better Ampere performance."
-            )
-        else:
-            result.valid = False
-            result.errors.append(
-                f"FP8 quantization requires Hopper+ or CDNA3+. "
-                f"{gpu.name} ({gpu.architecture}) does not support native FP8. "
-                f"Use INT8/AWQ/GPTQ instead."
-            )
+        result.valid = False
+        result.errors.append(
+            f"FP8 quantization requires Hopper or Blackwell native FP8 support. {gpu.name} does not support it."
+        )
 
     if quantization in ("nvfp4", "fp4", "mxfp4") and not gpu.fp4_support:
         result.valid = False
@@ -104,13 +111,6 @@ def validate_config(
         result.valid = False
         result.errors.append(
             f"MXFP4 is AMD CDNA4 native. {gpu.name} supports NVFP4, not MXFP4. Use NVFP4 quantization instead."
-        )
-
-    # --- FP8 format compatibility ---
-    if gpu.fp8_support and gpu.fp8_format == "FNUZ":
-        result.warnings.append(
-            f"{gpu.name} uses FNUZ FP8 format (not OCP). "
-            f"Models trained with OCP FP8 will be auto-converted by vLLM with 2x scale factor."
         )
 
     # --- Memory fit ---
@@ -139,40 +139,22 @@ def validate_config(
     if support.tier == EngineSupportTier.UNSUPPORTED:
         result.valid = False
         result.errors.append(support.reason)
-    elif support.tier == EngineSupportTier.PREVIEW:
-        result.warnings.append(f"Preview engine: {support.reason}")
+    elif support.tier != EngineSupportTier.RECOMMENDED:
+        result.warnings.append(support.reason)
 
-    if engine == "atom" and gpu.vendor != "amd":
-        result.valid = False
-        result.errors.append("ATOM engine only works on AMD GPUs (MI300X/MI325X/MI355X)")
-
-    # DeepSeek MLA on ROCm needs block-size 1
-    if model.attention_type == "MLA" and gpu.vendor == "amd" and engine in ("vllm",):
-        result.warnings.append("DeepSeek MLA models require --block-size 1 on ROCm for correct results")
-
-    # AITER mandatory on AMD
-    if gpu.vendor == "amd":
-        result.info.append("AMD GPU detected — VLLM_ROCM_USE_AITER=1 is mandatory for competitive performance")
-        if gpu.compute_capability == "gfx942":
-            result.warnings.append("MI300X (gfx942): VLLM_ROCM_USE_AITER_FP8BMM MUST be 0 — crashes with memory faults")
-
-    # MoE without EP warning
-    if model.model_type == "moe" and model.experts_total > 64 and tp > 1:
+    if model.name == "Kimi-K2.5" and gpu.architecture == "Hopper" and tp < 4:
         result.warnings.append(
-            f"Large MoE model ({model.experts_total} experts) — "
-            f"consider Expert Parallelism (EP) in addition to TP for better scaling"
+            "Kimi-K2.5 on Hopper is reliability-sensitive below TP=4 because "
+            "KV headroom disappears quickly under long contexts."
         )
-
-    # Ampere FP8 misconception
-    if gpu.architecture == "Ampere" and quantization == "fp8":
-        result.info.append("FP8 on Ampere uses W8A16 Marlin (weight-only dequant), not native FP8 compute")
+    result.info.append("LMCache with sticky session routing is assumed for the supported production deployment.")
 
     preferred_tp, preferred_reason = resolve_preferred_tp(
         model,
         gpu,
         num_gpus=max(tp, 1),
         precision=normalized_precision,
-        workload=WorkloadMode.CHAT,
+        workload=WorkloadMode.CODING,
     )
     if preferred_tp is not None and preferred_tp != tp and preferred_reason:
         result.warnings.append(f"Platform/model hint prefers TP={preferred_tp}. {preferred_reason}")

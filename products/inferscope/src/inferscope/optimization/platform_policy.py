@@ -9,6 +9,7 @@ from enum import StrEnum
 from inferscope.hardware.gpu_profiles import GPUProfile
 from inferscope.models.registry import ModelVariant
 from inferscope.optimization.serving_profile import EngineType, PrecisionSpec, WorkloadMode
+from inferscope.optimization.target_profile import is_target_engine, is_target_gpu, is_target_model
 
 
 class PlatformFamily(StrEnum):
@@ -200,89 +201,67 @@ def resolve_engine_support(engine: EngineType | str, gpu: GPUProfile, multi_node
     engine_name = engine.value if isinstance(engine, EngineType) else str(engine).lower().strip()
     traits = resolve_platform_traits(gpu)
 
-    if engine_name == "atom":
-        if traits.is_amd:
-            return EngineSupport(
-                engine="atom",
-                tier=EngineSupportTier.SUPPORTED,
-                reason="ATOM is available for AMD deployments, especially MLA/MoE-heavy workloads.",
-            )
-        return EngineSupport(
-            engine="atom",
-            tier=EngineSupportTier.UNSUPPORTED,
-            reason="ATOM is AMD-only and is not available on NVIDIA Hopper or Blackwell.",
-        )
-
     if engine_name == "vllm":
-        if traits.is_nvidia:
-            return EngineSupport(
-                engine="vllm",
-                tier=EngineSupportTier.RECOMMENDED,
-                reason="vLLM is the primary supported NVIDIA engine in InferScope for Hopper and Blackwell.",
-            )
-        if traits.is_amd:
-            return EngineSupport(
-                engine="vllm",
-                tier=EngineSupportTier.SUPPORTED,
-                reason="vLLM is the broad-compatibility path for AMD deployments in InferScope.",
-            )
-
-    if engine_name == "sglang":
-        if traits.is_nvidia:
-            return EngineSupport(
-                engine="sglang",
-                tier=EngineSupportTier.SUPPORTED,
-                reason=(
-                    "SGLang is a supported alternative for NVIDIA, strongest on prefix-heavy coding and agent flows."
-                ),
-            )
-        if traits.is_amd:
-            return EngineSupport(
-                engine="sglang",
-                tier=EngineSupportTier.SUPPORTED,
-                reason="SGLang is usable on AMD, but InferScope still favors vLLM or ATOM for most deployments.",
-            )
-
-    if engine_name == "trtllm":
         if not traits.is_nvidia:
             return EngineSupport(
-                engine="trtllm",
+                engine="vllm",
                 tier=EngineSupportTier.UNSUPPORTED,
-                reason="TensorRT-LLM is NVIDIA-only.",
+                reason="The supported vLLM comparison lane is limited to NVIDIA Hopper and Blackwell GPUs.",
+            )
+        if not is_target_gpu(gpu):
+            return EngineSupport(
+                engine="vllm",
+                tier=EngineSupportTier.UNSUPPORTED,
+                reason="Supported GPUs are limited to H100, H200, B200, and B300 variants.",
             )
         return EngineSupport(
-            engine="trtllm",
+            engine="vllm",
             tier=EngineSupportTier.PREVIEW,
             reason=(
-                "TensorRT-LLM remains a preview planning target in InferScope; "
-                "compiler coverage exists but runtime support is still partial."
+                "vLLM is supported as a benchmark comparison lane for the Kimi long-context "
+                "coding target, but Dynamo remains the primary serving engine."
             ),
         )
 
-    if engine_name == "dynamo":
-        if not traits.is_nvidia:
-            return EngineSupport(
-                engine="dynamo",
-                tier=EngineSupportTier.UNSUPPORTED,
-                reason="NVIDIA Dynamo is NVIDIA-only.",
-            )
-        if multi_node:
-            return EngineSupport(
-                engine="dynamo",
-                tier=EngineSupportTier.SUPPORTED,
-                reason=(
-                    "Dynamo 1.0 is production-ready for multi-node disaggregated NVIDIA deployments. "
-                    "Provides KV-aware routing, NIXL transfer, and Grove block management."
-                ),
-            )
+    if not is_target_engine(engine_name):
+        return EngineSupport(
+            engine=engine_name,
+            tier=EngineSupportTier.UNSUPPORTED,
+            reason="InferScope is productized as Dynamo-only for the production MCP and benchmark lane.",
+        )
+
+    if not traits.is_nvidia:
+        return EngineSupport(
+            engine="dynamo",
+            tier=EngineSupportTier.UNSUPPORTED,
+            reason="NVIDIA Dynamo requires NVIDIA Hopper or Blackwell GPUs.",
+        )
+
+    if not is_target_gpu(gpu):
+        return EngineSupport(
+            engine="dynamo",
+            tier=EngineSupportTier.UNSUPPORTED,
+            reason="Supported GPUs are limited to H100, H200, B200, and B300 variants.",
+        )
+
+    if traits.is_hopper_pcie and multi_node:
         return EngineSupport(
             engine="dynamo",
             tier=EngineSupportTier.SUPPORTED,
             reason=(
-                "Dynamo 1.0 is production-ready. Recommended for disaggregated prefill/decode "
-                "topologies. For single-node colocated serving, vLLM or SGLang may be simpler."
+                "Dynamo is supported on H100 PCIe, but disaggregated LMCache lanes are transport-sensitive "
+                "without NVLink-class bandwidth or RDMA."
             ),
         )
+
+    return EngineSupport(
+        engine="dynamo",
+        tier=EngineSupportTier.RECOMMENDED,
+        reason=(
+            "Dynamo + LMCache is the supported production lane for long-context coding on "
+            "H100/H200/B200/B300, including single-endpoint and prefill/decode-split topologies."
+        ),
+    )
 
     return EngineSupport(
         engine=engine_name,
@@ -302,51 +281,37 @@ def resolve_preferred_precision(
     traits = resolve_platform_traits(gpu)
     kv_cache = "fp8_e4m3" if gpu.fp8_support else "auto"
 
-    if model.params_total_b <= 13 and gpu.memory_gb >= 40:
+    if not is_target_gpu(gpu) or not is_target_model(model):
+        if gpu.fp8_support:
+            return (
+                PrecisionSpec(weights="fp8", activations="fp8", kv_cache=kv_cache),
+                "Outside the production target scope; defaulting to conservative FP8 on capable NVIDIA hardware.",
+            )
         return (
-            PrecisionSpec(weights="bf16", activations="bf16", kv_cache=kv_cache),
-            "Small model fits comfortably; prefer BF16 for minimal conversion risk.",
+            PrecisionSpec(weights="bf16", activations="bf16", kv_cache="auto"),
+            "Outside the production target scope; defaulting to BF16.",
+        )
+
+    if workload != WorkloadMode.CODING:
+        return (
+            PrecisionSpec(weights="fp8", activations="fp8", kv_cache=kv_cache),
+            "InferScope's production lane is tuned for coding; using FP8 as the conservative fallback.",
         )
 
     if (
-        traits.is_blackwell
+        model.name == "Kimi-K2.5"
+        and traits.is_blackwell
         and gpu.fp4_support
-        and workload not in (WorkloadMode.CODING, WorkloadMode.AGENT)
-        and (model.serving.get("nvidia_nvfp4") or model.serving.get("nvidia_fp4"))
+        and _precision_fits_target_lane(model, gpu, max(num_gpus, 1), "fp4")
     ):
         return (
-            PrecisionSpec(weights="fp4", activations="fp8" if gpu.fp8_support else "bf16", kv_cache=kv_cache),
-            "Blackwell-specific NVFP4 path is available for this model; prefer FP4 for throughput and memory headroom.",
-        )
-
-    fp8_fits_gpu_count = model.weight_gb("fp8") / max(num_gpus, 1) <= gpu.memory_gb * 0.92
-
-    if gpu.fp8_support:
-        if not fp8_fits_gpu_count and model.params_total_b > 30 and not traits.is_blackwell:
-            return (
-                PrecisionSpec(weights="awq", activations="fp16", kv_cache="auto"),
-                "Native FP8 would overrun per-GPU HBM at the requested GPU count; "
-                "falling back to AWQ for a memory-valid auto plan.",
-            )
-        if traits.is_amd and model.model_type == "moe":
-            return (
-                PrecisionSpec(weights="bf16", activations="bf16", kv_cache="fp8_e4m3"),
-                "AMD MoE fallback: keep weights in BF16 and only compress KV to FP8 to avoid known decode regressions.",
-            )
-        return (
-            PrecisionSpec(weights="fp8", activations="fp8", kv_cache=kv_cache),
-            "Native FP8 support detected; use FP8 as the default throughput/quality tradeoff.",
-        )
-
-    if model.params_total_b > 30:
-        return (
-            PrecisionSpec(weights="awq", activations="fp16", kv_cache="auto"),
-            "No native FP8 support and model is large; prefer AWQ/INT4-style weight compression.",
+            PrecisionSpec(weights="fp4", activations="fp8", kv_cache=kv_cache),
+            "Blackwell NVFP4 is preferred for Kimi-K2.5 when it preserves long-context KV headroom.",
         )
 
     return (
-        PrecisionSpec(weights="bf16", activations="bf16", kv_cache="auto"),
-        "Defaulting to BF16 because the platform lacks native FP8.",
+        PrecisionSpec(weights="fp8", activations="fp8", kv_cache=kv_cache),
+        "FP8 is the default production precision for Dynamo long-context coding on Hopper and Blackwell.",
     )
 
 
@@ -357,9 +322,7 @@ def resolve_preferred_tp(
     precision: str,
     workload: WorkloadMode,
 ) -> tuple[int | None, str | None]:
-    """Resolve TP from model serving hints before falling back to memory heuristics."""
-
-    del workload  # reserved for future workload-specific TP overrides
+    """Resolve TP from target-model hints and KV-headroom heuristics."""
 
     valid_tps = _valid_tps(model, num_gpus)
     if not valid_tps:
@@ -367,6 +330,11 @@ def resolve_preferred_tp(
 
     traits = resolve_platform_traits(gpu)
     normalized_precision = precision.lower()
+    if not is_target_gpu(gpu) or not is_target_model(model):
+        for candidate in valid_tps:
+            if _tp_fits_memory(model, gpu, candidate, normalized_precision):
+                return candidate, "Selected the smallest memory-valid TP outside the production target scope."
+        return None, "No valid TP fits in GPU memory."
 
     hints: list[tuple[int, str]] = []
     if normalized_precision == "fp8":
@@ -374,41 +342,49 @@ def resolve_preferred_tp(
             hints.append((model.serving["tp_fp8_h200"], "Using model-specific H200 FP8 tensor-parallel hint."))
         elif traits.is_hopper and isinstance(model.serving.get("tp_fp8_h100"), int):
             hints.append((model.serving["tp_fp8_h100"], "Using model-specific H100 FP8 tensor-parallel hint."))
+        elif traits.is_b300 and isinstance(model.serving.get("tp_fp8_b300"), int):
+            hints.append((model.serving["tp_fp8_b300"], "Using model-specific B300 FP8 tensor-parallel hint."))
+        elif traits.is_blackwell and isinstance(model.serving.get("tp_fp8_b200"), int):
+            hints.append((model.serving["tp_fp8_b200"], "Using model-specific B200 FP8 tensor-parallel hint."))
         elif isinstance(model.serving.get("tp_fp8"), int):
             hints.append((model.serving["tp_fp8"], "Using model-specific FP8 tensor-parallel hint."))
-    elif normalized_precision in {"bf16", "fp16"}:
-        if traits.family in (PlatformFamily.CDNA3, PlatformFamily.CDNA4):
-            amd_hint = (
-                model.serving.get("tp_fp16_mi300x") or model.serving.get("tp_bf16") or model.serving.get("tp_fp16")
-            )
-            if isinstance(amd_hint, int):
-                hints.append((amd_hint, "Using AMD full-precision tensor-parallel hint."))
-        else:
-            fp_hint = model.serving.get("tp_bf16") or model.serving.get("tp_fp16")
-            if isinstance(fp_hint, int):
-                hints.append((fp_hint, "Using model-specific BF16/FP16 tensor-parallel hint."))
     elif normalized_precision in {"fp4", "nvfp4", "mxfp4"}:
-        if traits.is_nvidia:
+        if traits.is_b300 and isinstance(model.serving.get("tp_fp4_b300"), int):
+            hints.append((model.serving["tp_fp4_b300"], "Using model-specific B300 FP4 tensor-parallel hint."))
+        elif traits.is_blackwell and isinstance(model.serving.get("tp_fp4_b200"), int):
+            hints.append((model.serving["tp_fp4_b200"], "Using model-specific B200 FP4 tensor-parallel hint."))
+        else:
             fp4_hint = _extract_tp_from_command(
                 str(model.serving.get("nvidia_nvfp4") or model.serving.get("nvidia_fp4") or "")
             )
             if fp4_hint is not None:
                 hints.append((fp4_hint, "Using Blackwell FP4 launch hint published with the model."))
-        elif traits.is_amd:
-            fp4_hint = _extract_tp_from_command(str(model.serving.get("amd_mxfp4") or ""))
-            if fp4_hint is not None:
-                hints.append((fp4_hint, "Using AMD MXFP4 launch hint published with the model."))
+    elif normalized_precision in {"bf16", "fp16"}:
+        fp_hint = model.serving.get("tp_bf16") or model.serving.get("tp_fp16")
+        if isinstance(fp_hint, int):
+            hints.append((fp_hint, "Using model-specific BF16/FP16 tensor-parallel hint."))
 
     tp_min = model.serving.get("tp_min")
     if isinstance(tp_min, int) and tp_min > 1:
         hints.append((tp_min, f"Respecting model minimum TP requirement (tp_min={tp_min})."))
 
+    seen: set[int] = set()
+    ordered_candidates: list[tuple[int, str]] = []
     for hint_tp, reason in hints:
         resolved = _fit_hint_to_valid_tps(hint_tp, valid_tps)
-        if resolved is not None and _tp_fits_memory(model, gpu, resolved, normalized_precision):
-            return resolved, reason
+        if resolved is not None and resolved not in seen:
+            seen.add(resolved)
+            ordered_candidates.append((resolved, reason))
+    for candidate in valid_tps:
+        if candidate not in seen:
+            seen.add(candidate)
+            ordered_candidates.append((candidate, f"Using the smallest KV-headroom-valid TP candidate ({candidate})."))
 
-    return None, None
+    for candidate, reason in ordered_candidates:
+        if _tp_fits_memory(model, gpu, candidate, normalized_precision):
+            return candidate, reason
+
+    return None, "No tensor-parallel choice preserves minimum KV headroom for long-context coding."
 
 
 def _valid_tps(model: ModelVariant, num_gpus: int) -> list[int]:
@@ -442,5 +418,13 @@ def _extract_tp_from_command(value: str) -> int | None:
 
 def _tp_fits_memory(model: ModelVariant, gpu: GPUProfile, tp: int, precision: str) -> bool:
     normalized_precision = "fp4" if precision in {"nvfp4", "mxfp4"} else precision
-    per_gpu_target = gpu.memory_gb * 0.90 * 0.8
-    return model.weight_gb(normalized_precision) / max(tp, 1) <= per_gpu_target
+    per_gpu_usable = gpu.memory_gb * 0.92
+    activation_overhead = min(3.0, max(1.0, model.params_total_b / 100))
+    per_gpu_weight = model.weight_gb(normalized_precision) / max(tp, 1)
+    kv_headroom = per_gpu_usable - per_gpu_weight - activation_overhead
+    minimum_headroom = max(per_gpu_usable * 0.10, 16.0)
+    return kv_headroom >= minimum_headroom
+
+
+def _precision_fits_target_lane(model: ModelVariant, gpu: GPUProfile, num_gpus: int, precision: str) -> bool:
+    return any(_tp_fits_memory(model, gpu, tp, precision) for tp in _valid_tps(model, num_gpus))

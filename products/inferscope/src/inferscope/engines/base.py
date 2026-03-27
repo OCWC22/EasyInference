@@ -16,6 +16,7 @@ class EngineConfig:
 
     engine: str
     cli_flags: dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
     env_vars: dict[str, str] = field(default_factory=dict)
     command: str = ""
     warnings: list[str] = field(default_factory=list)
@@ -27,6 +28,7 @@ class EngineConfig:
         return {
             "engine": self.engine,
             "cli_flags": self.cli_flags,
+            "metadata": self.metadata,
             "env_vars": self.env_vars,
             "command": self.command,
             "warnings": self.warnings,

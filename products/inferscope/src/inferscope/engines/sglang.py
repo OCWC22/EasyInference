@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, cast
 
 import httpx
 
@@ -179,6 +179,6 @@ class SGLangAdapter(EngineAdapter):
             url = self._validate_endpoint(endpoint, allow_private=allow_private)
             async with httpx.AsyncClient(timeout=10.0) as client:
                 resp = await client.get(f"{url}/v1/models", headers=build_auth_headers(auth))
-                return resp.json()
+                return cast(dict[str, Any], resp.json())
         except Exception:  # noqa: S110
             return {}

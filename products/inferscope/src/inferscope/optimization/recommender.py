@@ -1,12 +1,10 @@
-"""Recommendation engine — generates optimal ServingProfiles.
-
-Re-architected into a modular Directed Acyclic Graph (DAG) for MCP routing.
-"""
+"""Recommendation engine — Dynamo-first serving profiles for the production lane."""
 
 from __future__ import annotations
 
 import abc
 from dataclasses import dataclass, field
+from typing import TypeVar
 
 from inferscope.engines.base import DeploymentInventory, EngineConfig
 from inferscope.engines.registry import get_compiler
@@ -25,7 +23,6 @@ from inferscope.optimization.platform_policy import (
 from inferscope.optimization.serving_profile import (
     CacheSpec,
     EngineType,
-    ModelClass,
     ObjectiveSpec,
     PrecisionSpec,
     SchedulerSpec,
@@ -34,7 +31,17 @@ from inferscope.optimization.serving_profile import (
     TopologySpec,
     WorkloadMode,
 )
+from inferscope.optimization.target_profile import is_target_gpu, is_target_model, target_profile_summary
 from inferscope.profiling import ProfilingIntent, resolve_profiling_intent
+
+_T = TypeVar("_T")
+
+
+def _require(value: _T | None, name: str) -> _T:
+    """Return a required pipeline value or raise a deterministic error."""
+    if value is None:
+        raise ValueError(f"Internal recommender error: missing {name}.")
+    return value
 
 
 @dataclass
@@ -48,7 +55,6 @@ class PipelineContext:
     objective: ObjectiveSpec
     forced_engine: str = "auto"
 
-    # Resolved during DAG execution
     platform_traits: PlatformTraits | None = None
     engine_type: EngineType | None = None
     precision: PrecisionSpec | None = None
@@ -60,8 +66,6 @@ class PipelineContext:
     engine_config: EngineConfig | None = None
     memory_plan: MemoryPlan | None = None
     profiling_intent: ProfilingIntent | None = None
-
-    # Reasoning trace for MCP visibility
     reasoning_trace: list[str] = field(default_factory=list)
 
 
@@ -74,80 +78,29 @@ class DAGNode(abc.ABC):
 
 
 class HardwareNode(DAGNode):
-    """Analyzes GPU architecture, memory, and native precisions."""
+    """Validate target-scope hardware and resolve the only supported engine."""
 
     def process(self, ctx: PipelineContext) -> None:
         ctx.platform_traits = resolve_platform_traits(ctx.gpu)
+        ctx.reasoning_trace.append(target_profile_summary())
         ctx.reasoning_trace.append(
-            f"HardwareNode: Detected {ctx.gpu.vendor.upper()} {ctx.gpu.name} "
-            f"({ctx.gpu.architecture}) with {ctx.gpu.memory_gb}GB memory."
+            f"HardwareNode: Detected {ctx.gpu.name} ({ctx.gpu.compute_capability}) with {ctx.gpu.memory_gb}GB HBM."
         )
-        ctx.reasoning_trace.extend(f"HardwareNode: {note}" for note in ctx.platform_traits.notes)
 
-        # Engine Selection
-        is_amd = ctx.platform_traits.is_amd
-        is_mla_moe = ctx.model.model_class == ModelClass.FRONTIER_MLA_MOE
+        if not is_target_model(ctx.model):
+            raise ValueError("Supported models are limited to Kimi-K2.5.")
+        if not is_target_gpu(ctx.gpu):
+            raise ValueError("Supported GPUs are limited to H100, H200, B200, and B300 variants.")
+        if ctx.workload != WorkloadMode.CODING:
+            raise ValueError("Supported workload mode is coding for the long-context production lane.")
+        if ctx.forced_engine not in {"auto", "dynamo", "vllm"}:
+            raise ValueError("InferScope's production lane supports Dynamo serving plus vLLM comparison benchmarks.")
 
-        if ctx.forced_engine != "auto":
-            try:
-                ctx.engine_type = EngineType(ctx.forced_engine)
-            except ValueError as exc:
-                valid = [e.value for e in EngineType]
-                raise ValueError(f"Unknown engine '{ctx.forced_engine}'. Valid engines: {valid}") from exc
-            support = resolve_engine_support(
-                ctx.engine_type,
-                ctx.gpu,
-                multi_node=ctx.num_gpus > 1,
-            )
-            if support.tier == EngineSupportTier.UNSUPPORTED:
-                raise ValueError(support.reason)
-            ctx.reasoning_trace.append(f"HardwareNode: Engine forced to {ctx.forced_engine}. {support.reason}")
-        else:
-            if is_amd:
-                if is_mla_moe and ctx.gpu.compute_capability == "gfx950":
-                    ctx.engine_type = EngineType.ATOM
-                    ctx.reasoning_trace.append("HardwareNode: Selected ATOM for MI355X MLA/MoE.")
-                elif is_mla_moe:
-                    ctx.engine_type = EngineType.ATOM
-                    ctx.reasoning_trace.append("HardwareNode: Selected ATOM for MI300X MLA/MoE.")
-                else:
-                    ctx.engine_type = EngineType.VLLM
-                    ctx.reasoning_trace.append("HardwareNode: Selected vLLM for AMD general workloads.")
-            else:
-                if ctx.platform_traits.is_hopper:
-                    if ctx.workload == WorkloadMode.CODING:
-                        ctx.engine_type = EngineType.SGLANG
-                        ctx.reasoning_trace.append(
-                            "HardwareNode: Hopper Tier 2 — SGLang for coding "
-                            "(RadixAttention prefix hit rate superior for session-heavy coding)."
-                        )
-                    else:
-                        ctx.engine_type = EngineType.VLLM
-                        ctx.reasoning_trace.append(
-                            f"HardwareNode: Hopper Tier 1 — vLLM for {ctx.workload.value} "
-                            "(FlashAttention-3 via wgmma/TMA, zero-overhead prefix caching, "
-                            "Hopper-optimized chunked prefill)."
-                        )
-                elif ctx.platform_traits.is_blackwell:
-                    if ctx.workload == WorkloadMode.CODING:
-                        ctx.engine_type = EngineType.SGLANG
-                        ctx.reasoning_trace.append(
-                            "HardwareNode: Blackwell Tier 2 — SGLang for coding "
-                            "(RadixAttention prefix hit rate superior for session-heavy coding)."
-                        )
-                    else:
-                        ctx.engine_type = EngineType.VLLM
-                        ctx.reasoning_trace.append(
-                            f"HardwareNode: Blackwell Tier 1 — vLLM for {ctx.workload.value} "
-                            "(FlashAttention-4 with RoPE+KV fusion, NVFP4 native, "
-                            "nvCOMP decompression engine)."
-                        )
-                elif ctx.workload == WorkloadMode.CODING:
-                    ctx.engine_type = EngineType.SGLANG
-                    ctx.reasoning_trace.append("HardwareNode: Selected SGLang for coding (RadixAttention).")
-                else:
-                    ctx.engine_type = EngineType.VLLM
-                    ctx.reasoning_trace.append("HardwareNode: Selected vLLM for NVIDIA general workloads.")
+        ctx.engine_type = EngineType.VLLM if ctx.forced_engine == "vllm" else EngineType.DYNAMO
+        support = resolve_engine_support(ctx.engine_type, ctx.gpu, multi_node=ctx.num_gpus > 1)
+        if support.tier == EngineSupportTier.UNSUPPORTED:
+            raise ValueError(support.reason)
+        ctx.reasoning_trace.append(f"HardwareNode: {support.reason}")
 
         ctx.precision, precision_reason = resolve_preferred_precision(
             ctx.model,
@@ -159,387 +112,107 @@ class HardwareNode(DAGNode):
 
 
 class ModelNode(DAGNode):
-    """Analyzes model boundaries (params, KV heads) for topology splits."""
+    """Resolve tensor parallelism and the base single-endpoint topology."""
 
     def process(self, ctx: PipelineContext) -> None:
-        ctx.reasoning_trace.append(
-            f"ModelNode: Analyzing {ctx.model.name} ({ctx.model.params_total_b}B total, {ctx.model.model_class.value})."
-        )
-        traits = ctx.platform_traits or resolve_platform_traits(ctx.gpu)
+        precision = _require(ctx.precision, "precision")
 
-        weight_gb = ctx.model.weight_gb(ctx.precision.weights)
-        per_gpu_usable = ctx.gpu.memory_gb * 0.90
-
-        candidates = []
-        for tp in [1, 2, 4, 8, 16, 32]:
-            if tp > ctx.num_gpus:
-                break
-            if ctx.model.kv_heads > 0 and ctx.model.kv_heads % tp != 0:
-                continue
-            candidates.append(tp)
-        valid_tps = candidates if candidates else [1]
-
-        preferred_tp, tp_reason = resolve_preferred_tp(
+        tp, tp_reason = resolve_preferred_tp(
             ctx.model,
             ctx.gpu,
             ctx.num_gpus,
-            ctx.precision.weights,
+            precision.weights,
             ctx.workload,
         )
-        tp = preferred_tp if preferred_tp in valid_tps else valid_tps[0]
-        if (
-            traits.is_amd
-            and ctx.workload in (WorkloadMode.CODING, WorkloadMode.AGENT)
-            and ctx.model.params_total_b < 40
-        ):
-            ctx.reasoning_trace.append(
-                "ModelNode: Forcing TP=1 for small model on AMD due to RCCL overhead compared to NCCL."
-            )
-            tp = 1
-        elif preferred_tp in valid_tps and tp_reason:
-            ctx.reasoning_trace.append(f"ModelNode: {tp_reason}")
-        else:
-            for candidate in valid_tps:
-                if weight_gb / candidate <= per_gpu_usable * 0.8:
-                    tp = candidate
-                    break
-                tp = candidate
+        if tp is None:
+            raise ValueError(tp_reason or "Unable to derive a tensor-parallel plan that fits in memory.")
 
-        ep = 1
-        fp4_ep_path = traits.is_blackwell and ctx.precision.weights == "fp4"
-        if ctx.model.model_type == "moe" and ctx.model.experts_total > 64 and fp4_ep_path and ctx.num_gpus >= tp * 2:
-            ep = min(2, ctx.num_gpus // tp)
-            if ep > 1:
-                ctx.reasoning_trace.append(f"ModelNode: Enabling expert parallelism with EP={ep}.")
-
-        dp = max(1, ctx.num_gpus // (tp * ep))
-        enable_eplb = ep > 1 and traits.has_high_speed_interconnect and ctx.engine_type == EngineType.VLLM
-        ctx.topology = TopologySpec(tp=tp, pp=1, dp=dp, ep=ep, enable_eplb=enable_eplb)
-        ctx.reasoning_trace.append(f"ModelNode: Resolved routing topology to TP={tp}, EP={ep}, DP={dp}.")
-        if enable_eplb:
-            ctx.reasoning_trace.append(
-                "ModelNode: EPLB enabled for multi-rank MoE load balancing on fast interconnect."
-            )
+        dp = max(1, ctx.num_gpus // tp)
+        ctx.topology = TopologySpec(
+            tp=tp,
+            pp=1,
+            dp=dp,
+            ep=1,
+            split_prefill_decode=False,
+            disagg_connector="lmcache",
+        )
+        ctx.reasoning_trace.append(f"ModelNode: {tp_reason or f'Resolved TP={tp}.'}")
+        ctx.reasoning_trace.append(
+            "ModelNode: Single-endpoint production default uses "
+            f"TP={tp}, DP={dp}, EP=1; split topology is a benchmark override, "
+            "not the base recommendation."
+        )
 
         ctx.speculation = SpeculationSpec()
-        if ctx.model.mtp_speculative and ctx.workload in (WorkloadMode.CODING, WorkloadMode.AGENT):
-            ctx.speculation = SpeculationSpec(
-                mode="low_batch_only",
-                method="mtp",
-                num_speculative_tokens=3,
-            )
-            ctx.reasoning_trace.append("ModelNode: Enabled MTP speculation for agentic workload.")
 
 
 class WorkloadNode(DAGNode):
-    """Generate scheduler and cache policy from workload and hardware boundaries."""
+    """Apply coding-specific scheduler and LMCache defaults."""
 
     def process(self, ctx: PipelineContext) -> None:
-        ctx.reasoning_trace.append(f"WorkloadNode: Injecting {ctx.workload.value.upper()} constraints.")
+        platform_traits = _require(ctx.platform_traits, "platform_traits")
 
-        traits = ctx.platform_traits or resolve_platform_traits(ctx.gpu)
-        is_amd = traits.is_amd
-        is_ampere = traits.is_ampere
-        is_hopper = traits.is_hopper
-        is_blackwell = traits.is_blackwell
-        is_h200 = traits.is_h200
-        is_hopper_pcie = traits.is_hopper_pcie
-        is_b300 = traits.is_b300
-        is_gb200 = traits.is_gb200
-        is_long_context_model = ctx.model.context_length > 32768
-        has_high_speed_interconnect = traits.has_high_speed_interconnect
-        multi_gpu = ctx.num_gpus > 1
-
-        if is_b300 or (is_hopper and not is_hopper_pcie):
-            high_util = 0.95
-        elif is_blackwell:
-            high_util = 0.93
+        if platform_traits.is_hopper_pcie:
+            high_util = 0.90
+        elif platform_traits.is_blackwell or platform_traits.is_h200:
+            high_util = 0.94
         else:
-            high_util = 0.93
+            high_util = 0.92
+        token_budget = self._derive_token_budget(ctx.gpu.memory_bandwidth_tb_s)
+        max_num_seqs = 64 if ctx.model.name == "Kimi-K2.5" else 96
+        namespace = self._namespace(ctx)
 
-        chunked = self._resolve_chunked_prefill(
-            ctx,
-            is_amd,
-            is_hopper or is_blackwell,
-            is_long_context_model,
+        ctx.scheduler = SchedulerSpec(
+            batched_token_budget=token_budget,
+            prefill_chunk_tokens=token_budget,
+            max_num_seqs=max_num_seqs,
+            decode_priority=0.75,
+            scheduling_policy="latency_guarded_fcfs",
+            chunked_prefill=not platform_traits.is_hopper_pcie,
+            prefill_decode_isolation="soft_priority",
+            max_prefill_chunk_ratio=0.45,
         )
-
-        bw = ctx.gpu.memory_bandwidth_tb_s
-        budget_base = self._derive_token_budget(bw)
-        large_hbm = is_h200 or is_blackwell
-
-        if ctx.workload == WorkloadMode.CODING:
-            budget = max(4096, int(budget_base * 0.5))
-            ctx.scheduler = SchedulerSpec(
-                batched_token_budget=budget,
-                prefill_chunk_tokens=budget,
-                max_num_seqs=128,
-                decode_priority=0.7,
-                chunked_prefill=chunked,
-                prefill_decode_isolation="soft_priority" if multi_gpu else "colocated",
-                max_prefill_chunk_ratio=0.5,
-            )
-            offload = "disabled" if large_hbm else "cold_only"
-            ctx.cache = CacheSpec(
-                prefix_cache=True,
-                session_affinity=True,
-                gpu_memory_utilization=high_util,
-                eviction_policy="lru",
-                offload_policy=offload,
-                offload_idle_threshold_s=30.0 if is_hopper_pcie else 60.0,
-                block_reuse_strategy="prefix_sharing",
-                fragmentation_check=True,
-            )
+        ctx.cache = CacheSpec(
+            prefix_cache=True,
+            cache_backend="lmcache",
+            lmcache_mode="local",
+            lmcache_namespace=namespace,
+            kv_tiering="gpu_only",
+            eviction_policy="lru",
+            session_affinity=True,
+            gpu_memory_utilization=high_util,
+            fragmentation_check=True,
+            offload_policy="disabled",
+            block_reuse_strategy="prefix_sharing_cross_session",
+        )
+        ctx.reasoning_trace.append(
+            "WorkloadNode: Coding defaults set LMCache local mode, sticky sessions, "
+            f"token budget={token_budget}, max_num_seqs={max_num_seqs}, util={high_util:.2f}."
+        )
+        if platform_traits.is_hopper_pcie:
             ctx.reasoning_trace.append(
-                f"WorkloadNode: Coding (Tier 2) — budget {budget}, offload={offload}, util={high_util}."
+                "WorkloadNode: H100 PCIe keeps a lower HBM utilization target "
+                "to protect reliability under long-context coding spikes."
             )
-
-        elif ctx.workload == WorkloadMode.AGENT:
-            budget = max(4096, int(budget_base * 0.75))
-            ctx.scheduler = SchedulerSpec(
-                batched_token_budget=budget,
-                prefill_chunk_tokens=budget,
-                max_num_seqs=128,
-                decode_priority=0.7,
-                chunked_prefill=chunked,
-                prefill_decode_isolation="soft_priority" if multi_gpu else "colocated",
-                max_prefill_chunk_ratio=0.4,
-            )
-            if large_hbm:
-                offload = "disabled"
-                idle_s = 0.0
-            elif is_hopper_pcie:
-                offload = "cold_only"
-                idle_s = 30.0
-            else:
-                offload = "cold_only"
-                idle_s = 60.0
-            ctx.cache = CacheSpec(
-                prefix_cache=True,
-                session_affinity=True,
-                gpu_memory_utilization=high_util,
-                eviction_policy="lru",
-                offload_policy=offload,
-                offload_idle_threshold_s=idle_s,
-                kv_compaction_trigger=0.4,
-                block_reuse_strategy="prefix_sharing_cross_session",
-                fragmentation_check=True,
-            )
+        if platform_traits.is_blackwell:
             ctx.reasoning_trace.append(
-                f"WorkloadNode: Agent (Tier 1) — budget {budget}, cross-session sharing, "
-                f"offload={offload}, util={high_util}."
-            )
-
-        elif ctx.workload == WorkloadMode.LONG_CONTEXT_RAG:
-            budget = max(16384, int(budget_base * 2.0))
-            ctx.scheduler = SchedulerSpec(
-                batched_token_budget=budget,
-                prefill_chunk_tokens=budget,
-                max_num_seqs=64 if not is_blackwell else 96,
-                decode_priority=0.4,
-                chunked_prefill=chunked,
-                prefill_decode_isolation="soft_priority" if multi_gpu else "colocated",
-                max_prefill_chunk_ratio=0.7,
-            )
-            if is_gb200:
-                offload = "cold_only"
-                idle_s = 240.0
-                tiering = "gpu_cpu"
-            elif is_blackwell:
-                offload = "cold_only"
-                idle_s = 240.0
-                tiering = "gpu_only"
-            elif is_h200:
-                offload = "cold_only"
-                idle_s = 180.0
-                tiering = "gpu_only"
-            elif is_hopper_pcie:
-                offload = "cold_only"
-                idle_s = 60.0
-                tiering = "gpu_cpu"
-            else:
-                offload = "cold_only"
-                idle_s = 120.0
-                tiering = "gpu_only"
-            ctx.cache = CacheSpec(
-                prefix_cache=True,
-                session_affinity=False,
-                gpu_memory_utilization=high_util,
-                offload_policy=offload,
-                offload_idle_threshold_s=idle_s,
-                kv_tiering=tiering,
-                fragmentation_check=True,
-            )
-            if is_gb200:
-                ctx.reasoning_trace.append(
-                    "WorkloadNode: GB200 Grace Blackwell — KV overflow to Grace LPDDR5X via "
-                    "NVLink-C2C @ 900 GB/s (~7x faster than PCIe Gen5)."
-                )
-            if is_hopper_pcie and is_long_context_model:
-                ctx.reasoning_trace.append(
-                    "WorkloadNode: CRITICAL — H100 PCIe + long context: consider disaggregated "
-                    "prefill/decode over KV offloading (PCIe-only offload is transfer-bound)."
-                )
-            ctx.reasoning_trace.append(
-                f"WorkloadNode: Long-context RAG (Tier 1) — budget {budget}, offload={offload} "
-                f"(idle {idle_s:.0f}s), tiering={tiering}, util={high_util}."
-            )
-
-        else:
-            budget = max(8192, budget_base)
-            weight_gb = ctx.model.weight_gb(ctx.precision.weights if ctx.precision else "fp16")
-            tp = max(ctx.topology.tp if ctx.topology else 1, 1)
-            kv_bpt = ctx.model.kv_cache_bytes_per_token("fp8" if ctx.gpu.fp8_support else "fp16") * ctx.model.layers
-            max_seqs = self._derive_max_seqs(
-                ctx.gpu.memory_gb,
-                weight_gb / tp,
-                kv_bpt / tp,
-                2048,
-                high_util,
-            )
-            ctx.scheduler = SchedulerSpec(
-                batched_token_budget=budget,
-                prefill_chunk_tokens=8192 if is_ampere else 16384,
-                max_num_seqs=max_seqs,
-                decode_priority=0.5,
-                chunked_prefill=chunked,
-                prefill_decode_isolation="colocated",
-                max_prefill_chunk_ratio=0.5,
-            )
-            ctx.cache = CacheSpec(
-                prefix_cache=True,
-                session_affinity=False,
-                gpu_memory_utilization=high_util,
-                offload_policy="disabled",
-                block_reuse_strategy="prefix_sharing",
-            )
-            ctx.reasoning_trace.append(
-                f"WorkloadNode: Chat (Tier 1) — budget {budget}, max_seqs={max_seqs}, "
-                f"offload=disabled, util={high_util}."
-            )
-
-        if is_hopper and ctx.engine_type == EngineType.VLLM:
-            ctx.reasoning_trace.append(
-                "WorkloadNode: Hopper vLLM — FlashAttention-3 via wgmma/TMA "
-                "(75%+ utilization vs FA2's 35%), zero-overhead V1 prefix caching."
-            )
-            if is_h200:
-                ctx.reasoning_trace.append(
-                    "WorkloadNode: H200 141GB HBM3e @ 4.8 TB/s — most workloads fit GPU-resident without KV offloading."
-                )
-        if is_blackwell and ctx.engine_type == EngineType.VLLM:
-            ctx.reasoning_trace.append(
-                "WorkloadNode: Blackwell vLLM — FlashAttention-4 with RoPE+KV fusion "
-                "(4.5x speedup), NVFP4 native, nvCOMP decompression engine."
-            )
-            if is_gb200:
-                ctx.reasoning_trace.append(
-                    "WorkloadNode: GB200 — Grace LPDDR5X (480GB @ 546 GB/s) as KV overflow "
-                    "via NVLink-C2C, eliminating PCIe bottleneck for long-context workloads."
-                )
-            elif is_b300:
-                ctx.reasoning_trace.append(
-                    "WorkloadNode: B300 288GB HBM3e — fits most models on TP=1-2, "
-                    "accelerated softmax in hardware, inference-optimized."
-                )
-
-        if (
-            is_blackwell
-            and multi_gpu
-            and ctx.workload
-            in (
-                WorkloadMode.LONG_CONTEXT_RAG,
-                WorkloadMode.AGENT,
-            )
-        ):
-            ctx.reasoning_trace.append(
-                "WorkloadNode: Blackwell disaggregated serving advantage — "
-                f"NVLink5 @ {ctx.gpu.nvlink_bandwidth_gb_s:.0f} GB/s (2x vs Hopper NVLink4) + "
-                "decompression engine for compressed KV transfer. Consider P/D split for "
-                "long-context workloads at high request rates."
-            )
-
-        if ctx.cache.offload_policy != "disabled":
-            if has_high_speed_interconnect:
-                ctx.cache.pcie_utilization_cap = 0.8
-            else:
-                ctx.cache.pcie_utilization_cap = 0.5
-                ctx.reasoning_trace.append(
-                    "WorkloadNode: No NVLink/InfinityFabric — capping PCIe offload utilization "
-                    "at 50% to prevent transfer-bound decode stalls."
-                )
-
-        if ctx.objective.ttft_p95_ms > 0 and ctx.objective.ttft_p95_ms < 500 and is_long_context_model:
-            ctx.scheduler.chunked_prefill = False
-            ctx.reasoning_trace.append(
-                f"WorkloadNode: Tight TTFT SLO ({ctx.objective.ttft_p95_ms}ms) + long-context "
-                "model — forcing contiguous prefill."
-            )
-
-        if (
-            ctx.model.model_type == "moe"
-            and ctx.topology.ep > 1
-            and ctx.engine_type == EngineType.VLLM
-            and (is_hopper or is_blackwell)
-        ):
-            ctx.scheduler.enable_moe_overlap = True
-            ctx.reasoning_trace.append(
-                "WorkloadNode: Enabling MoE overlap for multi-rank Hopper/Blackwell vLLM deployment."
+                "WorkloadNode: Blackwell enables higher HBM utilization and is "
+                "the preferred path for Kimi FP4 + LMCache density."
             )
 
     @staticmethod
     def _derive_token_budget(memory_bandwidth_tb_s: float) -> int:
-        raw = int(memory_bandwidth_tb_s * 5000)
-        return max(4096, min(raw, 131072))
+        if memory_bandwidth_tb_s >= 7.5:
+            return 32768
+        if memory_bandwidth_tb_s >= 4.0:
+            return 24576
+        return 16384
 
     @staticmethod
-    def _derive_max_seqs(
-        gpu_memory_gb: float,
-        weight_gb_per_gpu: float,
-        kv_bytes_per_token: float,
-        avg_context: int,
-        gpu_memory_utilization: float,
-    ) -> int:
-        usable_gb = gpu_memory_gb * gpu_memory_utilization
-        kv_budget_gb = usable_gb - weight_gb_per_gpu - 2.0
-        if kv_budget_gb <= 0:
-            return 32
-        kv_per_seq_gb = (kv_bytes_per_token * avg_context) / 1e9
-        fragmentation_factor = 0.75
-        if kv_per_seq_gb <= 0:
-            return 256
-        raw = int((kv_budget_gb * fragmentation_factor) / kv_per_seq_gb)
-        return max(32, min(raw, 1024))
-
-    @staticmethod
-    def _resolve_chunked_prefill(
-        ctx: PipelineContext,
-        is_amd: bool,
-        is_hopper: bool,
-        is_long_context_model: bool,
-    ) -> bool:
-        if is_amd and ctx.workload in (WorkloadMode.LONG_CONTEXT_RAG, WorkloadMode.CODING):
-            ctx.reasoning_trace.append(
-                "WorkloadNode: Disabling chunked prefill on AMD CDNA — KV cache staging "
-                "overhead + decode starvation risk for long-context workloads."
-            )
-            return False
-
-        if is_hopper and ctx.workload in (WorkloadMode.CHAT, WorkloadMode.AGENT):
-            ctx.reasoning_trace.append(
-                "WorkloadNode: Chunked prefill ON — Hopper wgmma/TMA handles "
-                "compute-memory overlap efficiently for Tier 1 workloads."
-            )
-            return True
-
-        if is_long_context_model and ctx.workload == WorkloadMode.LONG_CONTEXT_RAG:
-            ctx.reasoning_trace.append(
-                "WorkloadNode: Disabling chunked prefill for long-context RAG — contiguous "
-                "prefill avoids KV fragmentation across PagedAttention blocks."
-            )
-            return False
-
-        return True
+    def _namespace(ctx: PipelineContext) -> str:
+        model_key = ctx.model.name.lower().replace(".", "-")
+        gpu_key = ctx.gpu.name.lower().replace(" ", "-")
+        return f"{model_key}-{gpu_key}-coding"
 
 
 class ProfilingNode(DAGNode):
@@ -551,104 +224,114 @@ class ProfilingNode(DAGNode):
 
 
 class TelemetryNode(DAGNode):
-    """Configures Prometheus and Grafana alerts."""
+    """Describe the observability bias of the production lane."""
 
     def process(self, ctx: PipelineContext) -> None:
         ctx.reasoning_trace.append(
-            "TelemetryNode: Configured Prometheus /metrics scraper and Grafana KV cache capacity alerts."
+            "TelemetryNode: Production recommendations assume Prometheus coverage "
+            "for primary request flow plus LMCache metrics and request/session identifiers."
         )
 
 
 class CompilerNode(DAGNode):
-    """Finalize the profile and bind it to an engine compiler."""
+    """Finalize the profile and bind it to the selected engine compiler."""
 
     def process(self, ctx: PipelineContext) -> None:
+        engine_type = _require(ctx.engine_type, "engine_type")
+        topology = _require(ctx.topology, "topology")
+        scheduler = _require(ctx.scheduler, "scheduler")
+        cache = _require(ctx.cache, "cache")
+        precision = _require(ctx.precision, "precision")
+        speculation = _require(ctx.speculation, "speculation")
+
         ctx.profile = ServingProfile(
             model=ctx.model.name,
             model_class=ctx.model.model_class,
-            engine=ctx.engine_type,
+            engine=engine_type,
             gpu_type=ctx.gpu.name,
             num_gpus=ctx.num_gpus,
             workload_mode=ctx.workload,
             objective=ctx.objective,
-            topology=ctx.topology,
-            scheduler=ctx.scheduler,
-            cache=ctx.cache,
-            precision=ctx.precision,
-            speculation=ctx.speculation,
+            topology=topology,
+            scheduler=scheduler,
+            cache=cache,
+            precision=precision,
+            speculation=speculation,
             reasoning_trace=ctx.reasoning_trace,
         )
 
-        inventory = DeploymentInventory(
-            gpu_type=ctx.gpu.name,
-            gpu_arch=ctx.gpu.compute_capability,
-            gpu_count=ctx.num_gpus,
-            gpu_memory_gb=ctx.gpu.memory_gb,
-            gpu_memory_bandwidth_tb_s=ctx.gpu.memory_bandwidth_tb_s,
-            interconnect=(
-                f"nvlink{ctx.gpu.nvlink_version}"
-                if ctx.gpu.nvlink_version
-                else f"infinity_fabric_{ctx.gpu.infinity_fabric_version}"
-                if ctx.gpu.infinity_fabric_version
-                else ctx.gpu.pcie
-            ),
-            interconnect_bandwidth_gb_s=ctx.gpu.nvlink_bandwidth_gb_s or ctx.gpu.if_bandwidth_gb_s,
-            fp8_support=ctx.gpu.fp8_support,
-            fp4_support=ctx.gpu.fp4_support,
-            fp8_format=ctx.gpu.fp8_format,
-            platform_family=(ctx.platform_traits.family.value if ctx.platform_traits else ""),
-            has_grace=bool(ctx.platform_traits and ctx.platform_traits.is_grace),
-            grace_memory_gb=(ctx.platform_traits.grace_memory_gb if ctx.platform_traits else 0.0),
-            grace_memory_bandwidth_gb_s=(
-                ctx.platform_traits.grace_memory_bandwidth_gb_s if ctx.platform_traits else 0.0
-            ),
-            c2c_bandwidth_gb_s=(ctx.platform_traits.c2c_bandwidth_gb_s if ctx.platform_traits else 0.0),
-            has_decompression_engine=bool(ctx.platform_traits and ctx.platform_traits.has_decompression_engine),
-            has_helix_parallelism=bool(ctx.platform_traits and ctx.platform_traits.has_helix_parallelism),
-            has_accelerated_softmax=bool(ctx.platform_traits and ctx.platform_traits.has_accelerated_softmax),
-            platform_features=(ctx.platform_traits.to_dict() if ctx.platform_traits else {}),
-        )
-
-        compiler = get_compiler(ctx.engine_type.value)
+        inventory = _build_inventory(ctx)
+        compiler = get_compiler(engine_type.value)
         ctx.engine_config = compiler.compile(ctx.profile, inventory)
         support = resolve_engine_support(
-            ctx.engine_type,
+            engine_type,
             ctx.gpu,
-            multi_node=ctx.topology.split_prefill_decode or ctx.num_gpus > 1,
+            multi_node=topology.split_prefill_decode or ctx.num_gpus > 1,
         )
         ctx.engine_config.support_tier = support.tier.value
         ctx.engine_config.support_reason = support.reason
-        if support.tier == EngineSupportTier.PREVIEW:
-            ctx.engine_config.warnings.append(f"Preview engine: {support.reason}")
+        if support.tier == EngineSupportTier.UNSUPPORTED:
+            raise ValueError(support.reason)
 
         ctx.memory_plan = plan_memory(
             model=ctx.model,
             gpu=ctx.gpu,
             num_gpus=ctx.num_gpus,
-            tp=ctx.topology.tp,
-            precision=ctx.precision.weights,
-            kv_precision=ctx.precision.kv_cache,
-            gpu_memory_utilization=ctx.cache.gpu_memory_utilization,
+            tp=topology.tp,
+            precision=precision.weights,
+            kv_precision=precision.kv_cache,
+            gpu_memory_utilization=cache.gpu_memory_utilization,
         )
-
         if not ctx.memory_plan.fits:
-            ctx.profile.warnings.append(
-                f"Model does not fit with TP={ctx.topology.tp} {ctx.precision.weights} — "
-                "increase TP or use more aggressive quantization"
+            raise ValueError(
+                f"{ctx.model.name} does not retain enough KV headroom on {ctx.gpu.name} "
+                f"with TP={topology.tp} {precision.weights}."
             )
 
         ctx.profile.engine_flags = ctx.engine_config.cli_flags
         ctx.profile.env_vars = ctx.engine_config.env_vars
         ctx.profile.warnings.extend(ctx.engine_config.warnings)
+        ctx.reasoning_trace.append(
+            f"CompilerNode: Bound the production profile to a {engine_type.value} engine config with LMCache metadata."
+        )
 
-        ctx.reasoning_trace.append("CompilerNode: Successfully bound DAG context to final EngineConfig.")
+
+def _build_inventory(ctx: PipelineContext) -> DeploymentInventory:
+    platform_traits = _require(ctx.platform_traits, "platform_traits")
+    return DeploymentInventory(
+        gpu_type=ctx.gpu.name,
+        gpu_arch=ctx.gpu.compute_capability,
+        gpu_count=ctx.num_gpus,
+        gpu_memory_gb=ctx.gpu.memory_gb,
+        gpu_memory_bandwidth_tb_s=ctx.gpu.memory_bandwidth_tb_s,
+        interconnect=(
+            f"nvlink{ctx.gpu.nvlink_version}"
+            if ctx.gpu.nvlink_version
+            else f"infinity_fabric_{ctx.gpu.infinity_fabric_version}"
+            if ctx.gpu.infinity_fabric_version
+            else ctx.gpu.pcie
+        ),
+        interconnect_bandwidth_gb_s=ctx.gpu.nvlink_bandwidth_gb_s or ctx.gpu.if_bandwidth_gb_s,
+        fp8_support=ctx.gpu.fp8_support,
+        fp4_support=ctx.gpu.fp4_support,
+        fp8_format=ctx.gpu.fp8_format,
+        platform_family=platform_traits.family.value,
+        has_grace=bool(platform_traits.is_grace),
+        grace_memory_gb=platform_traits.grace_memory_gb,
+        grace_memory_bandwidth_gb_s=platform_traits.grace_memory_bandwidth_gb_s,
+        c2c_bandwidth_gb_s=platform_traits.c2c_bandwidth_gb_s,
+        has_decompression_engine=bool(platform_traits.has_decompression_engine),
+        has_helix_parallelism=bool(platform_traits.has_helix_parallelism),
+        has_accelerated_softmax=bool(platform_traits.has_accelerated_softmax),
+        platform_features=platform_traits.to_dict(),
+    )
 
 
 def recommend(
     model: ModelVariant,
     gpu: GPUProfile,
     num_gpus: int = 1,
-    workload: WorkloadMode = WorkloadMode.CHAT,
+    workload: WorkloadMode = WorkloadMode.CODING,
     engine: str = "auto",
     objective: ObjectiveSpec | None = None,
 ) -> tuple[ServingProfile, EngineConfig, MemoryPlan]:
@@ -674,14 +357,20 @@ def recommend(
     for node in nodes:
         node.process(ctx)
 
+    profile = _require(ctx.profile, "profile")
+    engine_config = _require(ctx.engine_config, "engine_config")
+    memory_plan = _require(ctx.memory_plan, "memory_plan")
+    engine_type = _require(ctx.engine_type, "engine_type")
+    topology = _require(ctx.topology, "topology")
+
     log = get_logger(component="recommender")
     log.info(
         "recommendation_compiled_via_dag",
         model=ctx.model.name,
         gpu=ctx.gpu.name,
-        engine=ctx.engine_type.value,
-        tp=ctx.topology.tp,
+        engine=engine_type.value,
+        tp=topology.tp,
         trace_length=len(ctx.reasoning_trace),
     )
 
-    return ctx.profile, ctx.engine_config, ctx.memory_plan
+    return profile, engine_config, memory_plan

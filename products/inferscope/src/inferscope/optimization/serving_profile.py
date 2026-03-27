@@ -1,7 +1,7 @@
 """Normalized ServingProfile — the single object InferScope optimizes.
 
-Engine-specific compilers translate this into vLLM/SGLang/ATOM/TRT-LLM/Dynamo flags.
-This is the most important abstraction in InferScope.
+InferScope is now productized around the Dynamo + LMCache long-context coding lane,
+but the normalized profile remains the main handoff between policy and compiler code.
 """
 
 from __future__ import annotations
@@ -100,6 +100,9 @@ class CacheSpec:
     """KV cache configuration."""
 
     prefix_cache: bool = True
+    cache_backend: str = "lmcache"  # lmcache | none
+    lmcache_mode: str = "local"  # disabled | local | shared
+    lmcache_namespace: str = ""
     kv_tiering: str = "gpu_only"  # gpu_only | gpu_cpu | gpu_cpu_ssd
     eviction_policy: str = "lru"
     session_affinity: bool = False
@@ -149,12 +152,12 @@ class ServingProfile:
     # Context
     model: str = ""
     model_class: ModelClass = ModelClass.DENSE_GQA
-    engine: EngineType = EngineType.VLLM
+    engine: EngineType = EngineType.DYNAMO
     gpu_type: str = ""
     num_gpus: int = 1
 
     # Optimization targets
-    workload_mode: WorkloadMode = WorkloadMode.CHAT
+    workload_mode: WorkloadMode = WorkloadMode.CODING
     objective: ObjectiveSpec = field(default_factory=ObjectiveSpec)
 
     # Configuration
@@ -212,6 +215,9 @@ class ServingProfile:
             },
             "cache": {
                 "prefix_cache": self.cache.prefix_cache,
+                "cache_backend": self.cache.cache_backend,
+                "lmcache_mode": self.cache.lmcache_mode,
+                "lmcache_namespace": self.cache.lmcache_namespace,
                 "kv_tiering": self.cache.kv_tiering,
                 "eviction_policy": self.cache.eviction_policy,
                 "session_affinity": self.cache.session_affinity,

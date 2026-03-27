@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import json
-from typing import Any
+from typing import Any, cast
 
 import httpx
 
@@ -180,7 +180,7 @@ class VLLMCompiler(ConfigCompiler):
                     "FP8 inference on MI300X MoE is currently slower than BF16 due to ROCm regressions."
                 )
             if profile.topology.tp > 1 and profile.model_class not in (
-                ModelClass.FRONTIER_DENSE,
+                ModelClass.DENSE_GQA,
                 ModelClass.FRONTIER_MLA_MOE,
             ):
                 cfg.warnings.append("High TP on small models (<40B) via RCCL is slower than TP=1 replicas on AMD.")
@@ -399,6 +399,6 @@ class VLLMAdapter(EngineAdapter):
             url = self._validate_endpoint(endpoint, allow_private=allow_private)
             async with httpx.AsyncClient(timeout=10.0) as client:
                 resp = await client.get(f"{url}/v1/models", headers=build_auth_headers(auth))
-                return resp.json()
+                return cast(dict[str, Any], resp.json())
         except Exception:  # noqa: S110
             return {}

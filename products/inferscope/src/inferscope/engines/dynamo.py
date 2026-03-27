@@ -1,18 +1,4 @@
-"""NVIDIA Dynamo v1.0+ engine adapter and config compiler.
-
-Dynamo is a datacenter-scale distributed inference serving framework.
-Production-ready since March 16, 2026 (GTC announcement). Deployed at
-AWS, Azure, Google Cloud, Oracle, Baseten, Fireworks, Cursor, Perplexity.
-
-Key components:
-- SLO Planner: capacity monitoring + scaling decisions
-- KV-aware Router: routes requests to workers with matching KV cache
-- NIXL: low-latency GPU-to-GPU KV cache transfer library
-- Grove: hierarchical KV block manager (GPU -> CPU -> NVMe -> S3)
-- Multi-backend: supports vLLM, SGLang, and TRT-LLM as workers
-
-Dynamo uses declarative YAML topology configs, not CLI flags.
-"""
+"""NVIDIA Dynamo engine adapter and compiler for the production InferScope lane."""
 
 from __future__ import annotations
 
@@ -29,233 +15,243 @@ from inferscope.engines.base import (
 )
 from inferscope.logging import get_logger
 from inferscope.optimization.serving_profile import ServingProfile
+from inferscope.optimization.target_profile import is_target_gpu, is_target_model
 
 _adapter_log = get_logger(component="dynamo_adapter")
 
+_REQUIRED_PRIMARY_PREFIXES = [
+    "dynamo_router_",
+    "dynamo_scheduler_",
+    "dynamo_request_",
+]
+
+_REQUIRED_CACHE_PREFIXES = [
+    "lmcache_",
+    "dynamo_lmcache_",
+]
+
+_REQUIRED_PREFILL_PREFIXES = [
+    "dynamo_prefill_",
+]
+
+_REQUIRED_DECODE_PREFIXES = [
+    "dynamo_decode_",
+]
+
 
 class DynamoCompiler(ConfigCompiler):
-    """Compiles a ServingProfile into a Dynamo deployment config.
-
-    Dynamo uses a declarative YAML topology config rather than CLI flags.
-    The compiler generates the YAML structure as a nested dict in cli_flags,
-    plus environment variables and deployment notes.
-    """
+    """Compile a normalized ServingProfile into a Dynamo deployment contract."""
 
     def engine_name(self) -> str:
         return "dynamo"
 
     def compile(self, profile: ServingProfile, inventory: DeploymentInventory) -> EngineConfig:
         cfg = EngineConfig(engine="dynamo")
-        cfg.support_tier = "supported"
-        cfg.support_reason = (
-            "Dynamo 1.0 is production-ready for disaggregated NVIDIA deployments "
-            "(GTC 2026, deployed at AWS/Azure/GCP/Oracle + Baseten, Fireworks, Cursor, Perplexity)."
+        cfg.command = (
+            "python -m dynamo.vllm "
+            f"--model {profile.model} "
+            f"--tensor-parallel-size {profile.topology.tp} "
+            f"--max-num-seqs {profile.scheduler.max_num_seqs}"
         )
+        cfg.env_vars["DYNAMO_CONFIG_FILE"] = "dynamo-config.yaml"
+        cfg.support_tier = "supported"
+        cfg.support_reason = "Dynamo + LMCache is the supported production lane for InferScope long-context coding."
 
         if not inventory.gpu_arch.startswith("sm_"):
             cfg.support_tier = "unsupported"
-            cfg.support_reason = "Dynamo requires NVIDIA GPUs (SM architecture)."
+            cfg.support_reason = "Dynamo requires NVIDIA Hopper or Blackwell GPUs."
             cfg.warnings.append(cfg.support_reason)
             return cfg
 
-        # --- Topology ---
-        topology = {
-            "model": profile.model,
-            "tensor_parallel_size": profile.topology.tp,
-            "pipeline_parallel_size": profile.topology.pp,
-        }
-        if profile.topology.dp > 1:
-            topology["data_parallel_size"] = profile.topology.dp
-        if profile.topology.ep > 1:
-            topology["expert_parallel_size"] = profile.topology.ep
+        if not is_target_gpu(inventory.gpu_type):
+            cfg.support_tier = "unsupported"
+            cfg.support_reason = "Supported GPUs are limited to H100, H200, B200, and B300 variants."
+            cfg.warnings.append(cfg.support_reason)
+            return cfg
 
-        # --- Backend engine ---
-        # Dynamo can use vLLM, SGLang, or TRT-LLM as worker backends
-        backend = "vllm"  # default
-        if profile.engine and profile.engine.value in ("vllm", "sglang", "trtllm"):
-            backend = profile.engine.value
-        topology["backend"] = backend
+        if not is_target_model(profile.model):
+            cfg.support_tier = "unsupported"
+            cfg.support_reason = "Supported models are limited to Kimi-K2.5."
+            cfg.warnings.append(cfg.support_reason)
+            return cfg
 
-        # --- Disaggregated serving ---
-        disagg: dict[str, Any] = {}
-        if profile.topology.split_prefill_decode:
-            disagg["enabled"] = True
-            disagg["prefill_workers"] = max(1, profile.topology.tp)
-            disagg["decode_workers"] = max(1, profile.topology.tp)
-            disagg["kv_transfer"] = "nixl"
+        split_topology = profile.topology.split_prefill_decode
+        lmcache_mode = (
+            profile.cache.lmcache_mode
+            if profile.cache.lmcache_mode != "disabled"
+            else ("shared" if split_topology else "local")
+        )
+        roles = ["primary", "cache"]
+        if split_topology:
+            roles = ["primary", "prefill", "decode", "cache"]
 
-            if inventory.has_rdma:
-                disagg["transport"] = "rdma"
-                cfg.notes.append("RDMA enabled for KV transfer — optimal disagg performance.")
-            else:
-                disagg["transport"] = "tcp"
-                cfg.warnings.append(
-                    "Disaggregated serving without RDMA: expect 20-30% degradation in "
-                    "KV transfer latency. Enable RoCE or InfiniBand for production."
-                )
-
-            if profile.topology.disagg_connector:
-                disagg["connector"] = profile.topology.disagg_connector
-
-            # NVLink5 advantage on Blackwell
-            if inventory.gpu_arch in ("sm_100", "sm_103"):
-                bw = inventory.interconnect_bandwidth_gb_s
-                cfg.notes.append(
-                    f"Blackwell NVLink5 @ {bw:.0f} GB/s enables compressed KV transfer "
-                    "via nvCOMP decompression engine during P/D handoff."
-                )
-
-        # --- KV cache management (Grove) ---
-        grove: dict[str, Any] = {
-            "gpu_memory_utilization": profile.cache.gpu_memory_utilization,
-        }
-        if profile.cache.kv_tiering == "gpu_cpu":
-            grove["tiers"] = ["gpu_hbm", "cpu_dram"]
-            if inventory.has_grace:
-                grove["tiers"] = ["gpu_hbm", "grace_lpddr5x", "cpu_dram"]
-                grove["c2c_bandwidth_gb_s"] = inventory.c2c_bandwidth_gb_s
-                cfg.notes.append(
-                    f"Grace LPDDR5X ({inventory.grace_memory_gb:.0f}GB @ "
-                    f"{inventory.grace_memory_bandwidth_gb_s:.0f} GB/s) as KV overflow "
-                    f"via NVLink-C2C @ {inventory.c2c_bandwidth_gb_s:.0f} GB/s."
-                )
-        elif profile.cache.kv_tiering == "gpu_cpu_ssd":
-            grove["tiers"] = ["gpu_hbm", "cpu_dram", "nvme_ssd"]
-        else:
-            grove["tiers"] = ["gpu_hbm"]
-
-        if profile.cache.prefix_cache:
-            grove["prefix_caching"] = True
-
-        # --- SLO Planner ---
-        slo_planner = {}
-        if profile.objective.ttft_p95_ms > 0:
-            slo_planner["ttft_p95_ms"] = profile.objective.ttft_p95_ms
-        if profile.objective.itl_p95_ms > 0:
-            slo_planner["itl_p95_ms"] = profile.objective.itl_p95_ms
-        if profile.objective.throughput_min_tps > 0:
-            slo_planner["min_throughput_tps"] = profile.objective.throughput_min_tps
-
-        # --- Router ---
-        router = {"type": "kv_aware"}
-        if profile.cache.session_affinity:
-            router["sticky_sessions"] = True
-
-        # --- Precision ---
-        precision = {}
-        if profile.precision.weights == "fp8":
-            precision["quantization"] = "fp8"
-        elif profile.precision.weights == "fp4":
-            if inventory.gpu_arch in ("sm_100", "sm_103"):
-                precision["quantization"] = "nvfp4"
-            else:
-                cfg.warnings.append(f"NVFP4 requires Blackwell, got {inventory.gpu_arch}")
-                precision["quantization"] = "fp8"
-        elif profile.precision.weights in ("awq", "gptq"):
-            precision["quantization"] = profile.precision.weights
-        if profile.precision.kv_cache and profile.precision.kv_cache != "auto":
-            precision["kv_cache_dtype"] = profile.precision.kv_cache
-
-        # --- Scheduler ---
-        scheduler = {
-            "max_num_batched_tokens": profile.scheduler.batched_token_budget,
-            "max_num_seqs": profile.scheduler.max_num_seqs,
-        }
-        if profile.scheduler.chunked_prefill:
-            scheduler["enable_chunked_prefill"] = True
-        if profile.scheduler.enable_moe_overlap:
-            scheduler["enable_moe_overlap"] = True
-
-        # --- Speculation ---
-        if profile.speculation and profile.speculation.mode != "off":
-            scheduler["speculative_config"] = {
-                "method": profile.speculation.method,
-                "num_speculative_tokens": profile.speculation.num_speculative_tokens,
-            }
-
-        # --- EPLB ---
-        if profile.topology.enable_eplb:
-            topology["enable_eplb"] = True
-            cfg.notes.append("EPLB enabled for dynamic MoE expert rebalancing across ranks.")
-
-        # --- Assemble config YAML structure ---
-        dynamo_config = {
-            "topology": topology,
-            "precision": precision,
-            "scheduler": scheduler,
-            "grove": grove,
-            "router": router,
-        }
-        if disagg:
-            dynamo_config["disaggregated"] = disagg
-        if slo_planner:
-            dynamo_config["slo_planner"] = slo_planner
-
-        cfg.cli_flags = dynamo_config
-
-        # --- Env vars ---
-        if inventory.gpu_arch in ("sm_100", "sm_103") and inventory.has_decompression_engine:
-            cfg.env_vars["DYNAMO_ENABLE_NVCOMP"] = "1"
-            cfg.notes.append("nvCOMP decompression engine enabled for compressed KV transfer.")
-
-        # --- Command ---
-        cfg.command = (
-            f"dynamo serve \\\n"
-            f"  --config dynamo-config.yaml \\\n"
-            f"  --model {profile.model}"
+        topology_mode = "prefill_decode_split" if split_topology else "single_endpoint"
+        has_fast_interconnect = inventory.has_rdma or inventory.interconnect.startswith("nvlink")
+        session_affinity = profile.cache.session_affinity or profile.cache.cache_backend == "lmcache"
+        namespace = (
+            profile.cache.lmcache_namespace
+            or f"{profile.model.lower().replace('.', '-').replace(' ', '-')}-{topology_mode}"
         )
 
-        # --- Platform-specific notes ---
-        if inventory.gpu_arch == "sm_100":
-            cfg.notes.append(
-                "Blackwell B200: Dynamo + NIXL achieves up to 30x token throughput "
-                "for DeepSeek-R1 on GB200 NVL72 vs single-node baseline."
+        required_metric_prefixes: dict[str, list[str]] = {
+            "primary": list(_REQUIRED_PRIMARY_PREFIXES),
+            "cache": list(_REQUIRED_CACHE_PREFIXES),
+        }
+        if split_topology:
+            required_metric_prefixes["prefill"] = list(_REQUIRED_PREFILL_PREFIXES)
+            required_metric_prefixes["decode"] = list(_REQUIRED_DECODE_PREFIXES)
+
+        topology = {
+            "mode": topology_mode,
+            "tensor_parallel_size": profile.topology.tp,
+            "pipeline_parallel_size": profile.topology.pp,
+            "data_parallel_size": profile.topology.dp,
+            "expert_parallel_size": profile.topology.ep,
+            "split_prefill_decode": split_topology,
+            "roles": roles,
+        }
+        backend = {
+            "worker": "vllm",
+            "model": profile.model,
+            "quantization": profile.precision.weights,
+            "kv_cache_dtype": profile.precision.kv_cache,
+        }
+        scheduler = {
+            "max_num_batched_tokens": profile.scheduler.batched_token_budget,
+            "prefill_chunk_tokens": profile.scheduler.prefill_chunk_tokens,
+            "max_num_seqs": profile.scheduler.max_num_seqs,
+            "decode_priority": profile.scheduler.decode_priority,
+            "scheduling_policy": profile.scheduler.scheduling_policy,
+            "chunked_prefill": profile.scheduler.chunked_prefill,
+            "prefill_decode_isolation": profile.scheduler.prefill_decode_isolation,
+        }
+        router = {
+            "mode": "kv_aware",
+            "session_affinity": session_affinity,
+            "session_header_name": "X-Session-ID",
+            "request_target": "primary",
+        }
+        lmcache = {
+            "enabled": True,
+            "mode": lmcache_mode,
+            "namespace": namespace,
+            "session_affinity": session_affinity,
+            "tiers": ["gpu_hbm"] + (["cpu_dram"] if split_topology or profile.cache.kv_tiering != "gpu_only" else []),
+            "connector": profile.topology.disagg_connector or "lmcache",
+            "prefix_cache_expected": profile.cache.prefix_cache,
+        }
+        observability = {
+            "metrics_path": "/metrics",
+            "health_path": "/health",
+            "required_metric_prefixes": required_metric_prefixes,
+            "emit_request_ids": True,
+            "trace_headers": ["x-request-id", "x-session-id"],
+        }
+        storage = {
+            "kv_tiering": profile.cache.kv_tiering,
+            "gpu_memory_utilization": profile.cache.gpu_memory_utilization,
+            "eviction_policy": profile.cache.eviction_policy,
+        }
+
+        cfg.cli_flags = {
+            "version": 1,
+            "topology": topology,
+            "backend": backend,
+            "scheduler": scheduler,
+            "router": router,
+            "lmcache": lmcache,
+            "storage": storage,
+            "observability": observability,
+        }
+        cfg.metadata = {
+            "backend": backend["worker"],
+            "topology": {
+                "mode": topology_mode,
+                "roles": roles,
+                "tp": profile.topology.tp,
+                "dp": profile.topology.dp,
+                "ep": profile.topology.ep,
+                "split_prefill_decode": split_topology,
+            },
+            "cache": {
+                "strategy": "lmcache",
+                "lmcache_mode": lmcache_mode,
+                "session_affinity": session_affinity,
+                "tiers": lmcache["tiers"],
+                "namespace": namespace,
+            },
+            "observability": observability,
+        }
+
+        if split_topology and not has_fast_interconnect:
+            cfg.warnings.append(
+                "Disaggregated Dynamo serving without NVLink-class bandwidth or RDMA "
+                "is transport-sensitive; expect higher TTFT and KV handoff variance."
             )
-        elif inventory.gpu_arch == "sm_103":
-            cfg.notes.append(
-                "Blackwell B300: inference-optimized die with accelerated softmax. "
-                "Dynamo enables full NVLink5 mesh utilization for P/D disaggregation."
+        if inventory.gpu_type.lower().startswith("h100 pcie") and split_topology:
+            cfg.warnings.append(
+                "H100 PCIe is supported for split topology, but production reliability "
+                "depends on RDMA and careful prefill/decode concurrency limits."
             )
-        elif inventory.gpu_arch == "sm_90a":
-            cfg.notes.append(
-                "Hopper H100/H200: Dynamo provides KV-aware routing and NIXL transfer "
-                "over NVLink4 @ 450 GB/s. Recommended for multi-node disaggregated deployments."
+        if profile.model == "Kimi-K2.5" and inventory.gpu_arch == "sm_90a" and profile.topology.tp < 4:
+            cfg.warnings.append(
+                "Kimi-K2.5 on Hopper typically needs TP>=4 to retain safe KV headroom for long-context coding."
             )
+
+        cfg.notes.extend(
+            [
+                "InferScope expects Dynamo to expose one stable OpenAI-compatible "
+                "request endpoint plus Prometheus metrics.",
+                "LMCache is the required cache backend for both single-endpoint and "
+                "prefill/decode-split benchmark lanes.",
+                "Observability must include frontend request metrics and cache visibility "
+                "so MCP clients can explain reliability regressions.",
+            ]
+        )
+        if split_topology:
+            cfg.notes.append(
+                "Split topology uses shared LMCache and should emit distinct "
+                "prefill/decode metric families even when served from one aggregate "
+                "metrics endpoint."
+            )
+        else:
+            cfg.notes.append(
+                "Single-endpoint topology uses local LMCache with sticky session "
+                "routing to maximize long-context prefix reuse."
+            )
+
+        if inventory.has_decompression_engine:
+            cfg.env_vars["DYNAMO_ENABLE_NVCOMP"] = "1"
+        if inventory.has_rdma:
+            cfg.env_vars["DYNAMO_KV_TRANSPORT"] = inventory.rdma_type or "rdma"
+        elif split_topology:
+            cfg.env_vars["DYNAMO_KV_TRANSPORT"] = "tcp"
 
         return cfg
 
 
 class DynamoAdapter(EngineAdapter):
-    """Connects to a running Dynamo deployment.
-
-    Dynamo exposes metrics through its router/gateway component.
-    Detection checks for Dynamo-specific metrics or the Dynamo health endpoint.
-    """
+    """Connect to a running Dynamo deployment."""
 
     def engine_name(self) -> str:
         return "dynamo"
 
     async def detect_engine(self, endpoint: str) -> bool:
-        """Detect Dynamo by checking for dynamo-specific metrics or health response."""
+        """Detect Dynamo by checking for Dynamo-specific metrics or health response."""
         try:
             url = self._validate_endpoint(endpoint)
             async with httpx.AsyncClient(timeout=5.0) as client:
-                # Check /metrics for dynamo-specific prefixes
                 resp = await client.get(f"{url}/metrics")
-                if "dynamo_" in resp.text or "dynamo:" in resp.text:
+                if "dynamo_" in resp.text or "lmcache_" in resp.text:
                     return True
 
-                # Check /health for Dynamo-specific response
                 try:
                     health = await client.get(f"{url}/health")
-                    if health.status_code == 200:
-                        body = health.text.lower()
-                        if "dynamo" in body:
-                            return True
+                    if health.status_code == 200 and "dynamo" in health.text.lower():
+                        return True
                 except Exception:  # noqa: S110
                     pass
 
-                # Check for Dynamo router headers
                 try:
                     models = await client.get(f"{url}/v1/models")
                     if "x-dynamo" in {k.lower() for k in models.headers}:
@@ -268,11 +264,7 @@ class DynamoAdapter(EngineAdapter):
         return False
 
     async def get_metrics(self, endpoint: str) -> dict[str, Any]:
-        """Scrape Prometheus metrics from Dynamo's gateway/router.
-
-        Dynamo exposes both its own metrics (dynamo_*) and backend engine
-        metrics (vllm:*, sglang:*) through the gateway.
-        """
+        """Scrape Prometheus metrics from Dynamo's gateway/router."""
         url = self._validate_endpoint(endpoint)
         metrics: dict[str, Any] = {}
         try:
@@ -281,8 +273,7 @@ class DynamoAdapter(EngineAdapter):
                 for line in resp.text.splitlines():
                     if line.startswith("#"):
                         continue
-                    # Capture dynamo-specific and backend metrics
-                    if any(prefix in line for prefix in ("dynamo_", "dynamo:", "vllm:", "sglang:")):
+                    if any(prefix in line for prefix in ("dynamo_", "lmcache_", "vllm:")):
                         parts = line.split()
                         if len(parts) >= 2:
                             name = parts[0].split("{")[0]
@@ -305,19 +296,38 @@ class DynamoAdapter(EngineAdapter):
         try:
             url = self._validate_endpoint(endpoint, allow_private=allow_private)
             async with httpx.AsyncClient(timeout=10.0) as client:
-                # Try /v1/models (standard OpenAI-compatible)
-                resp = await client.get(f"{url}/v1/models", headers=build_auth_headers(auth))
-                config: dict[str, Any] = resp.json()
+                models_resp = await client.get(f"{url}/v1/models", headers=build_auth_headers(auth))
+                models_payload: dict[str, Any] = models_resp.json()
 
-                # Try Dynamo-specific status endpoint
+                status_payload: dict[str, Any] = {}
                 try:
                     status = await client.get(f"{url}/v1/status", headers=build_auth_headers(auth))
                     if status.status_code == 200:
-                        config["dynamo_status"] = status.json()
+                        status_payload = status.json()
                 except Exception:  # noqa: S110
                     pass
 
-                return config
+                observed_model = ""
+                data = models_payload.get("data") if isinstance(models_payload, dict) else None
+                if isinstance(data, list) and data:
+                    first = data[0]
+                    if isinstance(first, dict):
+                        observed_model = str(first.get("id") or "")
+
+                topology = status_payload.get("topology") if isinstance(status_payload, dict) else {}
+                lmcache = status_payload.get("lmcache") if isinstance(status_payload, dict) else {}
+                observability = status_payload.get("observability") if isinstance(status_payload, dict) else {}
+
+                return {
+                    "engine": "dynamo",
+                    "model": observed_model,
+                    "models": models_payload,
+                    "backend": status_payload.get("backend", "vllm") if isinstance(status_payload, dict) else "vllm",
+                    "topology": topology if isinstance(topology, dict) else {},
+                    "lmcache": lmcache if isinstance(lmcache, dict) else {},
+                    "observability": observability if isinstance(observability, dict) else {},
+                    "status": status_payload,
+                }
         except Exception:  # noqa: S110
             _adapter_log.warning("dynamo_config_fetch_failed", endpoint=endpoint)
             return {}
