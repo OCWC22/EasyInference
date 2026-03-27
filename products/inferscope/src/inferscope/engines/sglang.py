@@ -6,6 +6,10 @@ from typing import Any
 
 import httpx
 
+from inferscope.logging import get_logger
+
+_adapter_log = get_logger(component="sglang_adapter")
+
 from inferscope.endpoint_auth import EndpointAuthConfig, build_auth_headers
 from inferscope.engines.base import (
     ConfigCompiler,
@@ -162,7 +166,7 @@ class SGLangAdapter(EngineAdapter):
                             except ValueError:
                                 metrics[name] = parts[-1]
         except Exception:  # noqa: S110
-            pass
+            _adapter_log.warning("sglang_metrics_scrape_failed", endpoint=endpoint)
         return metrics
 
     async def get_config(

@@ -45,14 +45,14 @@ async def _streaming_chat_handler(request: web.Request) -> web.StreamResponse:
     return response
 
 
-def test_run_rate_captures_streaming_metrics(free_tcp_port: int) -> None:
+def test_run_rate_captures_streaming_metrics(unused_tcp_port: int) -> None:
     app = web.Application()
     app.router.add_post("/v1/chat/completions", _streaming_chat_handler)
 
     async def _exercise() -> None:
         runner = web.AppRunner(app)
         await runner.setup()
-        port = free_tcp_port
+        port = unused_tcp_port
         site = web.TCPSite(runner, "127.0.0.1", port)
         await site.start()
 
@@ -90,7 +90,8 @@ def test_run_rate_captures_streaming_metrics(free_tcp_port: int) -> None:
         assert result.failed == 0
         assert result.total_output_tokens == 2
         assert result.per_request[0].ttft is not None
-        assert result.per_request[0].token_timestamps == []
+        assert len(result.per_request[0].token_timestamps) == 2
+        assert all(t > 0 for t in result.per_request[0].token_timestamps)
         assert result.per_request[0].ttft_slo_seconds == 20.0
         assert result.per_request[0].tpot_slo_seconds == 0.1
 

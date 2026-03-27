@@ -327,7 +327,7 @@ class SweepOrchestrator:
                     paths.append(p)
                     break
             except Exception:
-                pass
+                logger.warning("Failed to parse GPU config %s, skipping", p, exc_info=True)
 
         # Model config
         for p in (root / "models").glob("*.yaml"):
@@ -337,7 +337,7 @@ class SweepOrchestrator:
                     paths.append(p)
                     break
             except Exception:
-                pass
+                logger.warning("Failed to parse model config %s, skipping", p, exc_info=True)
 
         # Workload config
         wl_path = root / "workloads" / f"{workload}.yaml"
@@ -522,7 +522,7 @@ class SweepOrchestrator:
                 if data.get("status") == "completed":
                     completed.add(data.get("run_id", ""))
             except Exception:
-                pass
+                logger.warning("Failed to read manifest %s, skipping", manifest_path, exc_info=True)
         return completed
 
     @staticmethod
@@ -538,7 +538,9 @@ class SweepOrchestrator:
                     if tp:
                         throughputs.append(float(tp))
                 except Exception:
-                    pass
+                    logging.getLogger(__name__).warning(
+                        "Failed to read throughput from %s", r.benchmark_results[-1], exc_info=True,
+                    )
 
         if len(throughputs) < 2:
             return 0.0

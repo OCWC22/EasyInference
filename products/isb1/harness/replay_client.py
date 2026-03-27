@@ -15,9 +15,13 @@ import time
 from dataclasses import dataclass
 from typing import Any
 
+import logging
+
 import aiohttp
 
 from workloads.arrivals import GammaArrival, PoissonArrival
+
+logger = logging.getLogger(__name__)
 from workloads.base import Request
 
 _REQUEST_ENDPOINT = "/v1/chat/completions"
@@ -387,6 +391,7 @@ async def _run_stream_request(
                         emitted_at = time.monotonic() - started_monotonic
                         if first_output_timestamp is None:
                             first_output_timestamp = emitted_at
+                        token_timestamps.append(emitted_at)
                         completion_payloads.append(output_payload)
                     event_prompt, event_completion, event_total = _extract_usage(event)
                     if event_prompt is not None:
@@ -429,9 +434,16 @@ async def _run_stream_request(
                         emitted_at = time.monotonic() - started_monotonic
                         if first_output_timestamp is None:
                             first_output_timestamp = emitted_at
+                        token_timestamps.append(emitted_at)
                         completion_payloads.append(output_payload)
 
     except Exception as exc:  # noqa: BLE001
+        logger.warning(
+            "Request %s failed: %s: %s",
+            request.request_id,
+            type(exc).__name__,
+            exc,
+        )
         return ReplayRequestResult(
             request_id=request.request_id,
             session_id=request.session_id,

@@ -58,6 +58,7 @@ class CellConfig:
     output_dir: str | Path = field(default_factory=default_results_root)
     config_root: str | Path = field(default_factory=default_config_root)
     config_paths: list[str | Path] = field(default_factory=list)
+    external_endpoint: str | None = None
 
 
 @dataclass
@@ -222,26 +223,34 @@ class BenchmarkRunner:
             manifest.trace_request_count = len(requests)
             manifest.trace_sha256 = trace_hash
 
-            logger.info("[%s] Starting vLLM server", run_id)
-            server = VLLMServer(
-                model=cell.model_hf_id,
-                port=cell.port,
-                extra_args=self._build_vllm_args(),
-                log_dir=run_dir / "logs",
-                startup_timeout=cell.startup_timeout,
-            )
-            server.start()
-            result.startup_time_seconds = server.startup_time_seconds or 0.0
-            result.server_log_path = run_dir / "logs" / "vllm_server.log"
+            if cell.external_endpoint:
+                base_url = cell.external_endpoint.rstrip("/")
+                logger.info("[%s] Using external endpoint: %s", run_id, base_url)
+                manifest.benchmark_runner = "isb1_openai_replay_external"
+            else:
+                logger.info("[%s] Starting vLLM server", run_id)
+                server = VLLMServer(
+                    model=cell.model_hf_id,
+                    port=cell.port,
+                    extra_args=self._build_vllm_args(),
+                    log_dir=run_dir / "logs",
+                    startup_timeout=cell.startup_timeout,
+                )
+                server.start()
+                result.startup_time_seconds = server.startup_time_seconds or 0.0
+                result.server_log_path = run_dir / "logs" / "vllm_server.log"
+                base_url = server.base_url
 
-            logger.info("[%s] Starting telemetry collection", run_id)
-            telemetry = TelemetryCollector(output_path=run_dir / "telemetry.csv")
-            telemetry.start()
-            result.telemetry_path = run_dir / "telemetry.csv"
+            if not cell.external_endpoint:
+                logger.info("[%s] Starting telemetry collection", run_id)
+                telemetry = TelemetryCollector(output_path=run_dir / "telemetry.csv")
+                telemetry.start()
+                result.telemetry_path = run_dir / "telemetry.csv"
 
+            metrics_url = f"{base_url}/metrics"
             logger.info("[%s] Starting engine metrics collection", run_id)
             engine_metrics = EngineMetricsCollector(
-                metrics_url=server.get_metrics_url(),
+                metrics_url=metrics_url,
                 output_path=run_dir / "engine_metrics.jsonl",
             )
             engine_metrics.start()
@@ -249,7 +258,7 @@ class BenchmarkRunner:
 
             logger.info("[%s] Running benchmark replay", run_id)
             client = BenchmarkClient(
-                base_url=server.base_url,
+                base_url=base_url,
                 model=cell.model_hf_id,
                 result_dir=run_dir / "benchmark",
                 requests=requests,

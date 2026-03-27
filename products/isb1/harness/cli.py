@@ -227,6 +227,12 @@ def run(
     callback=_resolve_existing_click_path,
     help="Root directory for config files. Defaults to the product-local configs/ tree.",
 )
+@click.option(
+    "--endpoint",
+    default=None,
+    help="External endpoint URL (e.g. https://my-modal-app.modal.run). "
+    "Skips local vLLM server launch and GPU telemetry.",
+)
 def run_cell(
     gpu: str,
     model: str,
@@ -237,6 +243,7 @@ def run_cell(
     gpu_count: int | None,
     output_dir: str,
     config_root: str,
+    endpoint: str | None,
 ) -> None:
     """Execute a single benchmark cell."""
     from harness.config_validator import ConfigValidator
@@ -297,6 +304,7 @@ def run_cell(
         goodput_slo=goodput_slo,
         output_dir=output_dir,
         config_root=config_root,
+        external_endpoint=endpoint,
     )
 
     runner = BenchmarkRunner(cell)
@@ -333,10 +341,9 @@ def run_cell(
 )
 def analyze(results_dir: str, output_path: str | None) -> None:
     """Analyze benchmark results and compute metrics."""
-    from analysis.metrics import CellMetrics, MetricComputer
+    from analysis.metrics import CellMetrics, MetricComputer, get_gpu_hourly_cost
 
     results_path = Path(results_dir)
-    computer = MetricComputer()
 
     all_metrics: list[dict] = []
     for manifest_path in sorted(results_path.rglob("manifest.json")):
@@ -385,6 +392,10 @@ def analyze(results_dir: str, output_path: str | None) -> None:
                     except (ValueError, TypeError):
                         pass
 
+        computer = MetricComputer(
+            gpu_name=manifest_data.get("gpu", ""),
+            gpu_count=manifest_data.get("gpu_count", 1),
+        )
         metrics = computer.compute(per_request, engine_data, telem_data)
         entry = {**manifest_data, **metrics.to_dict()}
         all_metrics.append(entry)

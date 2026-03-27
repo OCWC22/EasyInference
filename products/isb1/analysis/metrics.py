@@ -66,6 +66,11 @@ class CellMetrics:
     avg_power_watts: float = 0.0
     watts_per_token: float = 0.0
 
+    # ── economics ─────────────────────────────────────────────────────
+    tokens_per_dollar_hour: float = 0.0   # gen_throughput * 3600 / gpu_hourly_cost
+    cost_per_million_tokens: float = 0.0  # (gpu_hourly_cost / 3600) / gen_throughput * 1e6
+    tokens_per_watt: float = 0.0          # gen_throughput / avg_power_watts
+
     # ── request counts ──────────────────────────────────────────────────
     total_requests: int = 0
     successful_requests: int = 0
@@ -138,6 +143,49 @@ def _compute_itl_gaps(token_timestamps: List[float]) -> List[float]:
     ]
 
 
+# ── GPU cost table (per-GPU on-demand $/hr from public cloud pricing) ────
+
+_GPU_HOURLY_COST: Dict[str, float] = {
+    # NVIDIA Hopper
+    "h100": 3.50,
+    "h100_sxm": 3.50,
+    "h100_pcie": 2.50,
+    "h100_nvl": 3.50,
+    "h200": 5.50,
+    "h200_sxm": 5.50,
+    "h800": 3.00,
+    "h20": 1.50,
+    "gh200": 6.00,
+    # NVIDIA Blackwell
+    "b100": 5.00,
+    "b200": 6.50,
+    "b300": 9.00,
+    "gb200": 8.00,
+    "gb300": 10.00,
+    # NVIDIA Ampere
+    "a100": 2.00,
+    "a100_80gb": 2.00,
+    "a100_40gb": 1.50,
+    "a10g": 0.75,
+    # AMD
+    "mi300x": 3.00,
+    "mi325x": 4.00,
+    "mi350x": 5.50,
+    "mi355x": 5.50,
+}
+
+
+def get_gpu_hourly_cost(gpu_name: str) -> float:
+    """Look up on-demand hourly cost for a GPU. Returns 0.0 if unknown."""
+    key = gpu_name.lower().replace("-", "_").replace(" ", "_")
+    if key in _GPU_HOURLY_COST:
+        return _GPU_HOURLY_COST[key]
+    for k, v in _GPU_HOURLY_COST.items():
+        if k in key or key in k:
+            return v
+    return 0.0
+
+
 # ── Main computer ────────────────────────────────────────────────────────
 
 
@@ -150,11 +198,32 @@ class MetricComputer:
         TTFT SLO threshold in seconds (default 2.0s).
     tpot_slo : float
         TPOT SLO threshold in seconds (default 0.1s).
+    gpu_hourly_cost : float
+        Per-GPU on-demand hourly cost in USD.  If 0.0, economic metrics
+        are skipped.  When *gpu_name* is provided and cost is 0.0, the
+        cost is looked up from the built-in table.
+    gpu_name : str
+        Optional GPU name for automatic cost lookup.
+    gpu_count : int
+        Number of GPUs used (cost is multiplied by this).
     """
 
-    def __init__(self, ttft_slo: float = 2.0, tpot_slo: float = 0.1) -> None:
+    def __init__(
+        self,
+        ttft_slo: float = 2.0,
+        tpot_slo: float = 0.1,
+        gpu_hourly_cost: float = 0.0,
+        gpu_name: str = "",
+        gpu_count: int = 1,
+    ) -> None:
         self.ttft_slo = ttft_slo
         self.tpot_slo = tpot_slo
+        if gpu_hourly_cost > 0:
+            self.total_hourly_cost = gpu_hourly_cost * gpu_count
+        elif gpu_name:
+            self.total_hourly_cost = get_gpu_hourly_cost(gpu_name) * gpu_count
+        else:
+            self.total_hourly_cost = 0.0
 
     def compute(
         self,
@@ -262,6 +331,15 @@ class MetricComputer:
         avg_power = float(np.mean(powers)) if powers else 0.0
         w_per_tok = avg_power / gen_throughput if gen_throughput > 0 else 0.0
 
+        # ── economics ─────────────────────────────────────────────────
+        tok_per_watt = gen_throughput / avg_power if avg_power > 0 else 0.0
+        if self.total_hourly_cost > 0 and gen_throughput > 0:
+            tok_per_dollar_hr = gen_throughput * 3600.0 / self.total_hourly_cost
+            cost_per_m_tok = (self.total_hourly_cost / 3600.0) / gen_throughput * 1e6
+        else:
+            tok_per_dollar_hr = 0.0
+            cost_per_m_tok = 0.0
+
         return CellMetrics(
             ttft_p50=_safe_percentile(ttfts, 50),
             ttft_p95=_safe_percentile(ttfts, 95),
@@ -288,6 +366,9 @@ class MetricComputer:
             error_rate=n_errors / total if total > 0 else 0.0,
             avg_power_watts=avg_power,
             watts_per_token=w_per_tok,
+            tokens_per_dollar_hour=tok_per_dollar_hr,
+            cost_per_million_tokens=cost_per_m_tok,
+            tokens_per_watt=tok_per_watt,
             total_requests=total,
             successful_requests=n_success,
             measurement_duration_seconds=wall_clock,
