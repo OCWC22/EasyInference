@@ -14,6 +14,7 @@ Usage:
 from __future__ import annotations
 
 import json
+from pathlib import Path
 
 import typer
 from rich.console import Console
@@ -60,6 +61,22 @@ def _print_result(result: dict) -> None:
     if confidence is not None:
         level = "green" if confidence >= 0.8 else "yellow" if confidence >= 0.6 else "red"
         console.print(f"Confidence: [{level}]{confidence:.0%}[/{level}]")
+
+    # Surface reasoning trace as readable "why" summary
+    reasoning = (
+        result.get("serving_profile", {}).get("reasoning_trace", [])
+        or result.get("reasoning_trace", [])
+        or result.get("reasoning", [])
+    )
+    if reasoning:
+        console.print("\n[bold yellow]Why this recommendation:[/bold yellow]")
+        for step in reasoning:
+            node = step.split(":")[0] if ":" in step else ""
+            detail = step.split(":", 1)[1].strip() if ":" in step else step
+            if node:
+                console.print(f"  [dim]{node}:[/dim] {detail}")
+            else:
+                console.print(f"  {detail}")
 
     launch_cmd = result.pop("launch_command", None)
     if launch_cmd:
@@ -212,6 +229,70 @@ def quantization_cmd(
 ):
     """Compare quantization options for this model + GPU."""
     _print_result(compare_quantization(model, gpu))
+
+
+@app.command()
+def evaluate(
+    benchmark_result: str = typer.Argument(help="Path to ISB-1 benchmark result JSON"),
+    model: str = typer.Option(None, help="Model name (auto-detected from result if omitted)"),
+    gpu: str = typer.Option(None, help="GPU type (auto-detected from result if omitted)"),
+    num_gpus: int = typer.Option(1, help="Number of GPUs"),
+):
+    """Compare actual benchmark results against InferScope's recommendation.
+
+    Shows whether the recommended config would have performed better or worse
+    than what was actually measured. Builds trust in the recommender over time.
+    """
+    result_data = json.loads(Path(benchmark_result).read_text(encoding="utf-8"))
+    if isinstance(result_data, list):
+        result_data = result_data[0]
+
+    actual_model = model or result_data.get("model", "")
+    actual_gpu = gpu or result_data.get("gpu", "")
+
+    if not actual_model or not actual_gpu:
+        console.print("[red]Cannot determine model and GPU from result. Use --model and --gpu.[/red]")
+        raise typer.Exit(1)
+
+    # Get recommendation
+    rec = recommend_config(actual_model, actual_gpu, "coding", num_gpus)
+    if "error" in rec:
+        console.print(f"[yellow]Recommendation unavailable: {rec['error']}[/yellow]")
+        console.print("Showing actual results only.")
+        console.print(Syntax(json.dumps(result_data, indent=2, default=str), "json", theme="monokai"))
+        return
+
+    rec_profile = rec.get("serving_profile", {})
+    rec_mem = rec.get("memory_plan", {})
+
+    # Compare
+    console.print("\n[bold]Recommendation vs Actual[/bold]\n")
+
+    comparisons = [
+        ("Engine", rec_profile.get("engine", "?"), result_data.get("engine", result_data.get("mode", "?"))),
+        ("Quantization", rec_profile.get("precision", {}).get("weights", "?"), result_data.get("quantization", "?")),
+        ("TP", str(rec_profile.get("topology", {}).get("tp", "?")), str(result_data.get("topology", "?"))),
+        ("GPU Mem Util", f"{rec_profile.get('cache', {}).get('gpu_memory_utilization', 0):.0%}", f"{result_data.get('gpu_memory_utilization', 0):.0%}" if result_data.get("gpu_memory_utilization") else "?"),
+        ("Prefix Cache", str(rec_profile.get("cache", {}).get("prefix_cache", "?")), "?"),
+        ("Memory Fit", "yes" if rec_mem.get("fits") else "no", "ran" if result_data.get("status") == "completed" else "failed"),
+    ]
+
+    for label, recommended, actual in comparisons:
+        match = "[green]=[/green]" if recommended == actual else "[yellow]!=[/yellow]"
+        console.print(f"  {label:<16} Recommended: [cyan]{recommended:<12}[/cyan] Actual: [white]{actual:<12}[/white] {match}")
+
+    # Performance gap
+    actual_throughput = result_data.get("generation_throughput", 0)
+    actual_goodput = result_data.get("goodput", 0)
+    actual_slo = result_data.get("slo_attainment", 0)
+
+    if actual_throughput > 0:
+        console.print(f"\n[bold]Measured Performance[/bold]")
+        console.print(f"  Throughput:  {actual_throughput:.0f} tok/s")
+        console.print(f"  Goodput:     {actual_goodput:.1f} req/s")
+        console.print(f"  SLO:         {actual_slo:.0%}")
+        console.print(f"  TTFT p95:    {result_data.get('ttft_p95', 0):.3f}s")
+        console.print(f"  TPOT p95:    {result_data.get('tpot_p95', 0) * 1000:.1f}ms")
 
 
 register_profiling_commands(app, print_result=_print_result, resolve_metrics_auth=_resolve_metrics_auth)

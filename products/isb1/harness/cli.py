@@ -353,6 +353,103 @@ def run_cell(
         raise SystemExit(1)
 
 
+# ── quick-bench ──────────────────────────────────────────────────────────
+
+
+@main.command("quick-bench")
+@click.argument("endpoint")
+@click.option("--requests", "num_requests", default=20, type=int, help="Number of requests to send.")
+@click.option("--duration", default=30, type=int, help="Measurement duration in seconds.")
+@click.option("--rate", default=4.0, type=float, help="Request rate (req/s).")
+@click.option("--model-id", default=None, help="Model ID served by the endpoint. Auto-detected if omitted.")
+def quick_bench(endpoint: str, num_requests: int, duration: int, rate: float, model_id: str | None) -> None:
+    """Fast smoke test against a live endpoint. Not publishable, but good for comparing configs.
+
+    Example: isb1 quick-bench https://my-endpoint.modal.run --requests 20 --duration 30
+    """
+    import asyncio
+    import time
+
+    from analysis.metrics import MetricComputer, _compute_itl_gaps, _compute_tpot, _safe_percentile
+    from harness.replay_client import ReplayRequestResult, run_rate
+    from workloads.base import Request, _new_request_id
+
+    # Auto-detect model
+    if not model_id:
+        try:
+            import httpx
+
+            resp = httpx.get(f"{endpoint.rstrip('/')}/v1/models", timeout=30)
+            data = resp.json().get("data", [])
+            model_id = data[0]["id"] if data else "unknown"
+            click.echo(f"Detected model: {model_id}")
+        except Exception:
+            model_id = "unknown"
+
+    # Generate simple synthetic requests
+    requests_pool = []
+    for i in range(num_requests):
+        requests_pool.append(
+            Request(
+                request_id=_new_request_id(),
+                messages=[
+                    {"role": "user", "content": f"Explain concept {i} in 2-3 sentences."},
+                ],
+                expected_output_tokens=128,
+                metadata={"workload": "quick_bench"},
+            )
+        )
+
+    click.echo(f"Running quick bench: {num_requests} requests at {rate} req/s for {duration}s")
+    click.echo(f"Endpoint: {endpoint}")
+    click.echo()
+
+    start = time.time()
+    result = asyncio.run(
+        run_rate(
+            base_url=endpoint.rstrip("/"),
+            model=model_id,
+            request_pool=requests_pool,
+            request_count=num_requests,
+            request_rate=rate,
+            arrival_model="poisson",
+            arrival_shape=None,
+            seed=42,
+            request_timeout_seconds=min(duration * 2, 300),
+            total_timeout_seconds=duration * 3,
+            goodput_slo={"ttft_p95_ms": 2000, "tpot_p95_ms": 100},
+        )
+    )
+    elapsed = time.time() - start
+
+    # Compute quick metrics
+    ok = [r for r in result.per_request if not r.error]
+    ttfts = [r.ttft for r in ok if r.ttft is not None]
+    tpots = [
+        _compute_tpot(r.e2e_latency, r.ttft, r.output_tokens)
+        for r in ok
+        if r.ttft is not None
+    ]
+    tpots = [t for t in tpots if t is not None]
+    itl_gaps = []
+    for r in ok:
+        itl_gaps.extend(_compute_itl_gaps(r.token_timestamps))
+
+    click.echo("━" * 50)
+    click.echo(f"  Completed:  {result.completed}/{len(result.per_request)} ({result.error_rate:.0%} errors)")
+    click.echo(f"  Duration:   {elapsed:.1f}s")
+    click.echo()
+    click.echo(f"  TTFT p50:   {_safe_percentile(ttfts, 50):.3f}s")
+    click.echo(f"  TTFT p95:   {_safe_percentile(ttfts, 95):.3f}s")
+    click.echo(f"  TPOT p50:   {_safe_percentile(tpots, 50) * 1000:.1f}ms")
+    click.echo(f"  TPOT p95:   {_safe_percentile(tpots, 95) * 1000:.1f}ms")
+    click.echo(f"  ITL  p50:   {_safe_percentile(itl_gaps, 50) * 1000:.1f}ms")
+    click.echo(f"  ITL  p95:   {_safe_percentile(itl_gaps, 95) * 1000:.1f}ms")
+    click.echo(f"  Throughput: {result.output_throughput:.0f} tok/s")
+    click.echo(f"  Goodput:    {result.goodput:.1f} req/s ({result.slo_attainment:.0%} SLO)")
+    click.echo("━" * 50)
+
+
 # ── analyze ──────────────────────────────────────────────────────────────
 
 
@@ -567,12 +664,22 @@ def report(analysis_path: str, output_path: str, template: str | None) -> None:
     else:
         tmpl = jinja2.Template(_DEFAULT_REPORT_TEMPLATE)
 
+    completed_results = [r for r in data if r.get("status") == "completed"]
+    throughputs = [r.get("generation_throughput", 0) for r in completed_results]
+    goodputs = [r.get("goodput", 0) for r in completed_results]
+    economic_data = [r for r in completed_results if r.get("cost_per_million_tokens", 0) > 0]
+
     html = tmpl.render(
         title="ISB-1 Benchmark Report",
         results=data,
         total_cells=len(data),
-        completed=sum(1 for r in data if r.get("status") == "completed"),
+        completed=len(completed_results),
         failed=sum(1 for r in data if r.get("status") == "failed"),
+        best_throughput=max(throughputs) if throughputs else 0,
+        best_goodput=max(goodputs) if goodputs else 0,
+        max_throughput=max(throughputs) if throughputs else 1,
+        max_goodput=max(goodputs) if goodputs else 1,
+        economic_data=economic_data,
     )
 
     Path(output_path).write_text(html, encoding="utf-8")
@@ -582,43 +689,191 @@ def report(analysis_path: str, output_path: str, template: str | None) -> None:
 _DEFAULT_REPORT_TEMPLATE = """\
 <!DOCTYPE html>
 <html>
-<head><title>{{ title }}</title>
+<head>
+<title>{{ title }}</title>
+<meta charset="utf-8">
 <style>
-  body { font-family: sans-serif; margin: 2em; }
-  table { border-collapse: collapse; width: 100%; }
-  th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-  th { background-color: #f5f5f5; }
-  .completed { color: green; }
-  .failed { color: red; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; margin: 0; padding: 2em; background: #0d1117; color: #c9d1d9; }
+  h1 { color: #58a6ff; margin-bottom: 0.5em; font-size: 1.8em; }
+  h2 { color: #8b949e; margin: 1.5em 0 0.5em; font-size: 1.3em; }
+  .summary { display: flex; gap: 1.5em; margin: 1em 0 2em; flex-wrap: wrap; }
+  .card { background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 1em 1.5em; min-width: 140px; }
+  .card .label { font-size: 0.8em; color: #8b949e; }
+  .card .value { font-size: 1.6em; font-weight: 600; color: #58a6ff; }
+  .card.green .value { color: #3fb950; }
+  .card.yellow .value { color: #d29922; }
+  .card.red .value { color: #f85149; }
+  table { border-collapse: collapse; width: 100%; margin: 1em 0; background: #161b22; border-radius: 8px; overflow: hidden; }
+  th { background: #21262d; color: #8b949e; padding: 10px 12px; text-align: left; font-size: 0.85em; text-transform: uppercase; letter-spacing: 0.05em; }
+  td { padding: 10px 12px; border-top: 1px solid #21262d; font-size: 0.9em; }
+  tr:hover td { background: #1c2128; }
+  .good { color: #3fb950; }
+  .warn { color: #d29922; }
+  .bad { color: #f85149; }
+  .bar { display: inline-block; height: 16px; border-radius: 3px; min-width: 2px; }
+  .bar-throughput { background: #58a6ff; }
+  .bar-goodput { background: #3fb950; }
+  .meta { color: #484f58; font-size: 0.8em; margin-top: 2em; }
+  a { color: #58a6ff; }
 </style>
 </head>
 <body>
 <h1>{{ title }}</h1>
-<p>Total cells: {{ total_cells }} | Completed: {{ completed }} | Failed: {{ failed }}</p>
+<p style="color: #8b949e;">Generated by ISB-1 (Inference Serving Benchmark Standard 1)</p>
+
+<div class="summary">
+  <div class="card"><div class="label">Total Cells</div><div class="value">{{ total_cells }}</div></div>
+  <div class="card green"><div class="label">Completed</div><div class="value">{{ completed }}</div></div>
+  {% if failed > 0 %}<div class="card red"><div class="label">Failed</div><div class="value">{{ failed }}</div></div>{% endif %}
+  {% if best_throughput %}<div class="card"><div class="label">Peak Throughput</div><div class="value">{{ "%.0f"|format(best_throughput) }} tok/s</div></div>{% endif %}
+  {% if best_goodput %}<div class="card green"><div class="label">Peak Goodput</div><div class="value">{{ "%.1f"|format(best_goodput) }} req/s</div></div>{% endif %}
+</div>
+
+<h2>Results</h2>
 <table>
 <tr>
   <th>GPU</th><th>Model</th><th>Workload</th><th>Mode</th><th>Quant</th>
-  <th>Throughput (tok/s)</th><th>TTFT p95 (s)</th><th>TPOT p95 (s)</th>
-  <th>Goodput</th><th>Status</th>
+  <th>Throughput (tok/s)</th><th>TTFT p95</th><th>TPOT p95</th><th>ITL p95</th>
+  <th>Goodput</th><th>SLO %</th><th>Errors</th>
 </tr>
 {% for r in results %}
 <tr>
-  <td>{{ r.gpu }}</td>
+  <td>{{ r.gpu|upper }}</td>
   <td>{{ r.model }}</td>
   <td>{{ r.workload }}</td>
   <td>{{ r.mode }}</td>
   <td>{{ r.quantization }}</td>
-  <td>{{ "%.1f"|format(r.generation_throughput|default(0)) }}</td>
-  <td>{{ "%.4f"|format(r.ttft_p95|default(0)) }}</td>
-  <td>{{ "%.4f"|format(r.tpot_p95|default(0)) }}</td>
-  <td>{{ "%.2f"|format(r.goodput|default(0)) }}</td>
-  <td class="{{ r.status }}">{{ r.status }}</td>
+  <td>
+    <span class="bar bar-throughput" style="width: {{ [r.generation_throughput|default(0) / (max_throughput or 1) * 100, 100]|min }}px"></span>
+    {{ "%.0f"|format(r.generation_throughput|default(0)) }}
+  </td>
+  <td class="{{ 'good' if r.ttft_p95|default(0) < 1 else 'warn' if r.ttft_p95|default(0) < 5 else 'bad' }}">
+    {{ "%.2f"|format(r.ttft_p95|default(0)) }}s
+  </td>
+  <td class="{{ 'good' if r.tpot_p95|default(0) < 0.05 else 'warn' if r.tpot_p95|default(0) < 0.1 else 'bad' }}">
+    {{ "%.1f"|format(r.tpot_p95|default(0) * 1000) }}ms
+  </td>
+  <td>{{ "%.1f"|format(r.itl_p95|default(0) * 1000) }}ms</td>
+  <td>
+    <span class="bar bar-goodput" style="width: {{ [r.goodput|default(0) / (max_goodput or 1) * 100, 100]|min }}px"></span>
+    {{ "%.1f"|format(r.goodput|default(0)) }}
+  </td>
+  <td class="{{ 'good' if r.slo_attainment|default(0) > 0.9 else 'warn' if r.slo_attainment|default(0) > 0.7 else 'bad' }}">
+    {{ "%.0f"|format(r.slo_attainment|default(0) * 100) }}%
+  </td>
+  <td class="{{ 'good' if r.error_rate|default(0) < 0.01 else 'warn' if r.error_rate|default(0) < 0.05 else 'bad' }}">
+    {{ "%.1f"|format(r.error_rate|default(0) * 100) }}%
+  </td>
 </tr>
 {% endfor %}
 </table>
+
+{% if economic_data %}
+<h2>Economics</h2>
+<table>
+<tr><th>GPU</th><th>Model</th><th>Quant</th><th>tok/s</th><th>$/M tokens</th><th>tok/watt</th></tr>
+{% for r in economic_data %}
+<tr>
+  <td>{{ r.gpu|upper }}</td>
+  <td>{{ r.model }}</td>
+  <td>{{ r.quantization }}</td>
+  <td>{{ "%.0f"|format(r.generation_throughput|default(0)) }}</td>
+  <td>{{ "%.2f"|format(r.cost_per_million_tokens|default(0)) }}</td>
+  <td>{{ "%.2f"|format(r.tokens_per_watt|default(0)) }}</td>
+</tr>
+{% endfor %}
+</table>
+{% endif %}
+
+<p class="meta">
+  ISB-1 Benchmark Report | {{ total_cells }} cells |
+  <a href="https://github.com/OCWC22/EasyInference">github.com/OCWC22/EasyInference</a>
+</p>
 </body>
 </html>
 """
+
+
+# ── import-results ───────────────────────────────────────────────────────
+
+
+@main.command("import-results")
+@click.argument("input_path", type=click.Path(exists=True))
+@click.option("--format", "fmt", default="auto", help="Format: auto, vllm_json, genai_perf_csv, jsonl")
+@click.option("--output", "output_path", default=None, type=click.Path(), help="Output ISB-1 JSON file.")
+@click.option("--gpu", default="unknown", help="GPU used (for metadata).")
+@click.option("--model", default="unknown", help="Model name (for metadata).")
+@click.option("--workload", default="chat", help="Workload type.")
+@click.option("--quantization", default="unknown", help="Quantization method.")
+def import_results(
+    input_path: str,
+    fmt: str,
+    output_path: str | None,
+    gpu: str,
+    model: str,
+    workload: str,
+    quantization: str,
+) -> None:
+    """Import external benchmark results (vLLM, GenAI-Perf, JSONL) into ISB-1 format.
+
+    Lets you use ISB-1's analysis, comparison, and leaderboard tools
+    on results from any benchmark tool.
+
+    Examples:
+      isb1 import-results vllm_output.json --gpu h100 --model llama70b
+      isb1 import-results genai_perf.csv --format genai_perf_csv --gpu a100
+    """
+    from analysis.importers import auto_import, detect_format, import_genai_perf_csv, import_jsonl, import_vllm_benchmark
+    from analysis.metrics import MetricComputer
+
+    if fmt == "auto":
+        fmt = detect_format(input_path)
+        click.echo(f"Detected format: {fmt}")
+
+    if fmt == "vllm_json":
+        per_request = import_vllm_benchmark(input_path)
+    elif fmt == "genai_perf_csv":
+        per_request = import_genai_perf_csv(input_path)
+    elif fmt == "jsonl":
+        per_request = import_jsonl(input_path)
+    else:
+        click.echo(f"ERROR: Unknown format '{fmt}'", err=True)
+        raise SystemExit(1)
+
+    click.echo(f"Imported {len(per_request)} requests")
+
+    computer = MetricComputer(gpu_name=gpu)
+    metrics = computer.compute(per_request)
+
+    result = {
+        "gpu": gpu,
+        "model": model,
+        "workload": workload,
+        "quantization": quantization,
+        "mode": "imported",
+        "status": "completed",
+        "source": str(input_path),
+        "source_format": fmt,
+        **metrics.to_dict(),
+    }
+
+    if output_path:
+        Path(output_path).parent.mkdir(parents=True, exist_ok=True)
+        Path(output_path).write_text(
+            json.dumps([result], indent=2) + "\n", encoding="utf-8"
+        )
+        click.echo(f"Written to {output_path}")
+    else:
+        click.echo()
+        click.echo(f"  TTFT p95:    {metrics.ttft_p95:.3f}s")
+        click.echo(f"  TPOT p95:    {metrics.tpot_p95 * 1000:.1f}ms")
+        click.echo(f"  Throughput:  {metrics.generation_throughput:.0f} tok/s")
+        click.echo(f"  Goodput:     {metrics.goodput:.1f} req/s")
+        click.echo(f"  SLO:         {metrics.slo_attainment:.0%}")
+        click.echo(f"  Error rate:  {metrics.error_rate:.1%}")
+        click.echo()
+        click.echo("Use --output results.json to save, then 'isb1 leaderboard --input results.json' to rank.")
 
 
 # ── quality ──────────────────────────────────────────────────────────────
