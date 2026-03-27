@@ -10,7 +10,10 @@ from inferscope.engines.base import (
     EngineAdapter,
     EngineConfig,
 )
+from inferscope.logging import get_logger
 from inferscope.optimization.serving_profile import ServingProfile
+
+_adapter_log = get_logger(component="trtllm_adapter")
 
 
 class TRTLLMCompiler(ConfigCompiler):
@@ -80,9 +83,11 @@ class TRTLLMAdapter(EngineAdapter):
         return "trtllm"
 
     async def detect_engine(self, endpoint: str) -> bool:
-        return False  # Phase 5
+        _adapter_log.info("trtllm_detect_not_implemented", endpoint=endpoint)
+        return False
 
     async def get_metrics(self, endpoint: str) -> dict[str, Any]:
+        _adapter_log.warning("trtllm_metrics_not_implemented", endpoint=endpoint)
         return {}
 
     async def get_config(
@@ -92,4 +97,5 @@ class TRTLLMAdapter(EngineAdapter):
         allow_private: bool = True,
         auth=None,
     ) -> dict[str, Any]:
+        _adapter_log.warning("trtllm_config_not_implemented", endpoint=endpoint)
         return {}

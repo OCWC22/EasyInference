@@ -133,16 +133,21 @@ def parse_header_values(values: list[str] | None, *, option_name: str = "header"
     return headers
 
 
+_DEFAULT_PORTS = {"http": 80, "https": 443}
+
+
 def same_origin(url_a: str, url_b: str) -> bool:
     """Return True when two URLs share scheme, host, and effective port."""
     parsed_a = urlsplit(url_a)
     parsed_b = urlsplit(url_b)
+    port_a = parsed_a.port or _DEFAULT_PORTS.get(parsed_a.scheme.lower(), 0)
+    port_b = parsed_b.port or _DEFAULT_PORTS.get(parsed_b.scheme.lower(), 0)
     return (
         parsed_a.scheme.lower(),
         (parsed_a.hostname or "").lower(),
-        parsed_a.port,
+        port_a,
     ) == (
         parsed_b.scheme.lower(),
         (parsed_b.hostname or "").lower(),
-        parsed_b.port,
+        port_b,
     )

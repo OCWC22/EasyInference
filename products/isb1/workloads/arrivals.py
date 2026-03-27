@@ -132,11 +132,11 @@ def _resolve_burstgpt_path(path: Path | None = None) -> Path | None:
         return cached
 
     logger.info("Downloading BurstGPT dataset (~250 MB)...")
+    tmp = cached.with_suffix(".tmp")
     try:
         import urllib.request
 
         cache_dir.mkdir(parents=True, exist_ok=True)
-        tmp = cached.with_suffix(".tmp")
         urllib.request.urlretrieve(_BURSTGPT_HF_URL, tmp)  # noqa: S310
         tmp.rename(cached)
         logger.info("BurstGPT dataset saved to %s", cached)
