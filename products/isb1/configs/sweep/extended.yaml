@@ -12,8 +12,7 @@ models:
     architecture_class: "dense_gqa"
   - model: "dsv32"
     architecture_class: "frontier_mla_moe"
-  - model: "kimik25"
-    architecture_class: "moe"
+  # kimik25 excluded — weights not yet publicly released
   - model: "glm5"
     architecture_class: "dense_gqa"
   - model: "qwen35b"
@@ -25,7 +24,7 @@ models:
 
 workloads: ["chat", "agent", "rag", "coding"]
 
-modes: ["mode_a", "mode_b", "mode_c"]
+modes: ["mode_a", "mode_b"]  # mode_c reserved for operator-submitted configs
 
 quantizations:
   default: ["fp8"]

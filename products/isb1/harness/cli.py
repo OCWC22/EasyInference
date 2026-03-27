@@ -370,8 +370,8 @@ def quick_bench(endpoint: str, num_requests: int, duration: int, rate: float, mo
     import asyncio
     import time
 
-    from analysis.metrics import MetricComputer, _compute_itl_gaps, _compute_tpot, _safe_percentile
-    from harness.replay_client import ReplayRequestResult, run_rate
+    from analysis.metrics import _compute_itl_gaps, _compute_tpot, _safe_percentile
+    from harness.replay_client import run_rate
     from workloads.base import Request, _new_request_id
 
     # Auto-detect model
@@ -825,7 +825,7 @@ def import_results(
       isb1 import-results vllm_output.json --gpu h100 --model llama70b
       isb1 import-results genai_perf.csv --format genai_perf_csv --gpu a100
     """
-    from analysis.importers import auto_import, detect_format, import_genai_perf_csv, import_jsonl, import_vllm_benchmark
+    from analysis.importers import detect_format, import_genai_perf_csv, import_jsonl, import_vllm_benchmark
     from analysis.metrics import MetricComputer
 
     if fmt == "auto":

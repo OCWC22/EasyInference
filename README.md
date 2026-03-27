@@ -34,7 +34,7 @@ EasyInference/
 ├── products/
 │   ├── isb1/         # Benchmark standard, harness, configs, analysis, tests
 │   └── inferscope/   # CLI, MCP server, optimization engine, packaged benchmark tooling
-├── inferscope-bench/ # Local donor harness used as a benchmark foundation, not a public product
+├── demo/             # Modal deploy scripts for testing
 ├── .github/workflows/
 ├── docs/
 ├── ARCHITECTURE.md

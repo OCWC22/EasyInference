@@ -254,8 +254,9 @@ def evaluate(
         console.print("[red]Cannot determine model and GPU from result. Use --model and --gpu.[/red]")
         raise typer.Exit(1)
 
-    # Get recommendation
-    rec = recommend_config(actual_model, actual_gpu, "coding", num_gpus)
+    # Get recommendation using the workload from the benchmark result
+    actual_workload = result_data.get("workload", "coding")
+    rec = recommend_config(actual_model, actual_gpu, actual_workload, num_gpus)
     if "error" in rec:
         console.print(f"[yellow]Recommendation unavailable: {rec['error']}[/yellow]")
         console.print("Showing actual results only.")
@@ -268,18 +269,35 @@ def evaluate(
     # Compare
     console.print("\n[bold]Recommendation vs Actual[/bold]\n")
 
+    rec_engine = rec_profile.get("engine", "?")
+    rec_quant = rec_profile.get("precision", {}).get("weights", "?")
+    rec_tp = str(rec_profile.get("topology", {}).get("tp", "?"))
+    rec_util = rec_profile.get("cache", {}).get("gpu_memory_utilization", 0)
+    rec_prefix = str(rec_profile.get("cache", {}).get("prefix_cache", "?"))
+    rec_fits = "yes" if rec_mem.get("fits") else "no"
+
+    act_engine = result_data.get("engine", result_data.get("mode", "?"))
+    act_quant = result_data.get("quantization", "?")
+    act_tp = str(result_data.get("topology", "?"))
+    act_util = result_data.get("gpu_memory_utilization")
+    act_util_str = f"{act_util:.0%}" if act_util else "?"
+    act_status = "ran" if result_data.get("status") == "completed" else "failed"
+
     comparisons = [
-        ("Engine", rec_profile.get("engine", "?"), result_data.get("engine", result_data.get("mode", "?"))),
-        ("Quantization", rec_profile.get("precision", {}).get("weights", "?"), result_data.get("quantization", "?")),
-        ("TP", str(rec_profile.get("topology", {}).get("tp", "?")), str(result_data.get("topology", "?"))),
-        ("GPU Mem Util", f"{rec_profile.get('cache', {}).get('gpu_memory_utilization', 0):.0%}", f"{result_data.get('gpu_memory_utilization', 0):.0%}" if result_data.get("gpu_memory_utilization") else "?"),
-        ("Prefix Cache", str(rec_profile.get("cache", {}).get("prefix_cache", "?")), "?"),
-        ("Memory Fit", "yes" if rec_mem.get("fits") else "no", "ran" if result_data.get("status") == "completed" else "failed"),
+        ("Engine", rec_engine, act_engine),
+        ("Quantization", rec_quant, act_quant),
+        ("TP", rec_tp, act_tp),
+        ("GPU Mem Util", f"{rec_util:.0%}", act_util_str),
+        ("Prefix Cache", rec_prefix, "?"),
+        ("Memory Fit", rec_fits, act_status),
     ]
 
     for label, recommended, actual in comparisons:
         match = "[green]=[/green]" if recommended == actual else "[yellow]!=[/yellow]"
-        console.print(f"  {label:<16} Recommended: [cyan]{recommended:<12}[/cyan] Actual: [white]{actual:<12}[/white] {match}")
+        console.print(
+            f"  {label:<16} Recommended: [cyan]{recommended:<12}[/cyan] "
+            f"Actual: [white]{actual:<12}[/white] {match}"
+        )
 
     # Performance gap
     actual_throughput = result_data.get("generation_throughput", 0)
@@ -287,7 +305,7 @@ def evaluate(
     actual_slo = result_data.get("slo_attainment", 0)
 
     if actual_throughput > 0:
-        console.print(f"\n[bold]Measured Performance[/bold]")
+        console.print("\n[bold]Measured Performance[/bold]")
         console.print(f"  Throughput:  {actual_throughput:.0f} tok/s")
         console.print(f"  Goodput:     {actual_goodput:.1f} req/s")
         console.print(f"  SLO:         {actual_slo:.0%}")

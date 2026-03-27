@@ -3,12 +3,13 @@
 Usage:
     modal deploy demo/modal_vllm.py
 
-This deploys Llama-3-8B-Instruct on a single A100-80GB GPU with:
+This deploys Qwen2.5-7B-Instruct on a single A10G GPU with:
 - OpenAI-compatible /v1/chat/completions endpoint
 - Prometheus /metrics endpoint for InferScope profiling
 - Prefix caching enabled
 
 The endpoint URL will be printed after deployment.
+Change MODEL_ID and gpu= to test different configurations.
 """
 
 import modal

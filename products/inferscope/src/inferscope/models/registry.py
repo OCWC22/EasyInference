@@ -387,7 +387,7 @@ _register(
         model_type="moe",
         context_length=1048576,
         attention_type="GQA",
-        kv_heads=0,  # Under-documented
+        kv_heads=8,  # Estimated — official architecture docs under-specified
         serving={
             "vllm_flags": (
                 "--trust-remote-code --tool-call-parser minimax_m2 --reasoning-parser minimax_m2_append_think"
