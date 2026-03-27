@@ -2,9 +2,16 @@
 
 from __future__ import annotations
 
-from inferscope.hardware.gpu_profiles import get_gpu_profile, list_gpus
-from inferscope.models.registry import get_model_variant, list_models
+from inferscope.hardware.gpu_profiles import get_gpu_profile
+from inferscope.models.registry import get_model_variant
 from inferscope.optimization.memory_planner import plan_memory
+from inferscope.optimization.target_profile import (
+    is_target_gpu,
+    is_target_model,
+    supported_gpu_aliases,
+    supported_model_names,
+    target_profile_summary,
+)
 from inferscope.optimization.validator import validate_config
 from inferscope.security import InputValidationError, validate_model_name
 
@@ -17,12 +24,12 @@ def get_model_profile(model: str) -> dict:
         return {"error": str(e), "confidence": 0.0}
 
     variant = get_model_variant(model)
-    if variant is None:
-        available = list_models()
+    if variant is None or not is_target_model(variant):
+        available = supported_model_names()
         return {
-            "error": f"Unknown model: '{model}'",
+            "error": f"Unsupported model: '{model}'",
             "available_models": available,
-            "summary": f"Model '{model}' not found. Available: {', '.join(available)}",
+            "summary": target_profile_summary(),
             "confidence": 0.0,
             "evidence": "lookup_failure",
         }
@@ -46,25 +53,25 @@ def validate_serving_config(
     gpu: str,
     tp: int = 1,
     quantization: str = "auto",
-    engine: str = "vllm",
+    engine: str = "dynamo",
 ) -> dict:
     """Pre-flight check: does this config work?
 
     Checks TP divisibility, memory fit, format compatibility, known bugs.
     """
     variant = get_model_variant(model)
-    if variant is None:
+    if variant is None or not is_target_model(variant):
         return {
-            "error": f"Unknown model: '{model}'",
-            "available_models": list_models(),
+            "error": f"Unsupported model: '{model}'",
+            "available_models": supported_model_names(),
             "confidence": 0.0,
         }
 
     gpu_profile = get_gpu_profile(gpu)
-    if gpu_profile is None:
+    if gpu_profile is None or not is_target_gpu(gpu_profile):
         return {
-            "error": f"Unknown GPU: '{gpu}'",
-            "available_gpus": list_gpus(),
+            "error": f"Unsupported GPU: '{gpu}'",
+            "available_gpus": supported_gpu_aliases(),
             "confidence": 0.0,
         }
 
@@ -106,12 +113,20 @@ def estimate_capacity(
     Uses exact per-layer KV cache formulas from model profile.
     """
     variant = get_model_variant(model)
-    if variant is None:
-        return {"error": f"Unknown model: '{model}'", "confidence": 0.0}
+    if variant is None or not is_target_model(variant):
+        return {
+            "error": f"Unsupported model: '{model}'",
+            "available_models": supported_model_names(),
+            "confidence": 0.0,
+        }
 
     gpu_profile = get_gpu_profile(gpu)
-    if gpu_profile is None:
-        return {"error": f"Unknown GPU: '{gpu}'", "confidence": 0.0}
+    if gpu_profile is None or not is_target_gpu(gpu_profile):
+        return {
+            "error": f"Unsupported GPU: '{gpu}'",
+            "available_gpus": supported_gpu_aliases(),
+            "confidence": 0.0,
+        }
 
     # Resolve quantization
     if quantization == "auto":
@@ -143,6 +158,7 @@ def estimate_capacity(
         "gpu": gpu_profile.name,
         "num_gpus": num_gpus,
         "quantization": quantization,
+        "target_profile": "dynamo_long_context_coding",
         "summary": (
             f"{variant.name} on {num_gpus}× {gpu_profile.name} ({quantization}): "
             f"{'✅ fits' if mem.fits else '❌ does not fit'}, "
