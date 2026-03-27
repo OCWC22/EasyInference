@@ -232,6 +232,12 @@ def run(
     help="External endpoint URL (e.g. https://my-modal-app.modal.run). "
     "Skips local vLLM server launch and GPU telemetry.",
 )
+@click.option(
+    "--model-id",
+    default=None,
+    help="HuggingFace model ID served by the endpoint (e.g. Qwen/Qwen2.5-7B-Instruct). "
+    "Required when --endpoint is used with a model not in ISB-1 configs.",
+)
 def run_cell(
     gpu: str,
     model: str,
@@ -243,6 +249,7 @@ def run_cell(
     output_dir: str,
     config_root: str,
     endpoint: str | None,
+    model_id: str | None,
 ) -> None:
     """Execute a single benchmark cell."""
     from harness.config_validator import ConfigValidator
@@ -251,25 +258,52 @@ def run_cell(
     validator = ConfigValidator(config_root)
 
     # Resolve model info
+    model_cfg: dict = {}
+    model_hf_id = model_id or ""
     try:
         model_cfg = validator.load_model(model)
+        if not model_hf_id:
+            model_hf_id = model_cfg.get("hf_model_id", "")
     except FileNotFoundError:
-        click.echo(f"ERROR: Model config for '{model}' not found.", err=True)
-        raise SystemExit(1)
-
-    model_hf_id = model_cfg.get("hf_model_id", "")
+        if not endpoint:
+            click.echo(f"ERROR: Model config for '{model}' not found.", err=True)
+            raise SystemExit(1)
+        # External endpoint mode — config is optional if --model-id is provided
+        if not model_hf_id:
+            click.echo(
+                f"WARNING: No config for '{model}' and no --model-id provided. "
+                "Attempting to auto-detect from endpoint...",
+                err=True,
+            )
+            try:
+                import httpx
+                resp = httpx.get(f"{endpoint.rstrip('/')}/v1/models", timeout=30)
+                data = resp.json().get("data", [])
+                if data:
+                    model_hf_id = data[0].get("id", model)
+                    click.echo(f"  Detected model: {model_hf_id}", err=True)
+                else:
+                    model_hf_id = model
+            except Exception:
+                model_hf_id = model
 
     # Auto-detect gpu_count if not provided
     if gpu_count is None:
-        quant_key = "fp8" if quantization.startswith("fp8") else quantization
-        min_gpus = model_cfg.get("min_gpus", {})
-        quant_map = min_gpus.get(quant_key, min_gpus.get("bf16", {}))
-        gpu_count = quant_map.get(gpu, 1)
+        if model_cfg:
+            quant_key = "fp8" if quantization.startswith("fp8") else quantization
+            min_gpus = model_cfg.get("min_gpus", {})
+            quant_map = min_gpus.get(quant_key, min_gpus.get("bf16", {}))
+            gpu_count = quant_map.get(gpu, 1)
+        else:
+            gpu_count = 1
 
     # Resolve topology
-    rec = model_cfg.get("recommended_topology", {})
-    quant_key = "fp8" if quantization.startswith("fp8") else quantization
-    topology = rec.get(quant_key, rec.get("bf16", {})).get(gpu, f"tp{gpu_count}")
+    if model_cfg:
+        rec = model_cfg.get("recommended_topology", {})
+        quant_key = "fp8" if quantization.startswith("fp8") else quantization
+        topology = rec.get(quant_key, rec.get("bf16", {})).get(gpu, f"tp{gpu_count}")
+    else:
+        topology = f"tp{gpu_count}"
 
     # Resolve workload
     try:

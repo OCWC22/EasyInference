@@ -202,13 +202,16 @@ class BenchmarkRunner:
         base_url: str = f"http://localhost:{cell.port}"
 
         try:
-            logger.info("[%s] Validating configuration", run_id)
-            validator = ConfigValidator(cell.config_root)
-            memory_result = validator.check_memory_fit(
-                cell.gpu, cell.model, cell.quantization, cell.gpu_count
-            )
-            if not memory_result.ok:
-                raise RuntimeError(f"Config validation failed:\n{memory_result.summary()}")
+            if not cell.external_endpoint:
+                logger.info("[%s] Validating configuration", run_id)
+                validator = ConfigValidator(cell.config_root)
+                memory_result = validator.check_memory_fit(
+                    cell.gpu, cell.model, cell.quantization, cell.gpu_count
+                )
+                if not memory_result.ok:
+                    raise RuntimeError(f"Config validation failed:\n{memory_result.summary()}")
+            else:
+                logger.info("[%s] Skipping config validation (external endpoint)", run_id)
 
             logger.info("[%s] Materializing workload trace", run_id)
             requests = materialize_requests(
