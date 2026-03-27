@@ -898,6 +898,60 @@ MI355X = GPUProfile(
 )
 
 
+MI350X = GPUProfile(
+    name="MI350X",
+    vendor="amd",
+    architecture="CDNA4",
+    compute_capability="gfx950",
+    process="TSMC N3P",
+    die="Antares",
+    sms=256,  # CUs
+    peak_clock_mhz=2400,
+    warp_size=64,
+    memory_type="HBM3e",
+    memory_gb=288,
+    memory_bandwidth_tb_s=8.0,
+    l2_cache_mb=32,
+    infinity_fabric_version=4,
+    if_bandwidth_gb_s=1075,
+    pcie="gen5",
+    tdp_watts=750,
+    fp8_support=True,
+    fp8_format="OCP",
+    fp4_support=True,
+    fp4_format="MXFP4",
+    structured_sparsity=True,
+    peak_tflops={
+        "fp16_tc": 2500,
+        "fp16_tc_sparse": 5000,
+        "fp8_tc": 5000,
+        "fp8_tc_sparse": 10100,
+        "mxfp6_tc": 10066,
+        "mxfp4_tc": 10066,
+        "fp32": 156,
+        "fp64_tc": 78.6,
+    },
+    inference_notes=[
+        "OCP FP8 — no conversion from NVIDIA models needed (unlike MI300X FNUZ)",
+        "MXFP4 native: 35x inference improvement over MI300X (largely from native FP4)",
+        "288 GB HBM3e at 8 TB/s matches Blackwell B200 bandwidth",
+        "Available on Azure (ND-MI350X-v1), OCI, CoreWeave, Lambda",
+        "Priced 25-30% below Blackwell B200 ($5.50-$7.00/GPU-hr on-demand)",
+        "Same CDNA4 ISA as MI355X — lower TDP variant (750W vs 1400W)",
+    ],
+    extra={
+        "xcds": 8,
+        "cus_per_xcd": 32,
+        "lds_per_cu_kb": 160,
+        "lds_banks": 64,
+        "llc_mb": 256,
+        "ds_read_tr": True,
+        "mxfp4_scale_granularity": 32,
+        "mxfp6_support": True,
+    },
+)
+
+
 # =============================================================================
 # GPU Registry
 # =============================================================================
@@ -943,6 +997,7 @@ GPU_REGISTRY: dict[str, GPUProfile] = {
     "mi300x": MI300X,
     "mi325x": MI325X,
     # AMD CDNA4
+    "mi350x": MI350X,
     "mi355x": MI355X,
 }
 

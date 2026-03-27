@@ -19,7 +19,7 @@ import logging
 
 import aiohttp
 
-from workloads.arrivals import GammaArrival, PoissonArrival
+from workloads.arrivals import BurstGPTArrival, GammaArrival, PoissonArrival
 
 logger = logging.getLogger(__name__)
 from workloads.base import Request
@@ -331,6 +331,8 @@ def _arrival_offsets(
     normalized = arrival_model.strip().lower()
     if normalized == "gamma":
         generator = GammaArrival(rate=request_rate, shape=arrival_shape or 0.5, seed=seed)
+    elif normalized == "burstgpt":
+        generator = BurstGPTArrival(rate=request_rate, seed=seed)
     else:
         generator = PoissonArrival(rate=request_rate, seed=seed)
     return generator.generate(num_requests).tolist()

@@ -9,6 +9,7 @@ vocabulary bank.
 from __future__ import annotations
 
 import json
+import logging
 import uuid
 from pathlib import Path
 from typing import Any
@@ -16,6 +17,54 @@ from typing import Any
 import numpy as np
 
 from workloads.base import Request, WorkloadGenerator, _new_request_id
+
+logger = logging.getLogger(__name__)
+
+# ---------------------------------------------------------------------------
+# ShareGPT auto-download
+# ---------------------------------------------------------------------------
+
+_SHAREGPT_HF_URL = (
+    "https://huggingface.co/datasets/anon8231489123/"
+    "ShareGPT_Vicuna_unfiltered/resolve/main/"
+    "ShareGPT_V3_unfiltered_cleaned_split.json"
+)
+_SHAREGPT_FILENAME = "ShareGPT_V3_unfiltered_cleaned_split.json"
+
+
+def _resolve_sharegpt_path(path: Path) -> Path:
+    """Return the path to a ShareGPT JSON file, downloading if necessary.
+
+    Download locations tried in order:
+    1. *path* as given (already exists)
+    2. ``~/.cache/isb1/{filename}`` (cached download)
+
+    If neither exists, downloads from HuggingFace to the cache dir.
+    """
+    if path.is_file():
+        return path
+
+    # Check cache
+    cache_dir = Path.home() / ".cache" / "isb1"
+    cached = cache_dir / _SHAREGPT_FILENAME
+    if cached.is_file():
+        logger.info("Using cached ShareGPT dataset at %s", cached)
+        return cached
+
+    # Download
+    logger.info("Downloading ShareGPT V3 dataset (~600 MB)...")
+    try:
+        import urllib.request
+
+        cache_dir.mkdir(parents=True, exist_ok=True)
+        tmp = cached.with_suffix(".tmp")
+        urllib.request.urlretrieve(_SHAREGPT_HF_URL, tmp)  # noqa: S310
+        tmp.rename(cached)
+        logger.info("ShareGPT dataset saved to %s", cached)
+        return cached
+    except Exception:
+        logger.warning("Failed to download ShareGPT dataset, falling back to synthetic", exc_info=True)
+        return path  # Return original path — _try_load_sharegpt will see it doesn't exist
 
 # ---------------------------------------------------------------------------
 # Realistic vocabulary bank (NOT lorem ipsum)
@@ -151,7 +200,8 @@ class ChatWorkloadGenerator(WorkloadGenerator):
 
         self._sharegpt_data: list[list[dict[str, str]]] | None = None
         if sharegpt_path is not None:
-            self._try_load_sharegpt(Path(sharegpt_path))
+            resolved = _resolve_sharegpt_path(Path(sharegpt_path))
+            self._try_load_sharegpt(resolved)
 
     # ------------------------------------------------------------------
     # ShareGPT loading
