@@ -23,9 +23,9 @@ logger = logging.getLogger(__name__)
 
 _BURSTGPT_HF_URL = (
     "https://huggingface.co/datasets/lzzmm/BurstGPT/resolve/main/"
-    "BurstGPT_without_fails.csv"
+    "data/BurstGPT_without_fails_1.csv"
 )
-_BURSTGPT_FILENAME = "BurstGPT_without_fails.csv"
+_BURSTGPT_FILENAME = "BurstGPT_without_fails_1.csv"
 
 
 class PoissonArrival:
