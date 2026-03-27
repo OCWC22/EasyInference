@@ -29,9 +29,9 @@ def import_vllm_benchmark(path: str | Path) -> list[dict[str, Any]]:
     """
     raw = json.loads(Path(path).read_text(encoding="utf-8"))
 
-    # vLLM outputs can be a list of dicts or a dict with a "results" key
+    # vLLM outputs can be a list of dicts or a dict with nested keys
     if isinstance(raw, dict):
-        entries = raw.get("results", raw.get("requests", [raw]))
+        entries = raw.get("per_request", raw.get("results", raw.get("requests", [raw])))
     elif isinstance(raw, list):
         entries = raw
     else:

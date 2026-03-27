@@ -377,14 +377,15 @@ def quick_bench(endpoint: str, num_requests: int, duration: int, rate: float, mo
     # Auto-detect model
     if not model_id:
         try:
-            import httpx
+            import requests as req
 
-            resp = httpx.get(f"{endpoint.rstrip('/')}/v1/models", timeout=30)
+            resp = req.get(f"{endpoint.rstrip('/')}/v1/models", timeout=30)
             data = resp.json().get("data", [])
             model_id = data[0]["id"] if data else "unknown"
             click.echo(f"Detected model: {model_id}")
         except Exception:
             model_id = "unknown"
+            click.echo("Could not auto-detect model. Use --model-id to specify.")
 
     # Generate simple synthetic requests
     requests_pool = []

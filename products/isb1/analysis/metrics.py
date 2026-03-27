@@ -314,7 +314,8 @@ class MetricComputer:
         for r in successful:
             ttft_threshold = r.get("ttft_slo_seconds", self.ttft_slo)
             tpot_threshold = r.get("tpot_slo_seconds", self.tpot_slo)
-            ttft_ok = r.get("ttft", float("inf")) <= ttft_threshold
+            ttft_val = r.get("ttft")
+            ttft_ok = ttft_val is not None and ttft_val <= ttft_threshold
             tpot_val = _compute_tpot(
                 r.get("e2e_latency", 0.0),
                 r.get("ttft", 0.0),
