@@ -64,7 +64,7 @@ class TestModelRegistry:
         [
             ("Kimi-K2", "MLA"),
             ("Kimi-K2.5", "MLA"),
-            ("GLM-5", "GQA"),
+            ("GLM-5", "MLA"),
             ("GLM-4-9B", "GQA"),
         ],
     )
@@ -72,6 +72,46 @@ class TestModelRegistry:
         variant = get_model_variant(model_name)
         assert variant is not None
         assert variant.attention_type == expected_attention
+
+    def test_kimi_k25_exact_specs(self) -> None:
+        """Verify Kimi-K2.5 matches verified HuggingFace/paper specs."""
+        v = get_model_variant("Kimi-K2.5")
+        assert v is not None
+        assert v.params_total_b == 1000
+        assert v.params_active_b == 32
+        assert v.layers == 61
+        assert v.experts_total == 384
+        assert v.experts_active == 8
+        assert v.context_length == 256000
+        assert v.vocab_size == 160000
+        assert v.head_dim == 112  # 7168 / 64
+        assert v.kv_heads == 64
+        assert v.serving["hf_repo"] == "moonshotai/Kimi-K2.5"
+        assert v.serving["hf_repo_nvfp4"] == "nvidia/Kimi-K2.5-NVFP4"
+        assert v.serving["hf_repo_amd_mxfp4"] == "amd/Kimi-K2.5-MXFP4"
+        assert v.serving["mla_latent_dim"] == 512
+        assert v.serving["kv_compression_ratio"] == 32
+        assert v.serving["disagg_recommended"] is True
+
+    def test_glm5_exact_specs(self) -> None:
+        """Verify GLM-5 matches verified config.json and paper specs."""
+        v = get_model_variant("GLM-5")
+        assert v is not None
+        assert v.params_total_b == 744
+        assert v.params_active_b == 40
+        assert v.layers == 78
+        assert v.experts_total == 256
+        assert v.experts_active == 8
+        assert v.context_length == 202752
+        assert v.vocab_size == 154880
+        assert v.head_dim == 256
+        assert v.kv_heads == 64
+        assert v.attention_type == "MLA"
+        assert v.serving["hf_repo"] == "zai-org/GLM-5"
+        assert v.serving["hf_repo_fp8"] == "zai-org/GLM-5-FP8"
+        assert v.serving["hf_repo_nvfp4"] == "nvidia/GLM-5-NVFP4"
+        assert v.serving["mla_kv_lora_rank"] == 512
+        assert v.serving["disagg_recommended"] is True
 
     def test_fuzzy_match_kimi(self) -> None:
         """Kimi K2 should match various name formats."""

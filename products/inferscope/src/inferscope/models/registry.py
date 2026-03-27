@@ -295,24 +295,62 @@ _register(
         name="Kimi-K2.5",
         family="Kimi K2/K2.5",
         model_class=ModelClass.FRONTIER_MLA_MOE,
-        params_total_b=1040,
+        params_total_b=1000,
         params_active_b=32,
         model_type="moe",
         context_length=256000,
         attention_type="MLA",
         kv_heads=64,
-        head_dim=192,
-        layers=61,
+        head_dim=112,  # 7168 / 64 attention heads
+        layers=61,  # 61 layers including 1 dense layer
         experts_total=384,
-        experts_active=8,
+        experts_active=8,  # + 1 shared expert
         vocab_size=160000,
         serving={
-            "vllm_flags": "--trust-remote-code --enforce-eager --tool-call-parser kimi_k2 --reasoning-parser kimi_k2",
-            "nvidia_nvfp4": "moonshotai/Kimi-K2.5-NVFP4 -tp 4",
-            "amd_mxfp4": "amd/Kimi-K2.5-MXFP4 -tp 4 --mm-encoder-tp-mode data",
-            "tp_min": 4,
+            # === HuggingFace model IDs ===
+            "hf_repo": "moonshotai/Kimi-K2.5",
+            "hf_repo_nvfp4": "nvidia/Kimi-K2.5-NVFP4",
+            "hf_repo_amd_mxfp4": "amd/Kimi-K2.5-MXFP4",
+            # === vLLM serving (primary) ===
+            "vllm_flags": (
+                "--trust-remote-code --enforce-eager "
+                "--tool-call-parser kimi_k2 --reasoning-parser kimi_k2 "
+                "--enable-auto-tool-choice"
+            ),
+            "vllm_tp_bf16": 8,  # 8x H100/H200 for BF16
+            "vllm_tp_fp8": 8,  # 8x H100/H200 for FP8 (recommended)
+            "vllm_tp_nvfp4": 4,  # 4x B200 for NVFP4 (Blackwell only)
+            "vllm_nvfp4_cmd": (
+                "vllm serve nvidia/Kimi-K2.5-NVFP4 -tp 4 "
+                "--tool-call-parser kimi_k2 --reasoning-parser kimi_k2 --trust-remote-code"
+            ),
+            # === AMD serving ===
+            "amd_mxfp4_cmd": (
+                "vllm serve amd/Kimi-K2.5-MXFP4 -tp 4 "
+                "--mm-encoder-tp-mode data --trust-remote-code"
+            ),
+            "amd_gpu": "MI300X / MI325X / MI355X",
+            # === SGLang serving ===
+            "sglang_cmd": (
+                "sglang serve --model-path moonshotai/Kimi-K2.5 --tp 8 "
+                "--trust-remote-code --tool-call-parser kimi_k2 --reasoning-parser kimi_k2"
+            ),
+            # === Speculative decoding ===
             "eagle3_speculative": '{"model": "lightseekorg/kimi-k2.5-eagle3", "method": "eagle3"}',
-            "decode_context_parallel": "--decode-context-parallel-size 8",
+            # === KV cache ===
+            "kv_cache_dtype": "fp8",  # --kv-cache-dtype fp8 halves KV memory
+            "mla_latent_dim": 512,  # MLA compresses KV to latent dim
+            "kv_compression_ratio": 32,  # MLA provides ~32x KV compression
+            # === Disaggregated prefill ===
+            "disagg_recommended": True,
+            "disagg_note": "FP8 + DCP + Triton MLA is best for max throughput with long context",
+            # === Generation defaults ===
+            "temperature_thinking": 1.0,
+            "temperature_instant": 0.6,
+            "top_p": 0.95,
+            # === Vision ===
+            "vision_encoder": "MoonViT (400M params)",
+            "mm_encoder_tp_mode": "data",  # --mm-encoder-tp-mode data (small encoder, no TP gain)
         },
     )
 )
@@ -370,23 +408,74 @@ _register(
         name="GLM-5",
         family="GLM",
         model_class=ModelClass.FRONTIER_MLA_MOE,
-        params_total_b=400,
-        params_active_b=52,
+        params_total_b=744,
+        params_active_b=40,
         model_type="moe",
-        context_length=1048576,
-        attention_type="GQA",
-        kv_heads=8,
-        head_dim=128,
-        layers=64,
-        experts_total=192,
-        experts_active=8,
-        vocab_size=151552,
+        context_length=202752,  # max_position_embeddings from config.json
+        attention_type="MLA",  # Multi-Head Latent Attention (DeepSeek-style)
+        kv_heads=64,  # num_key_value_heads=64 (before MLA compression)
+        head_dim=256,  # qk_head_dim=256, v_head_dim=256
+        layers=78,  # num_hidden_layers=78 (3 dense + 75 MoE)
+        experts_total=256,
+        experts_active=8,  # + 1 shared expert
+        vocab_size=154880,
         serving={
-            "vllm_flags": "--trust-remote-code",
-            "mtp_speculative": "--speculative-config.method mtp --speculative-config.num_speculative_tokens 1",
-            "tp_fp8": 4,
-            "tp_bf16": 8,
+            # === HuggingFace model IDs ===
+            "hf_repo": "zai-org/GLM-5",
+            "hf_repo_fp8": "zai-org/GLM-5-FP8",
+            "hf_repo_nvfp4": "nvidia/GLM-5-NVFP4",
+            # === vLLM serving (primary) ===
+            "vllm_flags": (
+                "--trust-remote-code "
+                "--tool-call-parser glm47 --reasoning-parser glm45 "
+                "--enable-auto-tool-choice"
+            ),
+            "vllm_fp8_cmd": (
+                "vllm serve zai-org/GLM-5-FP8 -tp 8 "
+                "--gpu-memory-utilization 0.85 "
+                "--speculative-config.method mtp --speculative-config.num_speculative_tokens 1 "
+                "--tool-call-parser glm47 --reasoning-parser glm45 --enable-auto-tool-choice"
+            ),
+            "vllm_tp_fp8": 8,  # 8x H100/H200 for FP8
+            "vllm_tp_bf16": 16,  # 16x H100 for BF16 (or 8x H200)
+            # === SGLang serving ===
+            "sglang_cmd": (
+                "python3 -m sglang.launch_server --model-path zai-org/GLM-5-FP8 --tp-size 8 "
+                "--tool-call-parser glm47 --reasoning-parser glm45 "
+                "--speculative-algorithm EAGLE --speculative-num-steps 3 "
+                "--speculative-eagle-topk 1 --speculative-num-draft-tokens 4 "
+                "--mem-fraction-static 0.85"
+            ),
+            # === NVFP4 serving (Blackwell only) ===
+            "nvfp4_cmd": (
+                "python3 -m sglang.launch_server --model nvidia/GLM-5-NVFP4 -tp 8 "
+                "--quantization modelopt_fp4 --chunked-prefill-size 131072 "
+                "--mem-fraction-static 0.80 "
+                "--tool-call-parser glm47 --reasoning-parser glm45 --trust-remote-code"
+            ),
+            "nvfp4_gpu": "B200 / B300 (Blackwell only)",
+            # === Speculative decoding ===
+            "mtp_speculative": (
+                "--speculative-config.method mtp --speculative-config.num_speculative_tokens 1"
+            ),
+            "num_nextn_predict_layers": 1,
+            # === MLA / KV cache architecture ===
+            "mla_q_lora_rank": 2048,
+            "mla_kv_lora_rank": 512,  # KV cache compressed to 512-dim latent
+            "mla_qk_nope_head_dim": 192,
+            "mla_qk_rope_head_dim": 64,
+            "kv_cache_dtype": "fp8",  # --kv-cache-dtype fp8 recommended
+            # === Sparse attention ===
+            "sparse_attention": "DeepSeek Sparse Attention (DSA)",
+            "sparse_attention_note": "Reduces deployment cost while preserving long-context capacity",
+            # === Disaggregated prefill ===
+            "disagg_recommended": True,
+            "first_k_dense_replace": 3,  # First 3 layers are dense (no MoE)
             "ep_recommended": True,
+            # === Generation defaults ===
+            "temperature": 0.7,
+            "top_p": 0.95,
+            "gpu_memory_utilization": 0.85,
         },
     )
 )
