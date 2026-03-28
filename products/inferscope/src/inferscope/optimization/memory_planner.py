@@ -30,10 +30,14 @@ class MemoryPlan:
     overflow_bandwidth_gb_s: float = 0.0
     fits: bool = False
     notes: list[str] = None  # type: ignore[assignment]
+    estimation_mode: str = "exact"  # "exact" | "heuristic"
+    assumptions: list[str] = None  # type: ignore[assignment]
 
     def __post_init__(self) -> None:
         if self.notes is None:
             self.notes = []
+        if self.assumptions is None:
+            self.assumptions = []
 
     def to_dict(self) -> dict:
         return {
@@ -51,6 +55,8 @@ class MemoryPlan:
             "overflow_bandwidth_gb_s": round(self.overflow_bandwidth_gb_s, 2),
             "fits": self.fits,
             "notes": self.notes,
+            "estimation_mode": self.estimation_mode,
+            "assumptions": self.assumptions,
         }
 
 
@@ -160,6 +166,20 @@ def plan_memory(
         plan.notes.append(
             "Grace coherent memory can extend session capacity, "
             "but model weights still need an HBM-resident serving plan."
+        )
+
+    # Set estimation mode from model metadata
+    kv_estimation_mode = model.serving.get("kv_estimation_mode", "exact")
+    if kv_estimation_mode == "heuristic":
+        plan.estimation_mode = "heuristic"
+        plan.assumptions.append(
+            f"KV cache math for {model.name} is heuristic — actual usage may differ "
+            "due to non-standard attention (e.g., hybrid DeltaNet layers)."
+        )
+    if model.attention_type == "hybrid":
+        plan.assumptions.append(
+            "Model uses hybrid attention; some layers have compressed state instead of full KV. "
+            "Calculated KV budget is an upper-bound estimate."
         )
 
     return plan
