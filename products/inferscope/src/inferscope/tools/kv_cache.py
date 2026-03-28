@@ -13,6 +13,7 @@ from inferscope.production_target import (
     is_target_gpu,
     is_target_model,
     normalize_target_workload_class,
+    resolve_model_support_contract,
     supported_gpu_aliases,
     supported_model_names,
     target_profile_summary,
@@ -28,6 +29,11 @@ def _resolve_supported_model(model: str) -> tuple[Any, dict[str, Any] | None]:
             "summary": target_profile_summary(),
             "confidence": 0.0,
         }
+    contract = resolve_model_support_contract(variant.name)
+    if contract is not None:
+        variant.serving.setdefault("support_tier", contract.tier)
+        variant.serving.setdefault("kv_estimation_mode", contract.kv_estimation_mode)
+        variant.serving.setdefault("recommendation_scope", contract.recommendation_scope)
     return variant, None
 
 
@@ -60,7 +66,7 @@ def calculate_kv_budget(
     kv_total = kv_per_sequence * batch_size
     kv_total_gb = kv_total / (1024**3)
 
-    return {
+    result = {
         "kv_budget": {
             "kv_per_token_bytes": round(kv_per_token_all_layers, 1),
             "kv_per_sequence_bytes": round(kv_per_sequence, 0),
@@ -84,6 +90,21 @@ def calculate_kv_budget(
         "confidence": 0.95,
         "evidence": "architecture_based_calculation",
     }
+
+    kv_estimation_mode = variant.serving.get("kv_estimation_mode", "exact")
+    result["estimation_mode"] = kv_estimation_mode
+    if kv_estimation_mode in ("heuristic", "hybrid_exact"):
+        result["confidence"] = 0.8
+        kv_layers = variant.serving.get("kv_layers")
+        if kv_layers and kv_layers < variant.layers:
+            result["notes"] = (
+                f"Hybrid attention: only {kv_layers}/{variant.layers} layers have standard KV cache. "
+                f"Remaining layers use fixed recurrent state (~{variant.serving.get('deltanet_state_bytes_per_seq_bf16', 0) / (1024**2):.0f} MB/sequence)."
+            )
+    else:
+        result["confidence"] = 0.95
+
+    return result
 
 
 def recommend_kv_strategy(
@@ -115,11 +136,14 @@ def recommend_kv_strategy(
     kv_per_session = kv_per_token * max_context
     total_kv_gb = (kv_per_session * concurrent_sessions * 1.20) / (1024**3)
 
+    from inferscope.production_target import _minimum_tp_for_gpu
+    tp = _minimum_tp_for_gpu(variant, gpu_profile) if gpu_profile else 1
+
     mem = plan_memory(
         model=variant,
         gpu=gpu_profile,
-        num_gpus=1,
-        tp=1,
+        num_gpus=tp,
+        tp=tp,
         precision="fp4" if variant.name == "Kimi-K2.5" and gpu_profile.fp4_support else "fp8",
         kv_precision="fp8_e4m3",
     )

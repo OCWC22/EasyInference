@@ -108,7 +108,16 @@ def plan_memory(
 
     # KV cache per token (all layers)
     kv_per_token_per_layer = model.kv_cache_bytes_per_token(kv_precision)
-    plan.kv_cache_per_token_bytes = kv_per_token_per_layer * model.layers
+
+    # Hybrid attention: only some layers have KV cache
+    kv_layers = model.serving.get("kv_layers", model.layers)
+    if isinstance(kv_layers, int) and kv_layers < model.layers:
+        plan.notes.append(
+            f"Hybrid attention: {kv_layers}/{model.layers} layers have standard KV cache. "
+            f"Remaining {model.layers - kv_layers} layers use fixed recurrent state."
+        )
+
+    plan.kv_cache_per_token_bytes = kv_per_token_per_layer * kv_layers
 
     # Max tokens in cache
     if plan.kv_cache_per_token_bytes > 0 and plan.kv_cache_budget_gb > 0:
@@ -127,6 +136,21 @@ def plan_memory(
     avg_context = min(4096, context)  # Assume average 4K context for concurrency calc
     if avg_context > 0 and plan.max_tokens_in_cache > 0:
         plan.max_concurrent_sequences = plan.max_tokens_in_cache // avg_context
+
+    # Account for fixed DeltaNet state per sequence
+    deltanet_state = model.serving.get("deltanet_state_bytes_per_seq_bf16", 0)
+    if deltanet_state and plan.max_concurrent_sequences > 0:
+        deltanet_total_gb = (deltanet_state * plan.max_concurrent_sequences) / (1024**3)
+        if deltanet_total_gb > 0.1:  # Only adjust if material
+            adjusted_budget = plan.kv_cache_budget_gb - deltanet_total_gb
+            if adjusted_budget > 0 and plan.kv_cache_per_token_bytes > 0:
+                plan.max_tokens_in_cache = int(adjusted_budget * (1024**3) / plan.kv_cache_per_token_bytes)
+                if context > 0:
+                    plan.max_concurrent_sequences = plan.max_tokens_in_cache // context
+                plan.notes.append(
+                    f"DeltaNet recurrent state: {deltanet_state / (1024**2):.1f} MB/sequence "
+                    f"(total {deltanet_total_gb:.1f} GB for {plan.max_concurrent_sequences} sequences)."
+                )
 
     # Does it fit?
     plan.fits = per_gpu_kv_budget > 0

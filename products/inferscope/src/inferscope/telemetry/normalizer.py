@@ -52,6 +52,29 @@ class NormalizedMetrics:
     kv_active_blocks: float = 0.0
     kv_total_blocks: float = 0.0
 
+    # KV disaggregation metrics
+    kvbm_offload_d2h: float = 0.0
+    kvbm_onboard_h2d: float = 0.0
+    nixl_transfer_latency_s: float | None = None
+    nixl_transfer_bytes: float = 0.0
+    nixl_transfer_failures: float = 0.0
+
+    # Tiering metrics
+    kvbm_host_hit_rate: float = 0.0
+    kvbm_disk_hit_rate: float = 0.0
+    grove_tier_gpu_pct: float = 0.0
+    grove_tier_cpu_pct: float = 0.0
+    grove_tier_ssd_pct: float = 0.0
+    grove_evictions: float = 0.0
+
+    # LMCache metrics
+    lmcache_hit_rate: float = 0.0
+    lmcache_retrieve_speed_tps: float = 0.0
+
+    # SLO violation counters
+    slo_ttft_violations: float = 0.0
+    slo_itl_violations: float = 0.0
+
     # Scrape metadata
     scrape_time_ms: float = 0.0
     scrape_error: str = ""
@@ -82,6 +105,29 @@ class NormalizedMetrics:
                 "disconnected_clients": self.disconnected_clients,
                 "kv_active_blocks": self.kv_active_blocks,
                 "kv_total_blocks": self.kv_total_blocks,
+            },
+            "disaggregation": {
+                "kvbm_offload_d2h": self.kvbm_offload_d2h,
+                "kvbm_onboard_h2d": self.kvbm_onboard_h2d,
+                "nixl_transfer_latency_ms": round(self.nixl_transfer_latency_s * 1000, 2) if self.nixl_transfer_latency_s else None,
+                "nixl_transfer_bytes": self.nixl_transfer_bytes,
+                "nixl_transfer_failures": self.nixl_transfer_failures,
+            },
+            "tiering": {
+                "kvbm_host_hit_rate": self.kvbm_host_hit_rate,
+                "kvbm_disk_hit_rate": self.kvbm_disk_hit_rate,
+                "grove_gpu_pct": self.grove_tier_gpu_pct,
+                "grove_cpu_pct": self.grove_tier_cpu_pct,
+                "grove_ssd_pct": self.grove_tier_ssd_pct,
+                "grove_evictions": self.grove_evictions,
+            },
+            "lmcache": {
+                "hit_rate": self.lmcache_hit_rate,
+                "retrieve_speed_tps": self.lmcache_retrieve_speed_tps,
+            },
+            "slo": {
+                "ttft_violations": self.slo_ttft_violations,
+                "itl_violations": self.slo_itl_violations,
             },
             "latency": {
                 "ttft_avg_ms": round(self.ttft_avg_s * 1000, 1) if self.ttft_avg_s else None,
@@ -179,5 +225,27 @@ def normalize(scrape: ScrapeResult) -> NormalizedMetrics:
         m.disconnected_clients = scrape.get("dynamo_frontend_disconnected_clients")
         m.kv_active_blocks = scrape.get("dynamo_component_kvstats_active_blocks")
         m.kv_total_blocks = scrape.get("dynamo_component_kvstats_total_blocks")
+        # Dynamo KV disaggregation
+        m.kvbm_offload_d2h = scrape.get("kvbm_offload_blocks_d2h")
+        m.kvbm_onboard_h2d = scrape.get("kvbm_onboard_blocks_h2d")
+        m.nixl_transfer_latency_s = scrape.get_histogram_avg("dynamo_nixl_transfer_latency_seconds")
+        m.nixl_transfer_bytes = scrape.get("dynamo_nixl_transfer_bytes_total")
+        m.nixl_transfer_failures = scrape.get("dynamo_nixl_transfer_failures_total")
+        # Tiering
+        m.kvbm_host_hit_rate = scrape.get("kvbm_host_cache_hit_rate")
+        m.kvbm_disk_hit_rate = scrape.get("kvbm_disk_cache_hit_rate")
+        m.grove_tier_gpu_pct = scrape.get("dynamo_grove_tier_gpu_usage_percent")
+        m.grove_tier_cpu_pct = scrape.get("dynamo_grove_tier_cpu_usage_percent")
+        m.grove_tier_ssd_pct = scrape.get("dynamo_grove_tier_ssd_usage_percent")
+        m.grove_evictions = scrape.get("dynamo_grove_evictions_total")
+        # LMCache
+        m.lmcache_hit_rate = scrape.get("dynamo_lmcache_hit_rate")
+        lmc_speed_sum = scrape.get("lmcache:retrieve_speed_sum")
+        lmc_speed_count = scrape.get("lmcache:retrieve_speed_count")
+        if lmc_speed_count > 0:
+            m.lmcache_retrieve_speed_tps = lmc_speed_sum / lmc_speed_count
+        # SLO
+        m.slo_ttft_violations = scrape.get("dynamo_slo_ttft_violations_total")
+        m.slo_itl_violations = scrape.get("dynamo_slo_itl_violations_total")
 
     return m

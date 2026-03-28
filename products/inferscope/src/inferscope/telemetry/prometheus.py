@@ -85,6 +85,44 @@ DYNAMO_METRICS = {
     "dynamo_component_kvstats_total_blocks": "Total KV blocks on the worker",
     "dynamo_component_kvstats_gpu_cache_usage_percent": "Worker GPU KV cache utilization",
     "dynamo_component_kvstats_gpu_prefix_cache_hit_rate": "Worker GPU prefix cache hit rate",
+    # KVBM offload/onboard block counters
+    "kvbm_offload_blocks_d2h": "GPU-to-CPU KV block offload operations",
+    "kvbm_offload_blocks_h2d": "CPU-to-disk KV block offload operations",
+    "kvbm_offload_blocks_d2d": "Device-to-device KV block offload operations",
+    "kvbm_offload_blocks_d2o": "Device-to-object-storage KV block offload operations",
+    "kvbm_onboard_blocks_h2d": "CPU-to-GPU KV block onboard operations",
+    "kvbm_onboard_blocks_d2d": "Device-to-device KV block onboard operations",
+    "kvbm_onboard_blocks_o2d": "Object-storage-to-device KV block onboard operations",
+    # KVBM tier cache hit rates
+    "kvbm_host_cache_hit_rate": "CPU tier KV cache hit rate",
+    "kvbm_disk_cache_hit_rate": "Disk tier KV cache hit rate",
+    "kvbm_object_cache_hit_rate": "Object storage tier KV cache hit rate",
+    "kvbm_matched_tokens": "Tokens reused from KVBM cache",
+    # NIXL transfer metrics
+    "dynamo_nixl_transfer_latency_seconds": "NIXL KV transfer latency (prefill-to-decode)",
+    "dynamo_nixl_transfer_bytes_total": "Total bytes transferred via NIXL",
+    "dynamo_nixl_transfer_failures_total": "Failed NIXL transfer attempts",
+    # Grove tier usage
+    "dynamo_grove_tier_gpu_usage_percent": "Grove GPU tier utilization",
+    "dynamo_grove_tier_cpu_usage_percent": "Grove CPU tier utilization",
+    "dynamo_grove_tier_ssd_usage_percent": "Grove SSD tier utilization",
+    "dynamo_grove_evictions_total": "Total Grove tier eviction events",
+    # LMCache integration
+    "dynamo_lmcache_hit_rate": "LMCache hit rate (Dynamo-reported)",
+    "dynamo_lmcache_miss_rate": "LMCache miss rate (Dynamo-reported)",
+    # SLO violations
+    "dynamo_slo_ttft_violations_total": "Requests exceeding TTFT SLO",
+    "dynamo_slo_itl_violations_total": "Decode steps exceeding ITL SLO",
+}
+
+LMCACHE_METRICS: dict[str, str] = {
+    "lmcache:num_hit_tokens_total": "Total tokens found in LMCache",
+    "lmcache:num_requested_tokens_total": "Total tokens requested from LMCache",
+    "lmcache:retrieve_speed_sum": "Cumulative retrieve speed (for averaging)",
+    "lmcache:retrieve_speed_count": "Retrieve speed sample count",
+    "lmcache:store_speed_sum": "Cumulative store speed (for averaging)",
+    "lmcache:store_speed_count": "Store speed sample count",
+    "lmcache:local_cache_usage": "Local LMCache storage utilization",
 }
 
 # Regex for Prometheus text format: metric_name{labels} value [timestamp]
@@ -171,6 +209,8 @@ def detect_engine_from_metrics(text: str) -> str:
         return "sglang"
     if "atom:" in text:
         return "atom"
+    if "lmcache:" in text:
+        return "lmcache"
     return "unknown"
 
 

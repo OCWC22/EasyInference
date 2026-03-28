@@ -77,8 +77,8 @@ _PLANNING_ONLY_PHASES: tuple[str, ...] = ("kv_math",)
 
 # --- Tier-specific constants ---
 PRODUCTION_VALIDATED_MODELS = ("Kimi-K2.5",)
-BENCHMARK_SUPPORTED_MODELS = ("Qwen3-Coder-480B-A35B-Instruct", "Qwen3-Coder-30B-A3B-Instruct")
-PLANNING_PREVIEW_MODELS = ("Qwen3-Coder-Next",)
+BENCHMARK_SUPPORTED_MODELS = ("Qwen3-Coder-480B-A35B-Instruct", "Qwen3-Coder-30B-A3B-Instruct", "Qwen3-Coder-Next")
+PLANNING_PREVIEW_MODELS: tuple[str, ...] = ()
 
 PRODUCTION_WORKLOAD_PACKS = ("kimi-k2-long-context-coding",)
 BENCHMARK_WORKLOAD_PACKS = ("qwen3-coder-kv-stress",)
@@ -125,15 +125,15 @@ _MODEL_CONTRACTS: dict[str, ModelSupportContract] = {
     ),
     "Qwen3-Coder-Next": ModelSupportContract(
         model_name="Qwen3-Coder-Next",
-        tier="planning_preview",
-        allowed_workloads=(),
-        allowed_experiments=(),
-        allowed_phases=_PLANNING_ONLY_PHASES,
-        recommendation_scope="planning_only",
-        kv_estimation_mode="heuristic",
+        tier="benchmark_supported",
+        allowed_workloads=BENCHMARK_WORKLOAD_PACKS + PRODUCTION_WORKLOAD_PACKS,
+        allowed_experiments=BENCHMARK_EXPERIMENTS,
+        allowed_phases=_ALL_LIVE_PHASES,
+        recommendation_scope="benchmark_only",
+        kv_estimation_mode="hybrid_exact",
         warnings=(
-            "Hybrid attention (Gated DeltaNet + standard) — KV cache math is heuristic only.",
-            "No live benchmark phases available for planning-preview models.",
+            "Hybrid attention: 12/48 layers use standard KV cache, 36 use Gated DeltaNet.",
+            "FP8 KV cache not supported — BF16 KV required.",
         ),
     ),
 }
@@ -291,10 +291,14 @@ def resolve_model_support_contract(model_name: str) -> ModelSupportContract | No
     """Look up the support contract for a model by name."""
     if not model_name.strip():
         return None
-    # Direct match
+    # Canonicalize through the model registry first
+    variant = get_model_variant(model_name)
+    if variant is not None and variant.name in _MODEL_CONTRACTS:
+        return _MODEL_CONTRACTS[variant.name]
+    # Direct match fallback
     if model_name in _MODEL_CONTRACTS:
         return _MODEL_CONTRACTS[model_name]
-    # Case-insensitive match
+    # Case-insensitive compact match
     compact = _compact(model_name)
     for key, contract in _MODEL_CONTRACTS.items():
         if _compact(key) == compact:
