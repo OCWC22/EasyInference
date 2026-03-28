@@ -1,75 +1,82 @@
 # InferScope Architecture
 
-InferScope is a hardware-aware operator product with two public surfaces:
+InferScope is an operator product with two public surfaces:
 
 - the `inferscope` CLI
 - the `inferscope serve` MCP server
 
-Both surfaces expose the same benchmark-aware optimization and runtime profiling core.
+Those surfaces are intentionally narrower than the rest of the codebase history suggests.
 
-## Platform recommendation boundary
+InferScope is not a benchmark platform.
+It is a runtime diagnostics and narrow probe product.
 
-InferScope supports NVIDIA (primary validated path) and AMD (day-one support for planning and benchmark gating).
+## Product boundary
 
-InferScope uses a shared platform-policy layer to keep recommendation behavior consistent across:
+InferScope sits beside two other benchmark realities:
 
-- the recommendation DAG
-- engine selection ranking
-- engine compilers
-- validator warnings
-- memory and KV overflow advisories
-- benchmark stack planning
+- **InferenceX** is the public frontier benchmark reference outside this repo
+- **ISB-1** is the reproducible benchmark standard inside this repo
+- **InferScope** is the operator-facing deployment analysis layer
 
-That layer makes the following distinctions explicit instead of inferring them indirectly:
+That means InferScope should answer questions like:
 
-- **H100 vs H200**
-- **B200/B300 vs GB200/GB300**
-- **MI300X vs MI355X** (AMD CDNA3 vs CDNA4)
-- supported auto-selected engines vs preview planning targets
-- HBM fit vs Grace coherent overflow advisory (NVIDIA Grace systems)
+- why is this deployment missing frontier performance?
+- is KV reuse actually working?
+- did disaggregation help or just add handoff tax?
+- what changed between probe A and probe B?
 
-## Boundary model
+It should not answer those questions by building a generic matrix browser, suite planner, or launch-bundle framework.
 
-InferScope sits on top of the EasyInference benchmark stack.
+## Current supported contract
 
-- **InferenceX** is the external public reference.
-- **ISB-1** is the reproducible benchmark standard.
-- **InferScope** is the operator layer that packages benchmark assets and runtime analysis for direct use.
+InferScope has one authoritative scope file:
 
-This means InferScope should not grow into a second benchmark standard. It should stay focused on planning, replay, comparison, diagnostics, and profiling.
+- `src/inferscope/production_target.py`
+
+That file defines the supported product lane:
+
+- model: `Kimi-K2.5`
+- production engine: `dynamo`
+- comparison engine: `vllm`
+- workload pack: `kimi-k2-long-context-coding`
+- GPUs: `h100`, `h200`, `b200`, `b300`
+- topologies: `single_endpoint`, `prefill_decode_split`
+- cache strategy: `lmcache`
+
+Any public CLI or MCP surface that contradicts that contract is wrong.
 
 ## Repository layout
 
 ```text
 src/inferscope/
-├── optimization/         # recommendation DAG, checks, serving profiles
-├── engines/              # engine compiler + runtime adapter seam
-├── hardware/             # GPU metadata and detection
-├── models/               # model metadata
-├── telemetry/            # Prometheus scraping, normalization, shared snapshots
-├── profiling/            # runtime profiling core and future trace/kernel boundary
-├── tools/                # operator-facing audits, diagnostics, profiling wrappers
-├── benchmarks/           # packaged workloads, experiments, replay, artifacts
-├── cli.py                # primary CLI composition root
-├── cli_profiling.py      # runtime profiling CLI commands
-├── cli_benchmarks.py     # benchmark CLI commands
-├── server.py             # primary MCP composition root
-├── server_profiling.py   # runtime profiling MCP tools
-└── server_benchmarks.py  # benchmark MCP tools
+├── production_target.py      # authoritative product contract
+├── hardware/                 # GPU metadata and detection
+├── models/                   # model metadata
+├── optimization/             # checks and recommendation helpers
+├── engines/                  # production-lane engine adapters
+├── telemetry/                # Prometheus capture and metric normalization
+├── profiling/                # live runtime profiling core
+├── benchmarks/               # workload resolution, replay, artifacts, probe resolution
+├── tools/                    # operator-facing wrappers around diagnostics/recommendations
+├── cli.py                    # CLI composition root
+├── cli_profiling.py          # profiling CLI surface
+├── cli_benchmarks.py         # narrow probe CLI surface
+├── server.py                 # MCP composition root
+├── server_profiling.py       # profiling MCP surface
+└── server_benchmarks.py      # narrow probe MCP surface
 ```
 
 ## Dependency direction
 
-```
+```text
 hardware ─┐
 models ───┤
            ├──→ optimization ──→ engines
            │          │
            │          ▼
            ├──→ telemetry ──→ profiling
-           │          │
-           │          ▼
-           └──→ benchmarks ──→ tools
+           │
+           └──→ benchmarks
                       │
                       ▼
                cli*.py / server*.py
@@ -77,78 +84,83 @@ models ───┤
 
 Rules:
 
-- `optimization` does NOT depend on `benchmarks`
-- `telemetry` owns shared runtime snapshot models and capture helpers
-- `profiling` depends on `telemetry`, optimization checks, and engine adapters
-- `benchmarks` depend on `telemetry` capture and artifact models, not the other way around
-- CLI and MCP surfaces compose the same profiling and benchmark subsystems — they are leaf nodes
+- `production_target.py` is the only public scope authority
+- `optimization` does not depend on benchmark orchestration
+- `telemetry` owns metric capture and normalization
+- `profiling` owns live runtime analysis
+- `benchmarks` owns workload resolution, replay, artifact persistence, and probe-plan resolution
+- CLI and MCP files are leaf composition layers
 
 ## Runtime profiling subsystem
 
-`src/inferscope/profiling/` now owns the first production runtime profiling path.
+`src/inferscope/profiling/` is the strongest on-thesis subsystem in the product.
 
 Current flow:
 
-1. scrape Prometheus metrics from a live endpoint
+1. scrape Prometheus metrics from the live deployment
 2. normalize engine-specific metrics into a shared runtime shape
-3. classify workload heuristically
-4. run audit checks against a `DeploymentContext`
-5. group findings into a stable bottleneck taxonomy
-6. optionally preview tuning changes
+3. classify workload and memory/cache pressure heuristically
+4. run deployment checks
+5. group findings into bottlenecks
+6. preview tuning changes
 7. optionally enrich runtime identity from `/v1/models`
 
-The profiling core is deliberately isolated so future `nsys`, `rocprofv3`, or kernel-level integrations can land in the same package without leaking into CLI/MCP composition or benchmark orchestration.
-
-This matters for Hopper and Blackwell specifically because the profiling surface now shares the same platform vocabulary as the optimizer. The MCP can reason about what the deployment is supposed to do and what the runtime metrics say it is actually doing.
+This is the live evidence path that should eventually feed remediation logic.
 
 ## Benchmark subsystem
 
-`src/inferscope/benchmarks/` is the source of truth for built-in benchmark assets.
+`src/inferscope/benchmarks/` is now a narrow probe package.
 
 It owns:
 
-- packaged workload YAMLs
-- packaged experiment specs
-- workload catalog resolution
-- OpenAI-compatible replay
-- benchmark artifact persistence
-- procedural materialization for selected built-ins
-- GPU / model / ISA-aware support assessment
-- InferenceX-style serving metrics captured into artifact runtime metadata
+- packaged workload resolution
+- packaged experiment resolution
+- procedural expansion for supported packaged probe workloads
+- replay execution against OpenAI-compatible endpoints
+- artifact persistence and comparison
+- support assessment
+- shared probe resolution in `probe_resolution.py`
 
-The key bridge API is `materialize_workload(...)`.
+It no longer owns:
 
-Behavior:
+- benchmark matrix discovery
+- benchmark strategy planning
+- benchmark stack-plan generation
+- stack bundle materialization
 
-- built-in workloads can be loaded as static seed packs
-- selected built-ins can be procedurally expanded at runtime
-- explicit file paths still work, but procedural expansion is limited to packaged built-ins
+Those abstractions were removed because they pushed InferScope toward generic benchmark infrastructure instead of operator value.
 
-Benchmark experiment metadata now has enough structure to describe realistic cache tiers and overflow layers, including:
+## Public surfaces
 
-- `gpu_hbm`
-- `grace_coherent`
-- `cpu_dram`
-- `remote_cache`
+### CLI benchmark surface
 
-That lets InferScope describe operator studies like:
+The retained benchmark CLI surface is:
 
-- single-endpoint cold-session offload with `OffloadingConnector`
-- disaggregated prefill/decode with `LMCacheConnectorV1`
-- Grace-aware long-context overflow on GH200 / GB200 / GB300 systems
+- `benchmark-plan`
+- `benchmark`
+- `benchmark-compare`
 
-The benchmark runtime now sits between packaged workload materialization and artifact persistence:
+### MCP benchmark surface
 
-- it preserves session ordering
-- it can schedule arrivals instead of blasting all requests immediately
-- it records TTFT / TPOT / ITL / throughput / goodput style metrics
-- it feeds those observed runtime metrics back to the MCP through saved artifacts and live tool responses
+The retained MCP benchmark surface is:
 
-## MCP bridge workloads
+- `tool_get_production_contract`
+- `tool_resolve_benchmark_plan`
+- `tool_run_benchmark`
+- `tool_compare_benchmarks`
+- `tool_get_benchmark_artifact`
 
-Two built-ins currently act as the main bridge from benchmark methodology into operator workflows:
+### MCP profiling surface
 
-- `tool-agent`
-- `coding-long-context`
+The profiling MCP surface stays because it is product-aligned:
 
-They are intentionally practical rather than normative. They map back to the stable ISB-1 families rather than redefining the benchmark taxonomy.
+- `tool_profile_runtime`
+- related profiling/audit helpers from `server_profiling.py`
+
+## Design rule
+
+InferScope should keep moving toward one product thesis:
+
+> explain why a real deployment is underperforming on KV reuse, offload, and disaggregated serving, then point to the next concrete remediation step.
+
+If a new abstraction does not help that job, it should not exist here.

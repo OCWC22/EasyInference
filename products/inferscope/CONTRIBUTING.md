@@ -46,13 +46,23 @@ Do not introduce repo-root mirrors of packaged built-ins.
 If you modify the benchmark bridge, verify at minimum:
 
 ```bash
-uv run inferscope benchmark-workloads
-uv run inferscope benchmark-experiments
-uv run inferscope benchmark-matrix --workload-class tool_agent --engine sglang
-uv run inferscope benchmark-plan tool-agent http://localhost:8000 --synthetic-requests 2 || true
+uv run inferscope benchmark-plan \
+  kimi-k2-long-context-coding \
+  http://localhost:8000 \
+  --gpu b200 \
+  --num-gpus 8 \
+  --synthetic-requests 2 || true
+
+uv run inferscope benchmark \
+  kimi-k2-long-context-coding \
+  http://localhost:8000 \
+  --experiment dynamo-aggregated-lmcache-kimi-k2 \
+  --gpu b200 \
+  --num-gpus 8 \
+  --synthetic-requests 2 || true
 ```
 
-The `tool-agent` and `coding-long-context` built-ins are the main MCP bridge workloads. Keep them mapped to stable ISB-1 families rather than creating a second benchmark taxonomy.
+The benchmark surface is intentionally narrow. Do not add matrix, strategy, or stack-plan abstractions back into the public CLI or MCP contract without revisiting the product boundary.
 
 ## Test conventions
 
