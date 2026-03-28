@@ -208,7 +208,7 @@ class MetricComputer:
     ttft_slo : float
         TTFT SLO threshold in seconds (default 2.0s).
     tpot_slo : float
-        TPOT SLO threshold in seconds (default 0.1s).
+        TPOT SLO threshold in seconds (default 0.05s = 50ms, MLPerf interactive).
     gpu_hourly_cost : float
         Per-GPU on-demand hourly cost in USD.  If 0.0, economic metrics
         are skipped.  When *gpu_name* is provided and cost is 0.0, the
@@ -221,8 +221,8 @@ class MetricComputer:
 
     def __init__(
         self,
-        ttft_slo: float = 2.0,
-        tpot_slo: float = 0.1,
+        ttft_slo: float = 0.5,
+        tpot_slo: float = 0.05,
         gpu_hourly_cost: float = 0.0,
         gpu_name: str = "",
         gpu_count: int = 1,

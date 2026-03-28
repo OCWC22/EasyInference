@@ -645,12 +645,14 @@ class CodingTraceGenerator(WorkloadGenerator):
         max_files: int = 15,
         min_turns: int = 2,
         max_turns: int = 6,
+        max_context_tokens: int = 0,
     ) -> None:
         super().__init__(seed=seed)
         self.min_files = min_files
         self.max_files = max_files
         self.min_turns = min_turns
         self.max_turns = max_turns
+        self.max_context_tokens = max_context_tokens
 
     # ------------------------------------------------------------------
     # File generation
@@ -763,6 +765,15 @@ class CodingTraceGenerator(WorkloadGenerator):
         session_id = self.rng.bytes(6).hex()
 
         repo_context, filenames, class_names = self._generate_repo_context(num_files)
+
+        # Cap context to hardware limit if specified
+        if self.max_context_tokens > 0:
+            min_allowed = max(2, self.min_files)
+            approx_tokens = len(repo_context) // 4
+            while approx_tokens > self.max_context_tokens and num_files > min_allowed:
+                num_files -= 1
+                repo_context, filenames, class_names = self._generate_repo_context(num_files)
+                approx_tokens = len(repo_context) // 4
 
         # The system prompt + repo context is the shared prefix across all
         # turns in this session.

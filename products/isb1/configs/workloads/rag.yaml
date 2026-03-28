@@ -1,6 +1,6 @@
 workload_name: "rag"
 workload_id: "wl3"
-description: "Prefill-dominant workload with 32K-128K token retrieved contexts"
+description: "Prefill-dominant retrieval workload with realistic context lengths"
 
 trace:
   type: "synthetic_rag"
@@ -48,9 +48,11 @@ sampling:
 
 slo:
   ttft_p95_ms:
-    "32k": 6000
-    "96k": 20000
-  tpot_p95_ms: 100
+    "2k": 500
+    "8k": 1500
+    "32k": 5000
+    "96k": 15000
+  tpot_p95_ms: 50
 
 priority: "ttft"
 timeout_seconds: 300

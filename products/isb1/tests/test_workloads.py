@@ -118,16 +118,24 @@ class TestRAGGeneratorContextLengths:
             assert req.metadata.get("workload") == "rag"
 
     def test_bimodal_context_distribution(self):
-        """RAG generator should produce both short and long contexts."""
-        gen = RAGTraceGenerator(seed=42)
+        """RAG production profile produces a range of context lengths."""
+        gen = RAGTraceGenerator(seed=42)  # default context_profile="production"
         requests = gen.generate(100)
         context_tokens = [req.metadata.get("approx_context_tokens", 0) for req in requests]
-        # Bimodal: ~60% around 32K, ~40% around 96K
-        # Check there are values in both modes
-        short_count = sum(1 for t in context_tokens if t < 50000)
+        # Production profile targets 2K/8K but chunk overhead inflates actual
+        # context. Verify we get a distribution, not all the same length.
+        short_count = sum(1 for t in context_tokens if t < 15000)
+        long_count = sum(1 for t in context_tokens if t >= 15000)
+        assert short_count > 0, "Expected some shorter-context requests"
+        assert long_count > 0, "Expected some longer-context requests"
+
+    def test_stress_profile_produces_long_contexts(self):
+        """RAG stress profile produces 32K-96K contexts for KV pressure testing."""
+        gen = RAGTraceGenerator(seed=42, context_profile="stress")
+        requests = gen.generate(50)
+        context_tokens = [req.metadata.get("approx_context_tokens", 0) for req in requests]
         long_count = sum(1 for t in context_tokens if t >= 50000)
-        assert short_count > 0, "Expected some short-context requests"
-        assert long_count > 0, "Expected some long-context requests"
+        assert long_count > 0, "Expected some long-context requests in stress profile"
 
 
 # ---------------------------------------------------------------------------

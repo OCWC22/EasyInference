@@ -134,7 +134,7 @@ class ModelNode(DAGNode):
             dp=dp,
             ep=1,
             split_prefill_decode=False,
-            disagg_connector="lmcache",
+            disagg_connector="LMCacheConnectorV1",
         )
         ctx.reasoning_trace.append(f"ModelNode: {tp_reason or f'Resolved TP={tp}.'}")
         ctx.reasoning_trace.append(

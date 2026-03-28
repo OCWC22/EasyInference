@@ -25,10 +25,10 @@ _LOWER_IS_BETTER = frozenset({
     "e2e_p50", "e2e_p95", "e2e_p99",
     "error_rate",
     "preemptions_per_minute",
-    "kv_cache_utilization_p95",
     "queue_depth_p95",
     "avg_power_watts",
     "watts_per_token",
+    "cost_per_million_tokens",
 })
 
 # Metrics where higher is better (throughput, goodput, cache hits)
@@ -38,6 +38,17 @@ _HIGHER_IS_BETTER = frozenset({
     "goodput",
     "slo_attainment",
     "prefix_cache_hit_rate",
+    "tokens_per_dollar_hour",
+    "tokens_per_watt",
+})
+
+# KV cache utilization is a RANGE metric, not directional.
+# 60-90% = healthy (efficient use), >95% = risky (preemption territory),
+# <30% = over-provisioned. Comparisons report the value without classifying
+# direction — pair with preemption count to interpret.
+_RANGE_METRICS = frozenset({
+    "kv_cache_utilization_p50",
+    "kv_cache_utilization_p95",
 })
 
 # Core metrics included in summary reports by default
@@ -133,9 +144,15 @@ class ComparisonReport:
 
 
 def _classify_direction(metric: str, delta: float) -> str:
-    """Classify a delta as improved, regressed, or unchanged."""
+    """Classify a delta as improved, regressed, or unchanged.
+
+    Range metrics (like KV cache utilization) return "changed" instead of
+    improved/regressed because directionality depends on context.
+    """
     if abs(delta) < 1e-9:
         return "unchanged"
+    if metric in _RANGE_METRICS:
+        return "changed"
     if metric in _LOWER_IS_BETTER:
         return "improved" if delta < 0 else "regressed"
     if metric in _HIGHER_IS_BETTER:
