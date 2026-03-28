@@ -157,10 +157,14 @@ class RAGTraceGenerator(WorkloadGenerator):
         seed: int = 42,
         min_chunks: int = 5,
         max_chunks: int = 20,
+        max_context_tokens: int = 0,
+        context_profile: str = "production",
     ) -> None:
         super().__init__(seed=seed)
         self.min_chunks = min_chunks
         self.max_chunks = max_chunks
+        self.max_context_tokens = max_context_tokens
+        self.context_profile = context_profile
 
     # ------------------------------------------------------------------
     # Chunk generation
@@ -217,18 +221,38 @@ class RAGTraceGenerator(WorkloadGenerator):
     # ------------------------------------------------------------------
 
     def _select_context_params(self) -> tuple[int, int]:
-        """Return (num_chunks, tokens_per_chunk) following the bimodal distribution.
+        """Return (num_chunks, tokens_per_chunk) following the context profile.
 
-        60 % of requests target ~32K tokens, 40 % target ~96K tokens.
+        Profiles:
+        - "production": bimodal 2K/8K — realistic retrieval (5-10 chunks @ 512 tok)
+        - "long_context": bimodal 16K/32K — aggressive context stuffing
+        - "stress": bimodal 32K/96K — extreme KV cache pressure testing
         """
-        if self.rng.random() < 0.60:
-            # Short context: ~32K tokens
-            target_total = int(self.rng.normal(loc=32000, scale=3000))
-            target_total = max(16000, min(48000, target_total))
-        else:
-            # Long context: ~96K tokens
-            target_total = int(self.rng.normal(loc=96000, scale=8000))
-            target_total = max(64000, min(128000, target_total))
+        if self.context_profile == "stress":
+            if self.rng.random() < 0.60:
+                target_total = int(self.rng.normal(loc=32000, scale=3000))
+                target_total = max(16000, min(48000, target_total))
+            else:
+                target_total = int(self.rng.normal(loc=96000, scale=8000))
+                target_total = max(64000, min(128000, target_total))
+        elif self.context_profile == "long_context":
+            if self.rng.random() < 0.60:
+                target_total = int(self.rng.normal(loc=16000, scale=2000))
+                target_total = max(8000, min(24000, target_total))
+            else:
+                target_total = int(self.rng.normal(loc=32000, scale=4000))
+                target_total = max(16000, min(48000, target_total))
+        else:  # "production" — realistic RAG
+            if self.rng.random() < 0.70:
+                target_total = int(self.rng.normal(loc=2000, scale=500))
+                target_total = max(500, min(4000, target_total))
+            else:
+                target_total = int(self.rng.normal(loc=8000, scale=1500))
+                target_total = max(4000, min(16000, target_total))
+
+        # Cap to hardware limit if specified
+        if self.max_context_tokens > 0:
+            target_total = min(target_total, self.max_context_tokens)
 
         # Choose number of chunks within bounds
         num_chunks = int(self.rng.integers(self.min_chunks, self.max_chunks + 1))

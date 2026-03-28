@@ -362,8 +362,16 @@ def run_cell(
 @click.option("--duration", default=30, type=int, help="Measurement duration in seconds.")
 @click.option("--rate", default=4.0, type=float, help="Request rate (req/s).")
 @click.option("--model-id", default=None, help="Model ID served by the endpoint. Auto-detected if omitted.")
-def quick_bench(endpoint: str, num_requests: int, duration: int, rate: float, model_id: str | None) -> None:
+@click.option("--ttft-slo", default=500, type=int, help="TTFT SLO threshold in ms (default 500). Industry standard for interactive use.")
+@click.option("--tpot-slo", default=50, type=int, help="TPOT SLO threshold in ms (default 50). Use --tpot-slo 100 for batch workloads.")
+def quick_bench(
+    endpoint: str, num_requests: int, duration: int, rate: float,
+    model_id: str | None, ttft_slo: int, tpot_slo: int,
+) -> None:
     """Fast smoke test against a live endpoint. Not publishable, but good for comparing configs.
+
+    Default SLOs (TTFT 2s, TPOT 100ms) are tuned for H100. For slower GPUs,
+    relax with --ttft-slo 5000 --tpot-slo 200.
 
     Example: isb1 quick-bench https://my-endpoint.modal.run --requests 20 --duration 30
     """
@@ -418,7 +426,7 @@ def quick_bench(endpoint: str, num_requests: int, duration: int, rate: float, mo
             seed=42,
             request_timeout_seconds=min(duration * 2, 300),
             total_timeout_seconds=duration * 3,
-            goodput_slo={"ttft_p95_ms": 2000, "tpot_p95_ms": 100},
+            goodput_slo={"ttft_p95_ms": ttft_slo, "tpot_p95_ms": tpot_slo},
         )
     )
     elapsed = time.time() - start

@@ -52,14 +52,19 @@ def classify_workload(metrics: NormalizedMetrics) -> WorkloadClassification:
         signals["prefix_reuse"] = f"Low ({metrics.prefix_cache_hit_rate:.0%}) — likely unique prompts"
 
     # Signal 2: Queue depth vs running — concurrency pattern
+    # Note: low running count alone doesn't indicate coding — it could be
+    # light chat traffic. Only score coding when prefix cache also confirms.
     if metrics.requests_running > 0:
         queue_ratio = metrics.requests_waiting / max(metrics.requests_running, 1)
         if queue_ratio > 2.0:
-            scores["chat"] += 1.5  # high concurrency pressure = chat
+            scores["chat"] += 1.5
             signals["concurrency"] = f"High queue pressure (ratio {queue_ratio:.1f}) — chat pattern"
-        elif queue_ratio < 0.5 and metrics.requests_running < 20:
-            scores["coding"] += 1.0  # low concurrency = interactive coding
-            signals["concurrency"] = f"Low concurrency ({metrics.requests_running:.0f} running) — coding pattern"
+        elif metrics.requests_running >= 20:
+            scores["chat"] += 1.0
+            signals["concurrency"] = f"High concurrency ({metrics.requests_running:.0f} running) — chat pattern"
+        elif queue_ratio < 0.5 and metrics.requests_running < 5:
+            scores["coding"] += 0.5  # very low concurrency hints at coding, but weak signal
+            signals["concurrency"] = f"Very low concurrency ({metrics.requests_running:.0f} running)"
         else:
             scores["agent"] += 0.5
             signals["concurrency"] = (
@@ -92,6 +97,11 @@ def classify_workload(metrics: NormalizedMetrics) -> WorkloadClassification:
     if metrics.gen_throughput_tps > 0 and metrics.gen_throughput_tps > 5000:
         scores["chat"] += 1.0  # high throughput = batch chat
         signals["throughput"] = f"High ({metrics.gen_throughput_tps:.0f} tok/s) — batch processing"
+
+    # Signal 6: Preemption count — indicates KV cache thrashing
+    if metrics.preemptions_total > 0:
+        scores["agent"] += 1.0  # preemptions = long-context pressure, likely agent/RAG
+        signals["preemptions"] = f"Active ({metrics.preemptions_total:.0f}) — KV cache pressure"
 
     # Pick winner
     winner = max(scores, key=scores.get)  # type: ignore[arg-type]

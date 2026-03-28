@@ -115,8 +115,17 @@ def normalize(scrape: ScrapeResult) -> NormalizedMetrics:
         m.requests_running = scrape.get("vllm:num_requests_running")
         m.requests_waiting = scrape.get("vllm:num_requests_waiting")
         m.requests_swapped = scrape.get("vllm:num_requests_swapped")
-        m.kv_cache_usage = scrape.get("vllm:gpu_cache_usage_perc")
+        # vLLM v0.18 renamed gpu_cache_usage_perc -> kv_cache_usage_perc
+        # Use `is not None` to avoid falsy-zero bug (0.0 is a valid value)
+        kv_new = scrape.get("vllm:kv_cache_usage_perc")
+        m.kv_cache_usage = kv_new if kv_new is not None else scrape.get("vllm:gpu_cache_usage_perc")
+        # vLLM v0.18 replaced prefix_cache_hit_rate gauge with counters
         m.prefix_cache_hit_rate = scrape.get("vllm:gpu_prefix_cache_hit_rate")
+        if m.prefix_cache_hit_rate is None:
+            hits = scrape.get("vllm:prefix_cache_hits_total")
+            queries = scrape.get("vllm:prefix_cache_queries_total")
+            if hits is not None and queries is not None and queries > 0:
+                m.prefix_cache_hit_rate = hits / queries
         m.cpu_cache_usage = scrape.get("vllm:cpu_cache_usage_perc")
         m.prompt_tokens_total = scrape.get("vllm:prompt_tokens_total")
         m.generation_tokens_total = scrape.get("vllm:generation_tokens_total")
@@ -153,12 +162,16 @@ def normalize(scrape: ScrapeResult) -> NormalizedMetrics:
             "dynamo_component_inflight_requests"
         )
         m.requests_waiting = scrape.get("dynamo_frontend_queued_requests")
-        m.kv_cache_usage = scrape.get("dynamo_component_kvstats_gpu_cache_usage_percent") or scrape.get(
-            "vllm:gpu_cache_usage_perc"
-        )
-        m.prefix_cache_hit_rate = scrape.get("dynamo_component_kvstats_gpu_prefix_cache_hit_rate") or scrape.get(
-            "vllm:gpu_prefix_cache_hit_rate"
-        )
+        # Dynamo passes through vLLM KV cache metrics — no dynamo-specific KV metric exists
+        kv_new = scrape.get("vllm:kv_cache_usage_perc")
+        m.kv_cache_usage = kv_new if kv_new is not None else scrape.get("vllm:gpu_cache_usage_perc")
+        # Prefix cache: try Dynamo router KV hit rate, fall back to vLLM counters
+        m.prefix_cache_hit_rate = scrape.get("dynamo_component_router_kv_hit_rate")
+        if m.prefix_cache_hit_rate is None:
+            hits = scrape.get("vllm:prefix_cache_hits_total")
+            queries = scrape.get("vllm:prefix_cache_queries_total")
+            if hits is not None and queries is not None and queries > 0:
+                m.prefix_cache_hit_rate = hits / queries
         m.prompt_tokens_total = scrape.get("vllm:prompt_tokens_total")
         m.generation_tokens_total = scrape.get("dynamo_frontend_output_tokens_total") or scrape.get(
             "vllm:generation_tokens_total"

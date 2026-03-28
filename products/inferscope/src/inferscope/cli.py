@@ -258,9 +258,17 @@ def evaluate(
     actual_workload = result_data.get("workload", "coding")
     rec = recommend_config(actual_model, actual_gpu, actual_workload, num_gpus)
     if "error" in rec:
-        console.print(f"[yellow]Recommendation unavailable: {rec['error']}[/yellow]")
-        console.print("Showing actual results only.")
-        console.print(Syntax(json.dumps(result_data, indent=2, default=str), "json", theme="monokai"))
+        console.print(f"[dim]Note: No recommendation available for this model/GPU combo ({rec['error']})[/dim]")
+        # Show actual performance even without recommendation comparison
+        actual_throughput = result_data.get("generation_throughput", 0)
+        if actual_throughput > 0:
+            console.print("\n[bold]Measured Performance[/bold]")
+            console.print(f"  Throughput:  {actual_throughput:.0f} tok/s")
+            console.print(f"  Goodput:     {result_data.get('goodput', 0):.1f} req/s")
+            console.print(f"  SLO:         {result_data.get('slo_attainment', 0):.0%}")
+            console.print(f"  TTFT p95:    {result_data.get('ttft_p95', 0):.3f}s")
+            console.print(f"  TPOT p95:    {result_data.get('tpot_p95', 0) * 1000:.1f}ms")
+            console.print(f"  Error rate:  {result_data.get('error_rate', 0):.1%}")
         return
 
     rec_profile = rec.get("serving_profile", {})
