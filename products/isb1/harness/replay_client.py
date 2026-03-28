@@ -28,6 +28,19 @@ _REQUEST_ENDPOINT = "/v1/chat/completions"
 _SESSION_HEADER = "X-Session-ID"
 
 
+def _normalize_base_url(url: str) -> str:
+    """Strip trailing slash and any trailing /v1 path segment.
+
+    Callers may pass either ``https://host`` or ``https://host/v1``.
+    This normalizes both to ``https://host`` so that appending
+    ``/v1/...`` paths never produces ``/v1/v1/...``.
+    """
+    url = url.rstrip("/")
+    if url.endswith("/v1"):
+        url = url[:-3]
+    return url
+
+
 @dataclass(slots=True)
 class ReplayRequestResult:
     request_id: str
@@ -347,6 +360,7 @@ async def _run_stream_request(
     session_header_name: str,
     request_timeout_seconds: int,
     goodput_slo: dict[str, Any] | None,
+    extra_headers: dict[str, str] | None = None,
 ) -> ReplayRequestResult:
     started_at_epoch = time.time()
     started_monotonic = time.monotonic()
@@ -358,6 +372,8 @@ async def _run_stream_request(
     total_tokens: int | None = None
 
     headers = {"Content-Type": "application/json"}
+    if extra_headers:
+        headers.update(extra_headers)
     if request.session_id:
         headers[session_header_name] = request.session_id
     payload: dict[str, Any] = {
@@ -505,6 +521,7 @@ async def run_rate(
     request_timeout_seconds: int = 600,
     total_timeout_seconds: int = 7200,
     goodput_slo: dict[str, Any] | None = None,
+    extra_headers: dict[str, str] | None = None,
 ) -> ReplayRunResult:
     """Replay one rate point against an OpenAI-compatible endpoint."""
     requests = expand_request_pool(request_pool, request_count)
@@ -517,7 +534,7 @@ async def run_rate(
     )
     grouped = _group_requests(requests, arrival_offsets)
     start_monotonic = time.monotonic()
-    endpoint = f"{base_url.rstrip('/')}{_REQUEST_ENDPOINT}"
+    endpoint = f"{_normalize_base_url(base_url)}{_REQUEST_ENDPOINT}"
     max_concurrency = concurrency if concurrency is not None else max(1, len(grouped))
     semaphore = asyncio.Semaphore(max(1, max_concurrency))
     timeout = aiohttp.ClientTimeout(total=None)
@@ -539,6 +556,7 @@ async def run_rate(
                         session_header_name=session_header_name,
                         request_timeout_seconds=request_timeout_seconds,
                         goodput_slo=goodput_slo,
+                        extra_headers=extra_headers,
                     )
                     group_results.append((index, result))
                 return group_results

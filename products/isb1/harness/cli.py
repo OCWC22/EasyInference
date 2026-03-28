@@ -14,6 +14,7 @@ from harness.paths import (
     resolve_existing_path,
     resolve_path,
 )
+from harness.replay_client import _normalize_base_url
 
 logger = logging.getLogger(__name__)
 
@@ -277,7 +278,7 @@ def run_cell(
             )
             try:
                 import httpx
-                resp = httpx.get(f"{endpoint.rstrip('/')}/v1/models", timeout=30)
+                resp = httpx.get(f"{_normalize_base_url(endpoint)}/v1/models", timeout=30)
                 data = resp.json().get("data", [])
                 if data:
                     model_hf_id = data[0].get("id", model)
@@ -362,24 +363,64 @@ def run_cell(
 @click.option("--duration", default=30, type=int, help="Measurement duration in seconds.")
 @click.option("--rate", default=4.0, type=float, help="Request rate (req/s).")
 @click.option("--model-id", default=None, help="Model ID served by the endpoint. Auto-detected if omitted.")
-def quick_bench(endpoint: str, num_requests: int, duration: int, rate: float, model_id: str | None) -> None:
+@click.option(
+    "--workload",
+    "workload_type",
+    default="simple",
+    type=click.Choice(["simple", "chat", "coding", "agent", "swebench", "coderforge"]),
+    help="Workload type: simple (default), chat (ShareGPT), coding (synthetic repo), "
+    "agent (tool calling), swebench (real GitHub issues), coderforge (real agent trajectories).",
+)
+@click.option("--api-key", default=None, help="Bearer token for authenticated endpoints (Modal, Fireworks, etc.).")
+@click.option(
+    "--context-bucket",
+    default="32k",
+    type=click.Choice(["8k", "16k", "32k", "64k", "128k"]),
+    help="Context length bucket for swebench workload (default: 32k).",
+)
+@click.option("--sessions", default=4, type=int, help="Max concurrent sessions (for multi-turn workloads).")
+def quick_bench(
+    endpoint: str,
+    num_requests: int,
+    duration: int,
+    rate: float,
+    model_id: str | None,
+    workload_type: str,
+    api_key: str | None,
+    context_bucket: str,
+    sessions: int,
+) -> None:
     """Fast smoke test against a live endpoint. Not publishable, but good for comparing configs.
 
-    Example: isb1 quick-bench https://my-endpoint.modal.run --requests 20 --duration 30
+    \b
+    Examples:
+      isb1 quick-bench https://my-endpoint.modal.run
+      isb1 quick-bench https://api.openai.com/v1 --workload swebench --api-key $KEY --context-bucket 64k
+      isb1 quick-bench https://my-endpoint.modal.run --workload coderforge --api-key $TOKEN
+      isb1 quick-bench https://my-endpoint.modal.run --workload coding --sessions 8
     """
     import asyncio
+    import re
     import time
 
     from analysis.metrics import _compute_itl_gaps, _compute_tpot, _safe_percentile
     from harness.replay_client import run_rate
     from workloads.base import Request, _new_request_id
 
+    # Build auth headers
+    auth_headers: dict[str, str] | None = None
+    if api_key:
+        auth_headers = {"Authorization": f"Bearer {api_key}"}
+
     # Auto-detect model
     if not model_id:
         try:
             import requests as req
 
-            resp = req.get(f"{endpoint.rstrip('/')}/v1/models", timeout=30)
+            detect_headers = {}
+            if auth_headers:
+                detect_headers.update(auth_headers)
+            resp = req.get(f"{_normalize_base_url(endpoint)}/v1/models", headers=detect_headers, timeout=30)
             data = resp.json().get("data", [])
             model_id = data[0]["id"] if data else "unknown"
             click.echo(f"Detected model: {model_id}")
@@ -387,22 +428,69 @@ def quick_bench(endpoint: str, num_requests: int, duration: int, rate: float, mo
             model_id = "unknown"
             click.echo("Could not auto-detect model. Use --model-id to specify.")
 
-    # Generate simple synthetic requests
-    requests_pool = []
-    for i in range(num_requests):
-        requests_pool.append(
-            Request(
-                request_id=_new_request_id(),
-                messages=[
-                    {"role": "user", "content": f"Explain concept {i} in 2-3 sentences."},
-                ],
-                expected_output_tokens=128,
-                metadata={"workload": "quick_bench"},
+    # Generate request pool based on workload type
+    slo = {"ttft_p95_ms": 2000, "tpot_p95_ms": 100}
+
+    if workload_type == "swebench":
+        from workloads.swebench import SWEBenchCodingGenerator
+
+        click.echo(f"Generating SWE-bench coding workload (context: {context_bucket})...")
+        gen = SWEBenchCodingGenerator(seed=42, context_bucket=context_bucket, max_sessions=sessions)
+        requests_pool = gen.generate(num_requests)
+        slo = {"ttft_p95_ms": 3000 if context_bucket in ("8k", "16k", "32k") else 6000, "tpot_p95_ms": 60}
+
+    elif workload_type == "coderforge":
+        from workloads.coderforge import CoderForgeAgentGenerator
+
+        click.echo("Generating CoderForge agent workload...")
+        gen = CoderForgeAgentGenerator(seed=42, max_sessions=sessions)
+        requests_pool = gen.generate(num_requests)
+        slo = {"ttft_p95_ms": 1500, "tpot_p95_ms": 80}
+
+    elif workload_type == "coding":
+        from workloads.coding import CodingTraceGenerator
+
+        click.echo("Generating synthetic coding workload...")
+        gen = CodingTraceGenerator(seed=42)
+        requests_pool = gen.generate(num_requests)
+        slo = {"ttft_p95_ms": 3000, "tpot_p95_ms": 60}
+
+    elif workload_type == "chat":
+        from workloads.chat import ChatTraceGenerator
+
+        click.echo("Generating chat workload (ShareGPT)...")
+        gen = ChatTraceGenerator(seed=42)
+        requests_pool = gen.generate(num_requests)
+        slo = {"ttft_p95_ms": 2000, "tpot_p95_ms": 100}
+
+    elif workload_type == "agent":
+        from workloads.agent import AgentTraceGenerator
+
+        click.echo("Generating agent workload (tool calling)...")
+        gen = AgentTraceGenerator(seed=42)
+        requests_pool = gen.generate(num_requests)
+        slo = {"ttft_p95_ms": 1500, "tpot_p95_ms": 80}
+
+    else:
+        # Simple (original behavior)
+        requests_pool = []
+        for i in range(num_requests):
+            requests_pool.append(
+                Request(
+                    request_id=_new_request_id(),
+                    messages=[
+                        {"role": "user", "content": f"Explain concept {i} in 2-3 sentences."},
+                    ],
+                    expected_output_tokens=128,
+                    metadata={"workload": "quick_bench"},
+                )
             )
-        )
 
     click.echo(f"Running quick bench: {num_requests} requests at {rate} req/s for {duration}s")
     click.echo(f"Endpoint: {endpoint}")
+    click.echo(f"Workload: {workload_type}")
+    if auth_headers:
+        click.echo("Auth: Bearer token provided")
     click.echo()
 
     start = time.time()
@@ -416,9 +504,11 @@ def quick_bench(endpoint: str, num_requests: int, duration: int, rate: float, mo
             arrival_model="poisson",
             arrival_shape=None,
             seed=42,
+            concurrency=sessions,
             request_timeout_seconds=min(duration * 2, 300),
             total_timeout_seconds=duration * 3,
-            goodput_slo={"ttft_p95_ms": 2000, "tpot_p95_ms": 100},
+            goodput_slo=slo,
+            extra_headers=auth_headers,
         )
     )
     elapsed = time.time() - start
@@ -436,7 +526,8 @@ def quick_bench(endpoint: str, num_requests: int, duration: int, rate: float, mo
     for r in ok:
         itl_gaps.extend(_compute_itl_gaps(r.token_timestamps))
 
-    click.echo("━" * 50)
+    click.echo("━" * 60)
+    click.echo(f"  Workload:   {workload_type}")
     click.echo(f"  Completed:  {result.completed}/{len(result.per_request)} ({result.error_rate:.0%} errors)")
     click.echo(f"  Duration:   {elapsed:.1f}s")
     click.echo()
@@ -448,7 +539,94 @@ def quick_bench(endpoint: str, num_requests: int, duration: int, rate: float, mo
     click.echo(f"  ITL  p95:   {_safe_percentile(itl_gaps, 95) * 1000:.1f}ms")
     click.echo(f"  Throughput: {result.output_throughput:.0f} tok/s")
     click.echo(f"  Goodput:    {result.goodput:.1f} req/s ({result.slo_attainment:.0%} SLO)")
-    click.echo("━" * 50)
+
+    # Try to scrape KV cache metrics from /metrics endpoint
+    _scrape_kv_metrics(endpoint, auth_headers)
+
+    click.echo("━" * 60)
+
+
+def _scrape_kv_metrics(endpoint: str, auth_headers: dict[str, str] | None) -> None:
+    """Attempt to scrape KV cache metrics from the endpoint's /metrics path."""
+    import re
+
+    try:
+        import requests as req
+
+        headers = {}
+        if auth_headers:
+            headers.update(auth_headers)
+
+        # Try both /metrics and the base endpoint /metrics
+        base = endpoint.rstrip("/")
+        metrics_urls = [f"{base}/metrics"]
+        # If endpoint ends with /v1, also try without /v1
+        if base.endswith("/v1"):
+            metrics_urls.append(f"{base[:-3]}/metrics")
+
+        text = ""
+        for url in metrics_urls:
+            try:
+                resp = req.get(url, headers=headers, timeout=10)
+                if resp.ok and "# HELP" in resp.text:
+                    text = resp.text
+                    break
+            except Exception:
+                continue
+
+        if not text:
+            return
+
+        # Detect engine
+        engine = "unknown"
+        if "vllm:" in text:
+            engine = "vllm"
+        elif "dynamo_" in text:
+            engine = "dynamo"
+        elif "sglang:" in text:
+            engine = "sglang"
+
+        # Extract KV cache metrics
+        kv_usage = _extract_gauge(text, [
+            "vllm:kv_cache_usage_perc",
+            "vllm:gpu_cache_usage_perc",
+            "dynamo_component_kvstats_gpu_cache_usage_percent",
+        ])
+        prefix_hit = _extract_gauge(text, [
+            "vllm:gpu_prefix_cache_hit_rate",
+            "dynamo_component_kvstats_gpu_prefix_cache_hit_rate",
+        ])
+        # Try counter-based prefix hit rate for vLLM v0.18+
+        if prefix_hit is None:
+            hits = _extract_gauge(text, ["vllm:prefix_cache_hits_total"])
+            queries = _extract_gauge(text, ["vllm:prefix_cache_queries_total"])
+            if hits is not None and queries is not None and queries > 0:
+                prefix_hit = hits / queries
+
+        if kv_usage is not None or prefix_hit is not None:
+            click.echo()
+            click.echo("  KV Cache:")
+            if kv_usage is not None:
+                click.echo(f"    Utilization:      {kv_usage:.0%}")
+            if prefix_hit is not None:
+                click.echo(f"    Prefix Hit Rate:  {prefix_hit:.0%}")
+            click.echo(f"    Engine:           {engine}")
+
+    except Exception:
+        pass  # Metrics endpoint is optional
+
+
+def _extract_gauge(text: str, metric_names: list[str]) -> float | None:
+    """Extract the first matching gauge value from Prometheus text."""
+    import re
+
+    for name in metric_names:
+        # Match: metric_name{labels} value  OR  metric_name value
+        pattern = re.escape(name) + r"(?:\{[^}]*\})?\s+([-+]?[0-9]*\.?[0-9]+(?:[eE][-+]?[0-9]+)?)"
+        match = re.search(pattern, text)
+        if match:
+            return float(match.group(1))
+    return None
 
 
 # ── analyze ──────────────────────────────────────────────────────────────

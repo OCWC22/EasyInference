@@ -62,6 +62,10 @@ class CellMetrics:
     # ── errors ──────────────────────────────────────────────────────────
     error_rate: float = 0.0
 
+    # ── GPU utilization ─────────────────────────────────────────────────
+    gpu_utilization_mean: float = 0.0   # mean SM utilization 0.0–1.0 across GPUs
+    gpu_utilization_p5: float = 0.0    # p5 (idle floor, useful for disagg)
+
     # ── power ───────────────────────────────────────────────────────────
     avg_power_watts: float = 0.0
     watts_per_token: float = 0.0

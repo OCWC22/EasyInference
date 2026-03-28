@@ -5,6 +5,7 @@ from __future__ import annotations
 import itertools
 import json
 import logging
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -86,6 +87,8 @@ class SweepOrchestrator:
         models_raw: list[Any] = sweep.get("models", [])
         workloads: list[str] = sweep.get("workloads", [])
         modes: list[str] = sweep.get("modes", [])
+        prefix_caching_variants: list[bool] = sweep.get("prefix_caching", [True])
+        batched_tokens_sweep: list[int | None] = sweep.get("max_num_batched_tokens", [None])
 
         quant_cfg = sweep.get("quantizations", {})
         default_quants: list[str] = quant_cfg.get("default", ["fp8"])
@@ -117,9 +120,9 @@ class SweepOrchestrator:
 
         cells: list[CellConfig] = []
 
-        # Main matrix: gpus x models x workloads x modes x quantizations x trials
-        for gpu, model_info, workload, mode in itertools.product(
-            gpus, models, workloads, modes
+        # Main matrix: gpus x models x workloads x modes x quantizations x prefix_caching x batched_tokens x trials
+        for gpu, model_info, workload, mode, prefix_caching, max_batched_tokens in itertools.product(
+            gpus, models, workloads, modes, prefix_caching_variants, batched_tokens_sweep
         ):
             model_short = model_info["model"]
 
@@ -168,6 +171,8 @@ class SweepOrchestrator:
                             mode=mode,
                             quantization=quant,
                             topology=topology,
+                            prefix_caching=prefix_caching,
+                            max_num_batched_tokens=max_batched_tokens,
                             trial_number=trial,
                             num_prompts=num_prompts,
                             rate_sweep=rate_sweep,
@@ -402,61 +407,89 @@ class SweepOrchestrator:
         high_variance_max = trials_cfg.get("high_variance_max", 5)
         variance_cfg = self._sweep.get("variance", {})
         cv_threshold = variance_cfg.get("cv_threshold", 0.10)
+        parallel_cells: int = self._sweep.get("parallel_cells", 1)
+
+        # Load composite-hash result cache — skip unchanged cells
+        result_cache = self._load_result_cache()
 
         # Group cells by configuration key (all trials for same config)
         config_groups: dict[str, list[CellConfig]] = {}
         for cell in self._cells:
             key = (
                 f"{cell.gpu}/{cell.model}/{cell.workload}/{cell.mode}/"
-                f"{cell.quantization}"
+                f"{cell.quantization}/apc-{'on' if cell.prefix_caching else 'off'}/"
+                f"mbt-{cell.max_num_batched_tokens or 'default'}"
             )
             config_groups.setdefault(key, []).append(cell)
 
-        for config_key, group in config_groups.items():
+        def _run_config_group(config_key: str, group: list[CellConfig]) -> list[RunResult]:
+            """Run all trials for one configuration, extend on high variance."""
+            cache_key = self._cell_cache_key(group[0])
+            cached_trials = result_cache.get(cache_key, 0)
+            if cached_trials >= len(group):
+                logger.info(
+                    "Cache hit for %s (key=%s, %d trials cached) — skipping",
+                    config_key, cache_key, cached_trials,
+                )
+                return []
+
             logger.info("Running configuration: %s (%d trials)", config_key, len(group))
             trial_results: list[RunResult] = []
-
             for cell in group:
                 runner = BenchmarkRunner(cell)
-                result = runner.run()
-                trial_results.append(result)
-                summary.results.append(result)
+                trial_results.append(runner.run())
 
-                if result.status == "completed":
-                    summary.completed += 1
-                elif result.status == "failed":
-                    summary.failed += 1
-
-            # Check CV and extend trials if needed
-            completed_results = [r for r in trial_results if r.status == "completed"]
-            if len(completed_results) >= 2:
-                cv = self._compute_trial_cv(completed_results)
+            completed = [r for r in trial_results if r.status == "completed"]
+            if len(completed) >= 2:
+                cv = self._compute_trial_cv(completed)
                 logger.info("CV for %s: %.4f (threshold: %.4f)", config_key, cv, cv_threshold)
-
                 if cv > cv_threshold:
-                    current_trials = len(group)
-                    extra_needed = high_variance_max - current_trials
+                    extra_needed = high_variance_max - len(group)
                     if extra_needed > 0:
-                        logger.info(
-                            "High variance for %s — running %d additional trials",
-                            config_key,
-                            extra_needed,
-                        )
+                        logger.info("High variance — running %d extra trials", extra_needed)
                         base_cell = group[0]
-                        for t in range(current_trials + 1, high_variance_max + 1):
-                            ext_cell = CellConfig(**{
-                                **base_cell.__dict__,
-                                "trial_number": t,
-                                "seed": 42 + t,
-                            })
-                            runner = BenchmarkRunner(ext_cell)
-                            result = runner.run()
-                            summary.results.append(result)
-                            summary.total_cells += 1
-                            if result.status == "completed":
-                                summary.completed += 1
-                            elif result.status == "failed":
-                                summary.failed += 1
+                        for t in range(len(group) + 1, high_variance_max + 1):
+                            ext_cell = CellConfig(**{**base_cell.__dict__, "trial_number": t, "seed": 42 + t})
+                            trial_results.append(BenchmarkRunner(ext_cell).run())
+
+            return trial_results
+
+        if parallel_cells > 1:
+            logger.info("Parallel sweep: %d concurrent configurations", parallel_cells)
+            with ThreadPoolExecutor(max_workers=parallel_cells) as pool:
+                futures = {
+                    pool.submit(_run_config_group, k, g): (k, g)
+                    for k, g in config_groups.items()
+                }
+                for future in as_completed(futures):
+                    config_key, group = futures[future]
+                    try:
+                        group_results = future.result()
+                    except Exception:
+                        logger.exception("Configuration %s raised an exception", config_key)
+                        summary.failed += len(group)
+                        continue
+                    if not group_results:
+                        summary.skipped += len(group)
+                    for result in group_results:
+                        summary.results.append(result)
+                        summary.total_cells += 1
+                        if result.status == "completed":
+                            summary.completed += 1
+                        elif result.status == "failed":
+                            summary.failed += 1
+        else:
+            for config_key, group in config_groups.items():
+                group_results = _run_config_group(config_key, group)
+                if not group_results:
+                    summary.skipped += len(group)
+                for result in group_results:
+                    summary.results.append(result)
+                    summary.total_cells += 1
+                    if result.status == "completed":
+                        summary.completed += 1
+                    elif result.status == "failed":
+                        summary.failed += 1
 
         return summary
 
@@ -507,6 +540,48 @@ class SweepOrchestrator:
         summary.total_cells = len(original)
         self._cells = original
         return summary
+
+    @staticmethod
+    def _cell_cache_key(cell: CellConfig) -> str:
+        """Composite hash for result-cache invalidation.
+
+        Keyed on (model_hf_id, workload, mode, quantization, gpu, gpu_count,
+        prefix_caching, max_num_batched_tokens, config_file_hashes).
+        Changes to any of these invalidate the cache and force a re-run.
+        Changing only trial_number does NOT invalidate — we re-use cached trials.
+        """
+        import hashlib, json as _json
+        from harness.lockfile import LockfileGenerator
+        config_hashes = LockfileGenerator.hash_config_files(cell.config_paths)
+        canonical = _json.dumps(
+            {
+                "model_hf_id": cell.model_hf_id,
+                "workload": cell.workload,
+                "mode": cell.mode,
+                "quantization": cell.quantization,
+                "gpu": cell.gpu,
+                "gpu_count": cell.gpu_count,
+                "prefix_caching": cell.prefix_caching,
+                "max_num_batched_tokens": cell.max_num_batched_tokens,
+                "config_hashes": config_hashes,
+            },
+            sort_keys=True,
+        )
+        return hashlib.sha256(canonical.encode()).hexdigest()[:16]
+
+    def _load_result_cache(self) -> dict[str, int]:
+        """Return {cache_key: completed_trial_count} from existing manifests."""
+        cache: dict[str, int] = {}
+        for manifest_path in self.output_dir.rglob("manifest.json"):
+            try:
+                data = json.loads(manifest_path.read_text(encoding="utf-8"))
+                if data.get("status") == "completed":
+                    key = data.get("cache_key", "")
+                    if key:
+                        cache[key] = cache.get(key, 0) + 1
+            except Exception:
+                pass
+        return cache
 
     def _find_completed_runs(self) -> set[str]:
         """Scan output_dir for completed run manifests."""
