@@ -1,107 +1,99 @@
 # EasyInference Monorepo Architecture
 
-EasyInference is a two-product monorepo built around one operating model:
+EasyInference is a two-product monorepo with a hard boundary between benchmark standardization and operator diagnostics.
 
-- **ISB-1** is the reproducible benchmark standard.
-- **InferScope** is the operator-facing CLI and MCP layer.
+- **ISB-1** is the reproducible benchmark standard
+- **InferScope** is the operator-facing runtime profiling and narrow probe product
 
-The products share a repository for release discipline and discoverability. They do not share a runtime package or a single merged codebase.
+## Product boundary
 
-## External reference vs local products
+The repo is meant to be complementary to public frontier benchmarking, not a clone of it.
 
-EasyInference is designed to be **complementary** to [InferenceX](https://inferencex.semianalysis.com/), not a dashboard clone.
+- **InferenceX** owns the broad public frontier benchmark layer
+- **ISB-1** owns reproducible benchmark methodology, configs, harnesses, analysis, and publication in this repo
+- **InferScope** owns deployment-specific profiling, probe execution, and artifact comparison
 
-- **InferenceX** is the public, continuously updated, market-wide reference for cross-hardware and cross-framework inference performance.
-- **ISB-1** is the reproducible benchmark standard inside this repo for controlled validation, publication, and operator review.
-- **InferScope** is the high-leverage operator product: a self-contained MCP and CLI for tuning, diagnostics, planning, and benchmark replay.
+If a feature looks like generic benchmark infrastructure, it should default toward **ISB-1**.
+If a feature looks like deployment diagnosis or remediation, it should default toward **InferScope**.
 
-The local `inferscope-bench/` tree is treated as a **donor foundation** for workload ideas and replay patterns. It is not a third product, should not become a public dependency, and should not be modified for feature work.
+## Repository structure
 
-## GPU platform coverage
+```text
+EasyInference/
+├── products/
+│   ├── isb1/         # benchmark standard, harness, configs, analysis, publication
+│   └── inferscope/   # operator diagnostics, runtime profiling, narrow probe tooling
+├── demo/
+├── .github/workflows/
+├── docs/
+├── README.md
+├── ARCHITECTURE.md
+├── CONTRIBUTING.md
+├── VALIDATION.md
+└── Makefile
+```
 
-| Vendor | Supported GPUs | ISA | Status |
-|--------|---------------|-----|--------|
-| NVIDIA Hopper | H100, H200, GH200 | sm_90a | Production (primary validated path) |
-| NVIDIA Blackwell | B200, B300, GB200, GB300 | sm_100, sm_103 | Production (primary validated path) |
-| AMD CDNA3 | MI300X | gfx942 | Day-one support |
-| AMD CDNA4 | MI355X | gfx950 | Day-one support |
-
-NVIDIA Hopper/Blackwell is the primary validation path. AMD is supported for planning, benchmark gating, and support assessment from day one.
-
-## Product boundaries
+## Product responsibilities
 
 ### `products/isb1/`
 
-ISB-1 owns the benchmark standard:
+ISB-1 owns the benchmark system of record:
 
-- `workloads/` — canonical workload generators and trace materialization
-- `harness/` — server lifecycle, replay execution, telemetry, manifests, lockfiles
-- `analysis/` — metric computation, aggregation, statistics, and reporting helpers
-- `quality/` — quality checks that sit beside performance results
-- `configs/`, `publication/`, `scripts/`, and `tests/`
-
-ISB-1 keeps its own Python namespaces (`harness`, `workloads`, `analysis`, `quality`) inside the product root. That preserves the `isb1` CLI and keeps benchmark-local workflows self-contained.
+- workload generators and schemas
+- harness execution
+- telemetry capture for benchmark runs
+- manifests and lockfiles
+- analysis, statistics, and reporting
+- publication assets and claim evaluation
 
 ### `products/inferscope/`
 
-InferScope owns the operator product:
+InferScope owns the operator-facing product:
 
-- `src/inferscope/optimization/` — serving profile and recommendation DAG
-- `src/inferscope/engines/` — engine compiler seam
-- `src/inferscope/hardware/` and `src/inferscope/models/` — hardware and model metadata
-- `src/inferscope/tools/` — operator-facing diagnostics and audits
-- `src/inferscope/benchmarks/` — packaged workloads, experiments, replay, and artifact handling
-- `src/inferscope/profiling/` — future profiler/kernel boundary
+- live runtime profiling
+- deployment checks and bottleneck summaries
+- narrow benchmark probe resolution and execution
+- artifact comparison for deployment changes
+- MCP and CLI presentation layers for those workflows
 
-InferScope depends inward on its benchmark package. The benchmark package may depend inward on the optimizer. The optimizer must not depend on benchmark orchestration.
+InferScope should not be used to rebuild a second benchmark platform beside ISB-1.
 
-### Dependency flow (InferScope)
+## InferScope internal boundary
 
-```
-hardware ─┐
-models ───┤
-           ├──→ optimization ──→ engines
-           │          │
-           │          ▼
-           ├──→ telemetry ──→ profiling
-           │          │
-           │          ▼
-           └──→ benchmarks ──→ tools
-                      │
-                      ▼
-               cli*.py / server*.py
-```
+InferScope should be understood as four layers:
 
-## Benchmark-to-MCP bridge
+1. **scope** — `production_target.py` defines the supported product lane
+2. **telemetry + profiling** — live runtime evidence
+3. **benchmarks** — narrow probe resolution, replay, artifacts, comparison
+4. **presentation** — CLI and MCP surfaces
 
-The key repository-level bridge is:
-
-1. **ISB-1** defines the neutral workload families and replay methodology.
-2. **InferScope** packages practical, operator-facing workload packs and experiment specs.
-3. InferScope exposes those benchmark assets through both the CLI and MCP server.
-4. Operator flows can move from recommendation → replay → artifact comparison without leaving the product.
-
-Current mapping:
-
-- `tool-agent` in InferScope maps into the ISB-1 **agent** family.
-- `coding-long-context` in InferScope maps into the ISB-1 **coding** family.
-- RAG and chat scenarios remain available as neutral benchmark families in ISB-1 and as packaged evaluation assets in InferScope.
+That means benchmark matrix discovery, suite planning, and stack materialization are not core InferScope responsibilities.
 
 ## Root ownership
 
-The repository root owns only monorepo surfaces:
+The repository root owns only monorepo-level surfaces:
 
-- `README.md` — landing page and positioning
-- `ARCHITECTURE.md` — product boundaries and bridge model
-- `CONTRIBUTING.md` — contribution routing
-- `VALIDATION.md` — validation index
-- `Makefile` — delegating entrypoints
-- `.github/workflows/` — per-product CI
-- `docs/` — root-level compatibility and index material
+- landing docs
+- architecture and contribution guidance
+- validation entrypoints
+- CI wiring
+- top-level Make targets
 
-## Runtime data model
+It does not own product logic.
 
-- **ISB-1** defaults to product-local repo storage under `products/isb1/`.
-- **InferScope** defaults to user-local runtime storage under `~/.inferscope/`.
+## Donor harness rule
 
-This is intentional. Benchmark publications stay repo-oriented; operator artifacts stay package-oriented.
+`inferscope-bench/` is a donor harness only.
+
+- it is not a product
+- it should not be modified for feature work
+- ideas may be absorbed into product code, but the donor tree itself is not a supported surface
+
+## Design rule
+
+Keep the separation hard:
+
+- benchmark breadth and benchmark-standard infrastructure belong in **ISB-1**
+- deployment-specific diagnostics and remediation workflows belong in **InferScope**
+
+That separation is what keeps the monorepo strategically coherent.

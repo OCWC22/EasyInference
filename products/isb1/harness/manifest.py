@@ -36,9 +36,12 @@ class RunManifest:
     quantization: str = ""
     topology: str = ""
     kv_cache_dtype: str = "auto"
+    prefix_caching: bool = True
+    max_num_batched_tokens: int | None = None
 
     # ── config integrity ────────────────────────────────────────────────
-    config_hash: str = ""  # SHA-256
+    config_hash: str = ""    # SHA-256 of serving config files
+    cache_key: str = ""      # composite hash for result-cache invalidation
 
     # ── trial ───────────────────────────────────────────────────────────
     trial_number: int = 1

@@ -39,6 +39,8 @@ class CellConfig:
     quantization: str = "fp8"
     topology: str = "tp1"
     kv_cache_dtype: str = "auto"
+    prefix_caching: bool = True
+    max_num_batched_tokens: int | None = None  # None = vLLM default
     trial_number: int = 1
     port: int = 8000
     startup_timeout: int = 600
@@ -141,6 +143,8 @@ class BenchmarkRunner:
                 "quantization": cell.quantization,
                 "topology": cell.topology,
                 "kv_cache_dtype": cell.kv_cache_dtype,
+                "prefix_caching": cell.prefix_caching,
+                "max_num_batched_tokens": cell.max_num_batched_tokens,
                 "num_prompts": cell.num_prompts,
                 "rate_sweep": cell.rate_sweep,
                 "seed": cell.seed,
@@ -165,6 +169,10 @@ class BenchmarkRunner:
         if self.cell.kv_cache_dtype and self.cell.kv_cache_dtype != "auto":
             args.extend(["--kv-cache-dtype", self.cell.kv_cache_dtype])
         args.extend(["--gpu-memory-utilization", "0.90"])
+        if self.cell.prefix_caching:
+            args.append("--enable-prefix-caching")
+        if self.cell.max_num_batched_tokens is not None:
+            args.extend(["--max-num-batched-tokens", str(self.cell.max_num_batched_tokens)])
         args.extend(self.cell.vllm_extra_args)
         return args
 
