@@ -16,7 +16,7 @@ from inferscope.optimization.platform_policy import (
     resolve_preferred_tp,
 )
 from inferscope.optimization.serving_profile import WorkloadMode
-from inferscope.optimization.target_profile import (
+from inferscope.production_target import (
     is_target_engine,
     is_target_gpu,
     is_target_model,

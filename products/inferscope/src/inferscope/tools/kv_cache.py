@@ -8,7 +8,8 @@ from inferscope.hardware.gpu_profiles import get_gpu_profile
 from inferscope.models.registry import get_model_variant
 from inferscope.optimization.memory_planner import plan_memory
 from inferscope.optimization.platform_policy import resolve_platform_traits
-from inferscope.optimization.target_profile import (
+from inferscope.production_target import (
+    PRODUCTION_TARGET_NAME,
     is_target_gpu,
     is_target_model,
     normalize_target_workload_class,
@@ -75,7 +76,7 @@ def calculate_kv_budget(
             "For MCP reliability, keep enough HBM headroom for prompt bursts and cache rehydration.",
         ],
         "model": variant.name,
-        "target_profile": "dynamo_long_context_coding",
+        "target_profile": PRODUCTION_TARGET_NAME,
         "summary": (
             f"{variant.name} @ {context_length // 1024}K × {batch_size} ({kv_dtype}) "
             f"requires {kv_total_gb:.2f} GB of active KV."
@@ -172,7 +173,7 @@ def recommend_kv_strategy(
         "model": variant.name,
         "gpu": gpu_profile.name,
         "workload": "coding",
-        "target_profile": "dynamo_long_context_coding",
+        "target_profile": PRODUCTION_TARGET_NAME,
         "summary": (
             f"{variant.name} on {gpu_profile.name}: use Dynamo with {lmcache_mode} LMCache "
             f"and {topology} topology for {concurrent_sessions} coding sessions @ "
@@ -250,7 +251,7 @@ def recommend_disaggregation(
         },
         "model": variant.name,
         "gpu": gpu_profile.name,
-        "target_profile": "dynamo_long_context_coding",
+        "target_profile": PRODUCTION_TARGET_NAME,
         "summary": (
             f"{'Recommended' if recommended else 'Not recommended'}: "
             f"Dynamo prefill/decode split for {variant.name} on {gpu_profile.name}."
@@ -311,7 +312,7 @@ def compare_quantization(model: str, gpu: str) -> dict:
         "options": options,
         "model": variant.name,
         "gpu": gpu_profile.name,
-        "target_profile": "dynamo_long_context_coding",
+        "target_profile": PRODUCTION_TARGET_NAME,
         "summary": f"Top pick for {variant.name} on {gpu_profile.name}: {options[0]['quantization']}.",
         "confidence": 0.9,
         "evidence": "target_quantization_policy",

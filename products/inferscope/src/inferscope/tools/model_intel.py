@@ -5,7 +5,8 @@ from __future__ import annotations
 from inferscope.hardware.gpu_profiles import get_gpu_profile
 from inferscope.models.registry import get_model_variant
 from inferscope.optimization.memory_planner import plan_memory
-from inferscope.optimization.target_profile import (
+from inferscope.production_target import (
+    PRODUCTION_TARGET_NAME,
     is_target_gpu,
     is_target_model,
     supported_gpu_aliases,
@@ -158,7 +159,7 @@ def estimate_capacity(
         "gpu": gpu_profile.name,
         "num_gpus": num_gpus,
         "quantization": quantization,
-        "target_profile": "dynamo_long_context_coding",
+        "target_profile": PRODUCTION_TARGET_NAME,
         "summary": (
             f"{variant.name} on {num_gpus}× {gpu_profile.name} ({quantization}): "
             f"{'✅ fits' if mem.fits else '❌ does not fit'}, "

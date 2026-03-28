@@ -15,7 +15,7 @@ from inferscope.engines.base import (
 )
 from inferscope.logging import get_logger
 from inferscope.optimization.serving_profile import ServingProfile
-from inferscope.optimization.target_profile import is_target_gpu, is_target_model
+from inferscope.production_target import is_target_gpu, is_target_model
 
 _adapter_log = get_logger(component="dynamo_adapter")
 

@@ -31,7 +31,7 @@ from inferscope.optimization.serving_profile import (
     TopologySpec,
     WorkloadMode,
 )
-from inferscope.optimization.target_profile import is_target_gpu, is_target_model, target_profile_summary
+from inferscope.production_target import is_target_gpu, is_target_model, target_profile_summary
 from inferscope.profiling import ProfilingIntent, resolve_profiling_intent
 
 _T = TypeVar("_T")
@@ -88,7 +88,7 @@ class HardwareNode(DAGNode):
         )
 
         if not is_target_model(ctx.model):
-            raise ValueError("Supported models are limited to Kimi-K2.5 and GLM-4.7.")
+            raise ValueError("Supported models are limited to Kimi-K2.5.")
         if not is_target_gpu(ctx.gpu):
             raise ValueError("Supported GPUs are limited to H100, H200, B200, and B300 variants.")
         if ctx.workload not in {WorkloadMode.CODING, WorkloadMode.CHAT}:

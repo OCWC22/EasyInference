@@ -78,8 +78,12 @@ def test_cli_benchmark_plan_accepts_synthetic_options() -> None:
         app,
         [
             "benchmark-plan",
-            "tool-agent",
+            "kimi-k2-long-context-coding",
             "http://localhost:8000",
+            "--gpu",
+            "b200",
+            "--num-gpus",
+            "4",
             "--synthetic-requests",
             "4",
             "--synthetic-input-tokens",
@@ -89,4 +93,4 @@ def test_cli_benchmark_plan_accepts_synthetic_options() -> None:
         ],
     )
     assert result.exit_code == 0, result.stdout
-    assert "Resolved benchmark plan for tool-agent" in result.stdout
+    assert "Resolved probe plan for kimi-k2-long-context-coding" in result.stdout
