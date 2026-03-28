@@ -1,12 +1,7 @@
-"""Packaged evaluation subsystem for live workload replay, stack planning, and artifact capture."""
+"""InferScope benchmark primitives for narrow probe execution and artifact capture."""
 
 from inferscope.benchmarks.catalog import (
-    build_benchmark_matrix,
     compare_benchmark_artifacts,
-    describe_builtin_experiments,
-    describe_builtin_workloads,
-    list_builtin_experiments,
-    list_builtin_workloads,
     load_benchmark_artifact,
     load_experiment,
     load_workload,
@@ -25,15 +20,6 @@ from inferscope.benchmarks.experiments import (
     build_run_plan,
     parse_metrics_target_overrides,
 )
-from inferscope.benchmarks.launchers import (
-    BenchmarkStackPlan,
-    GeneratedFile,
-    LaunchComponent,
-    MaterializedBenchmarkStack,
-    MaterializedStackFile,
-    build_benchmark_stack_plan,
-    materialize_benchmark_stack_plan,
-)
 from inferscope.benchmarks.models import (
     BenchmarkArtifact,
     BenchmarkRequestResult,
@@ -46,7 +32,6 @@ from inferscope.benchmarks.models import (
 from inferscope.benchmarks.openai_replay import build_default_artifact_path, run_openai_replay
 from inferscope.benchmarks.procedural import ProceduralWorkloadOptions
 from inferscope.benchmarks.prometheus_capture import capture_endpoint_snapshot, capture_metrics_targets
-from inferscope.benchmarks.strategy import plan_benchmark_strategy, plan_benchmark_strategy_with_runtime
 from inferscope.benchmarks.support import (
     BenchmarkSupportIssue,
     BenchmarkSupportProfile,
@@ -61,36 +46,22 @@ __all__ = [
     "BenchmarkGoodputSLO",
     "BenchmarkRequestResult",
     "BenchmarkRunPlan",
-    "BenchmarkStackPlan",
     "BenchmarkSummary",
     "BenchmarkSupportIssue",
     "BenchmarkSupportProfile",
     "BenchmarkTopologyMetadata",
-    "GeneratedFile",
-    "LaunchComponent",
-    "MaterializedBenchmarkStack",
-    "MaterializedStackFile",
     "MetricSampleRecord",
     "MetricSnapshot",
     "ProceduralWorkloadOptions",
     "ResolvedMetricCaptureTarget",
     "WorkloadPack",
     "WorkloadRequest",
-    "build_benchmark_stack_plan",
-    "materialize_benchmark_stack_plan",
-    "build_default_artifact_path",
-    "build_benchmark_matrix",
-    "plan_benchmark_strategy",
-    "plan_benchmark_strategy_with_runtime",
     "assess_benchmark_support",
+    "build_default_artifact_path",
     "build_run_plan",
     "capture_endpoint_snapshot",
     "capture_metrics_targets",
     "compare_benchmark_artifacts",
-    "describe_builtin_experiments",
-    "describe_builtin_workloads",
-    "list_builtin_experiments",
-    "list_builtin_workloads",
     "load_benchmark_artifact",
     "load_experiment",
     "load_workload",

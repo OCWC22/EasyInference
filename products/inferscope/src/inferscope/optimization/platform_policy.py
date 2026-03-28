@@ -9,7 +9,7 @@ from enum import StrEnum
 from inferscope.hardware.gpu_profiles import GPUProfile
 from inferscope.models.registry import ModelVariant
 from inferscope.optimization.serving_profile import EngineType, PrecisionSpec, WorkloadMode
-from inferscope.optimization.target_profile import is_target_engine, is_target_gpu, is_target_model
+from inferscope.production_target import is_target_engine, is_target_gpu, is_target_model
 
 
 class PlatformFamily(StrEnum):

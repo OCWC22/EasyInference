@@ -1,13 +1,9 @@
-"""InferScope CLI — standalone command-line interface.
+"""InferScope CLI — operator tooling for runtime profiling and narrow probe execution.
 
 Usage:
-    inferscope profile DeepSeek-R1
     inferscope profile-runtime http://localhost:8000
-    inferscope validate DeepSeek-R1 h100 --tp 8
-    inferscope recommend DeepSeek-R1 mi355x --num-gpus 8 --workload coding
-    inferscope gpu h100
-    inferscope compare h100 mi355x
-    inferscope capacity Llama-3-70B h200 --num-gpus 1
+    inferscope benchmark-plan kimi-k2-long-context-coding http://localhost:8000 --gpu b200 --num-gpus 8
+    inferscope benchmark kimi-k2-long-context-coding http://localhost:8000 --experiment dynamo-disagg-lmcache-kimi-k2
     inferscope serve  # Start MCP server (stdio)
 """
 
@@ -44,7 +40,7 @@ from inferscope.tools.recommend import (
 
 app = typer.Typer(
     name="inferscope",
-    help="Hardware-aware inference optimization for LLM serving engines.",
+    help="Inference diagnostics and narrow probe tooling for KV cache and disaggregated serving.",
     no_args_is_help=True,
 )
 console = Console()
@@ -314,7 +310,7 @@ def evaluate(
 
 
 register_profiling_commands(app, print_result=_print_result, resolve_metrics_auth=_resolve_metrics_auth)
-register_benchmark_commands(app, print_result=_print_result, resolve_metrics_auth=_resolve_metrics_auth)
+register_benchmark_commands(app, print_result=_print_result)
 
 
 @app.command()

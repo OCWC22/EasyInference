@@ -13,7 +13,8 @@ from inferscope.optimization.platform_policy import (
 )
 from inferscope.optimization.recommender import recommend
 from inferscope.optimization.serving_profile import WorkloadMode
-from inferscope.optimization.target_profile import (
+from inferscope.production_target import (
+    PRODUCTION_TARGET_NAME,
     is_target_gpu,
     is_target_model,
     normalize_target_workload_class,
@@ -116,7 +117,7 @@ def recommend_config(
         "serving_profile": profile.to_dict(),
         "engine_config": engine_config.to_dict(),
         "memory_plan": mem_plan.to_dict(),
-        "target_profile": "dynamo_long_context_coding",
+        "target_profile": PRODUCTION_TARGET_NAME,
         "summary": (
             f"Recommended Dynamo config: {variant.name} on {num_gpus}× {gpu_profile.name} | "
             f"TP={profile.topology.tp} DP={profile.topology.dp} | "
@@ -164,7 +165,7 @@ def recommend_engine(
         "workload": "coding",
         "selected_engine": "dynamo",
         "summary": f"Top pick: dynamo — {support.reason}",
-        "target_profile": "dynamo_long_context_coding",
+        "target_profile": PRODUCTION_TARGET_NAME,
         "confidence": 0.95,
         "evidence": "production_engine_policy",
     }
@@ -215,7 +216,7 @@ def suggest_parallelism(model: str, gpu: str, num_gpus: int) -> dict:
         "model": variant.name,
         "gpu": gpu_profile.name,
         "num_gpus": num_gpus,
-        "target_profile": "dynamo_long_context_coding",
+        "target_profile": PRODUCTION_TARGET_NAME,
         "summary": (
             f"{variant.name} on {num_gpus}× {gpu_profile.name}: "
             f"{precision.weights.upper()} with TP={tp}, DP={dp}, EP=1 "
