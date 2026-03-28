@@ -104,15 +104,20 @@ def estimate_capacity_curve(
         result.summary = "Model does not fit — no capacity curve generated."
         return result
 
-    kv_budget_bytes = mem.kv_cache_budget_gb * (1024**3)
-    kv_per_token = mem.kv_cache_per_token_bytes
+    # Use per-GPU budget and per-GPU token cost to avoid TP double-counting.
+    # mem.kv_cache_budget_gb is total across TP shards; kv_cache_per_token_bytes is un-sharded.
+    per_gpu_budget_gb = mem.kv_cache_budget_gb / max(tp, 1)
+    kv_budget_bytes = per_gpu_budget_gb * (1024**3)
+    kv_per_token = mem.kv_cache_per_token_bytes / max(tp, 1)
     deltanet_state = model.serving.get("deltanet_state_bytes_per_seq_bf16", 0)
+    # DeltaNet state is also sharded across TP
+    deltanet_state_per_gpu = deltanet_state / max(tp, 1)
 
     for isl in sorted(isl_list):
         if kv_per_token <= 0:
             break
         per_seq_kv = kv_per_token * isl
-        per_seq_total = per_seq_kv + deltanet_state
+        per_seq_total = per_seq_kv + deltanet_state_per_gpu
         if per_seq_total <= 0:
             break
         max_conc = int(kv_budget_bytes / per_seq_total)
@@ -139,7 +144,8 @@ def estimate_capacity_curve(
         result.summary = (
             f"Capacity curve: {points[0].max_concurrent} sessions at {points[0].isl // 1024}K → "
             f"{points[-1].max_concurrent} sessions at {points[-1].isl // 1024}K context. "
-            f"KV budget: {mem.kv_cache_budget_gb:.1f} GB, {kv_per_token:.0f} bytes/token."
+            f"KV budget: {per_gpu_budget_gb:.1f} GB/GPU, {kv_per_token:.0f} bytes/token/GPU."
+            + (f" DeltaNet state: {deltanet_state_per_gpu / (1024**2):.1f} MB/seq/GPU." if deltanet_state else "")
         )
 
     if model.serving.get("warnings"):

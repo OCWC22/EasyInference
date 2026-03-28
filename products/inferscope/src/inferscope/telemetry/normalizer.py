@@ -228,7 +228,7 @@ def normalize(scrape: ScrapeResult) -> NormalizedMetrics:
         # Dynamo KV disaggregation
         m.kvbm_offload_d2h = scrape.get("kvbm_offload_blocks_d2h")
         m.kvbm_onboard_h2d = scrape.get("kvbm_onboard_blocks_h2d")
-        m.nixl_transfer_latency_s = scrape.get_histogram_avg("dynamo_nixl_transfer_latency_seconds")
+        m.nixl_transfer_latency_s = scrape.get_histogram_avg("dynamo_nixl_transfer_latency_seconds") or scrape.get("dynamo_nixl_transfer_latency_seconds") or None
         m.nixl_transfer_bytes = scrape.get("dynamo_nixl_transfer_bytes_total")
         m.nixl_transfer_failures = scrape.get("dynamo_nixl_transfer_failures_total")
         # Tiering

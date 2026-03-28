@@ -122,7 +122,7 @@ def plan_memory(
     # Max tokens in cache
     if plan.kv_cache_per_token_bytes > 0 and plan.kv_cache_budget_gb > 0:
         # KV cache is sharded across TP, so per-GPU budget × bytes per token / tp
-        kv_budget_bytes = per_gpu_kv_budget * 1e9
+        kv_budget_bytes = per_gpu_kv_budget * (1024**3)
         per_gpu_kv_per_token = plan.kv_cache_per_token_bytes / tp
         plan.max_tokens_in_cache = int(kv_budget_bytes / per_gpu_kv_per_token)
     else:
@@ -137,20 +137,13 @@ def plan_memory(
     if avg_context > 0 and plan.max_tokens_in_cache > 0:
         plan.max_concurrent_sequences = plan.max_tokens_in_cache // avg_context
 
-    # Account for fixed DeltaNet state per sequence
+    # Note DeltaNet fixed state overhead (capacity probe handles per-ISL math)
     deltanet_state = model.serving.get("deltanet_state_bytes_per_seq_bf16", 0)
-    if deltanet_state and plan.max_concurrent_sequences > 0:
-        deltanet_total_gb = (deltanet_state * plan.max_concurrent_sequences) / (1024**3)
-        if deltanet_total_gb > 0.1:  # Only adjust if material
-            adjusted_budget = plan.kv_cache_budget_gb - deltanet_total_gb
-            if adjusted_budget > 0 and plan.kv_cache_per_token_bytes > 0:
-                plan.max_tokens_in_cache = int(adjusted_budget * (1024**3) / plan.kv_cache_per_token_bytes)
-                if context > 0:
-                    plan.max_concurrent_sequences = plan.max_tokens_in_cache // context
-                plan.notes.append(
-                    f"DeltaNet recurrent state: {deltanet_state / (1024**2):.1f} MB/sequence "
-                    f"(total {deltanet_total_gb:.1f} GB for {plan.max_concurrent_sequences} sequences)."
-                )
+    if deltanet_state:
+        plan.notes.append(
+            f"DeltaNet recurrent state: {deltanet_state / (1024**2):.1f} MB/sequence (fixed, "
+            "independent of sequence length). Capacity probes account for this per-sequence overhead."
+        )
 
     # Does it fit?
     plan.fits = per_gpu_kv_budget > 0
@@ -194,11 +187,13 @@ def plan_memory(
 
     # Set estimation mode from model metadata
     kv_estimation_mode = model.serving.get("kv_estimation_mode", "exact")
-    if kv_estimation_mode == "heuristic":
-        plan.estimation_mode = "heuristic"
+    if kv_estimation_mode in ("heuristic", "hybrid_exact"):
+        plan.estimation_mode = kv_estimation_mode
         plan.assumptions.append(
-            f"KV cache math for {model.name} is heuristic — actual usage may differ "
-            "due to non-standard attention (e.g., hybrid DeltaNet layers)."
+            f"KV cache math for {model.name} is {kv_estimation_mode} — "
+            + ("exact for attention layers, fixed state for DeltaNet layers."
+               if kv_estimation_mode == "hybrid_exact"
+               else "actual usage may differ due to non-standard attention.")
         )
     if model.attention_type == "hybrid":
         plan.assumptions.append(

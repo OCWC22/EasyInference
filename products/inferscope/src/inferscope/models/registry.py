@@ -408,6 +408,7 @@ _register(
             "full_attention_interval": 4,
             "kv_layers": 12,
             "deltanet_layers": 36,
+            # 36 layers × 16 QK heads × 128 key_dim × 128 value_dim × 2 bytes = 18,874,368
             "deltanet_state_bytes_per_seq_bf16": 18874368,
             "kv_cache_quantizable": False,
             "recommended_kv_dtype": "bf16",

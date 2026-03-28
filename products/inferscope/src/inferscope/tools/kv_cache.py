@@ -29,11 +29,6 @@ def _resolve_supported_model(model: str) -> tuple[Any, dict[str, Any] | None]:
             "summary": target_profile_summary(),
             "confidence": 0.0,
         }
-    contract = resolve_model_support_contract(variant.name)
-    if contract is not None:
-        variant.serving.setdefault("support_tier", contract.tier)
-        variant.serving.setdefault("kv_estimation_mode", contract.kv_estimation_mode)
-        variant.serving.setdefault("recommendation_scope", contract.recommendation_scope)
     return variant, None
 
 
@@ -61,7 +56,8 @@ def calculate_kv_budget(
         return error
 
     kv_per_token_per_layer = variant.kv_cache_bytes_per_token(kv_dtype)
-    kv_per_token_all_layers = kv_per_token_per_layer * variant.layers
+    kv_layers = variant.serving.get("kv_layers", variant.layers)
+    kv_per_token_all_layers = kv_per_token_per_layer * kv_layers
     kv_per_sequence = kv_per_token_all_layers * context_length
     kv_total = kv_per_sequence * batch_size
     kv_total_gb = kv_total / (1024**3)
@@ -132,7 +128,8 @@ def recommend_kv_strategy(
 
     traits = resolve_platform_traits(gpu_profile)
     kv_dtype = "fp8" if gpu_profile.fp8_support else "fp16"
-    kv_per_token = variant.kv_cache_bytes_per_token(kv_dtype) * variant.layers
+    kv_layers = variant.serving.get("kv_layers", variant.layers)
+    kv_per_token = variant.kv_cache_bytes_per_token(kv_dtype) * kv_layers
     kv_per_session = kv_per_token * max_context
     total_kv_gb = (kv_per_session * concurrent_sessions * 1.20) / (1024**3)
 
