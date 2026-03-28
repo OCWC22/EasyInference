@@ -1,51 +1,92 @@
 # InferScope Benchmark Plan
 
-InferScope's benchmark plan is simple:
+InferScope's benchmark plan is no longer "build benchmark infrastructure and hope it becomes useful."
 
-> turn benchmark methodology into an operator workflow that can be consumed locally or through MCP.
+It is this:
 
-## What this product should do
+> keep a very small probe surface that helps operators explain KV-cache, offload, and disaggregated-serving behavior in real deployments.
 
-InferScope should be the fastest path from an operational question to an actionable benchmark loop:
+## Product rule
 
-1. recommend a serving strategy
-2. replay a relevant workload against an endpoint
-3. persist an artifact
-4. compare artifacts before and after a change
-5. expose the same flow to MCP clients
-6. keep benchmark launch planning on the same platform-policy path as the recommendation MCP
+InferScope should not become:
 
-## What it should not do
+- a public benchmark clone
+- a benchmark matrix browser
+- a benchmark suite planner
+- a stack-bundle generator
+- a generic benchmark wrapper over MCP
 
-InferScope should not become a competing benchmark standard or a dashboard clone.
+Those jobs either belong to **InferenceX** or to **ISB-1**.
 
-- InferenceX remains the public reference.
-- ISB-1 remains the benchmark standard in this repo.
-- InferScope remains the operator layer.
+## What InferScope should do
 
-## Current bridge workloads
+InferScope should be the fastest path from a deployment question to concrete evidence:
 
-The immediate bridge workloads are:
+1. profile a live endpoint
+2. resolve a supported probe plan
+3. run the probe against the endpoint
+4. save an artifact
+5. compare artifacts before and after a change
+6. connect runtime evidence to the next remediation step
 
-- `tool-agent`
-- `coding-long-context`
+## Current implementation stance
 
-These are high-leverage because they reflect the kinds of workloads operators actually need to validate when using an MCP or coding-focused deployment.
+The supported benchmark lane is deliberately narrow:
 
-That complement is intentional: public continuous benchmarking belongs to InferenceX, while InferScope needs to be the fastest path from that market context to a deployment-specific benchmark and profiling loop.
+- model: `Kimi-K2.5`
+- production engine: `dynamo`
+- comparison engine: `vllm`
+- workload pack: `kimi-k2-long-context-coding`
+- experiments:
+  - `dynamo-aggregated-lmcache-kimi-k2`
+  - `vllm-disagg-prefill-lmcache`
+  - `dynamo-disagg-lmcache-kimi-k2`
 
-## Donor benchmark basis
+The default probe path is the aggregated Dynamo lane.
 
-The local `inferscope-bench/` tree contributes workload and replay ideas. Those ideas should be absorbed into InferScope's packaged benchmark subsystem rather than maintained as a separate public product.
+## What was removed
 
-## Near-term priorities
+These surfaces were intentionally cut:
 
-1. keep the packaged workload catalog self-contained
-2. support procedural materialization for bridge workloads
-3. preserve stable `WorkloadPack` and `BenchmarkArtifact` contracts
-4. make CLI and MCP benchmark surfaces symmetric
-5. keep benchmark artifacts easy to review and compare
-6. extend the benchmark layer where public references are thin:
-   - realistic long-context KV-offload lanes
-   - LMCache disaggregated studies
-   - Grace-coherent overflow experiments
+- benchmark workload catalog commands
+- benchmark experiment catalog commands
+- benchmark matrix surfaces
+- benchmark strategy planning surfaces
+- benchmark stack-plan generation
+- benchmark stack materialization
+
+They created generic benchmark sprawl without improving operator truth.
+
+## What remains
+
+Retained public surfaces:
+
+- `benchmark-plan`
+- `benchmark`
+- `benchmark-compare`
+- `tool_get_production_contract`
+- `tool_resolve_benchmark_plan`
+- `tool_run_benchmark`
+- `tool_compare_benchmarks`
+- `tool_get_benchmark_artifact`
+
+## What to build next
+
+The next useful benchmark work is not more framework.
+It is more evidence.
+
+Priority order:
+
+1. richer KV/offload/disaggregation metrics in artifacts
+2. stronger provenance and reproducibility data in artifact manifests
+3. phase-aware telemetry for prefill, handoff, and decode
+4. gap-analysis logic that explains why production misses frontier behavior
+5. remediation logic that turns those gaps into concrete actions
+
+## Design test
+
+Any new benchmark feature should have to answer one question:
+
+> does this help explain a real operator bottleneck, or is it just more benchmark-looking infrastructure?
+
+If it is the second one, it should not be added here.

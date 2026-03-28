@@ -1,315 +1,188 @@
 # InferScope Benchmarks
 
-InferScope ships a packaged benchmark subsystem for operators.
+InferScope does not ship a generic benchmark platform anymore.
 
-This is distinct from ISB-1:
+Its benchmark package is a **narrow probe layer** for one operator-facing product lane.
 
-- **ISB-1** owns the benchmark standard and canonical workload families.
-- **InferScope** owns practical built-ins, replay workflows, and artifact handling for CLI and MCP use.
+If you want broad benchmark coverage, use **ISB-1**.
+If you want deployment-specific KV/disaggregation diagnostics, use **InferScope**.
 
-## Relationship to InferenceX
+## Scope
 
-As of **March 25, 2026**, InferenceX is the external public reference for broad, continuously updated hardware/framework results across platforms such as **H100, H200, B200, GB200, GB300, and MI355X**.
+InferScope benchmark support is intentionally limited to:
 
-InferScope uses that ecosystem reality as an input, but its benchmark layer is intentionally different:
+- **model:** `Kimi-K2.5`
+- **production engine:** `dynamo`
+- **comparison engine:** `vllm`
+- **workload pack:** `kimi-k2-long-context-coding`
+- **GPUs:** `h100`, `h200`, `b200`, `b300`
+- **topologies:** `single_endpoint`, `prefill_decode_split`
+- **cache strategy:** `lmcache`
 
-- it is designed to drive **operator decisions**
-- it can be consumed directly through **CLI and MCP**
-- it emphasizes scenario-specific workloads such as **tool-agent**, **coding-long-context**, and **long-context RAG**
-- it shares a recommendation and profiling core with the optimizer instead of acting as a standalone public leaderboard
+Supported probe experiments:
 
-## Operator extension lanes
+- `dynamo-aggregated-lmcache-kimi-k2`
+- `vllm-disagg-prefill-lmcache`
+- `dynamo-disagg-lmcache-kimi-k2`
 
-InferScope extends beyond the public InferenceX-style matrix by shipping operator-focused benchmark lanes for:
+The source of truth is `src/inferscope/production_target.py`.
 
-- **realistic long-context RAG**
-- **cold-session KV overflow**
-- **single-endpoint offload studies**
-- **LMCache-backed disaggregated serving**
-- **Grace-coherent overflow modeling**
+## What this layer does
 
-## Serving runtime
+The benchmark layer now exists to do four things:
 
-InferScope now uses a packaged serving runtime instead of a minimal replay loop.
+1. resolve the supported workload + experiment into a concrete run plan
+2. replay that plan against a live OpenAI-compatible endpoint
+3. persist a `BenchmarkArtifact`
+4. compare two artifacts to quantify change
 
-That runtime pulls in the useful mechanics from the local InferenceX-derived donor client and adapts them to InferScope's packaged workloads:
+That is it.
 
-- scheduled arrivals (`immediate`, `poisson`, `gamma`)
-- warmup requests
-- session-aware replay
-- per-request TTFT
-- TPOT-style decode latency
-- ITL from streamed output events
-- request/output throughput
-- optional goodput thresholds
-- tool-call parse success for MCP-style workloads
+It does **not** exist to:
 
-The resulting artifact still keeps the existing `BenchmarkArtifact` contract, but richer runtime metrics are written under:
+- list benchmark catalogs
+- build benchmark matrices
+- plan benchmark suites
+- generate benchmark stack plans
+- materialize benchmark bundles
+
+Those surfaces were removed because they turned InferScope into generic benchmark infrastructure instead of a useful operator product.
+
+## Public surfaces
+
+### CLI
+
+- `inferscope benchmark-plan`
+- `inferscope benchmark`
+- `inferscope benchmark-compare`
+
+### MCP
+
+- `tool_get_production_contract`
+- `tool_resolve_benchmark_plan`
+- `tool_run_benchmark`
+- `tool_compare_benchmarks`
+- `tool_get_benchmark_artifact`
+
+## Typical workflow
+
+```bash
+# inspect the resolved run plan
+uv run inferscope benchmark-plan \
+  kimi-k2-long-context-coding \
+  http://localhost:8000 \
+  --gpu b200 \
+  --num-gpus 8
+
+# run the aggregated production lane
+uv run inferscope benchmark \
+  kimi-k2-long-context-coding \
+  http://localhost:8000 \
+  --experiment dynamo-aggregated-lmcache-kimi-k2 \
+  --gpu b200 \
+  --num-gpus 8
+
+# run the disaggregated production lane
+uv run inferscope benchmark \
+  kimi-k2-long-context-coding \
+  http://localhost:8000 \
+  --experiment dynamo-disagg-lmcache-kimi-k2 \
+  --gpu b200 \
+  --num-gpus 8
+
+# compare results
+uv run inferscope benchmark-compare aggregated.json disagg.json
+```
+
+## Probe resolution
+
+Both CLI and MCP now route through:
+
+- `src/inferscope/benchmarks/probe_resolution.py`
+
+That module is the shared contract for:
+
+- procedural expansion
+- experiment defaulting
+- support assessment
+- run-plan construction
+- MCP vs CLI context-file policy
+
+Important rules:
+
+- blank `experiment` defaults to `dynamo-aggregated-lmcache-kimi-k2`
+- unsupported workload packs are rejected
+- unsupported experiments are rejected
+- model/engine are derived from the supported experiment and workload, not public override knobs
+- `context_file` is CLI-only and rejected from MCP
+
+## Artifact model
+
+The persisted artifact remains `BenchmarkArtifact`.
+
+What matters operationally in current outputs:
 
 - `run_plan.execution`
 - `run_plan.support`
 - `run_plan.observed_runtime`
+- request success/failure summary
+- saved metrics snapshots
+- comparison deltas and ratios
 
-This keeps older artifact readers usable while giving the MCP enough signal to optimize real deployments.
+Artifacts are written under:
 
-## GPU / model / ISA support gating
-
-Benchmark planning and execution are now support-aware.
-
-The CLI and MCP benchmark tools can validate:
-
-- GPU SKU (NVIDIA: H100, H200, B200, GB200, etc.; AMD: MI300X, MI355X)
-- GPU ISA / compute capability (`sm_90a`, `sm_100`, `sm_103` for NVIDIA; `gfx942`, `gfx950` for AMD)
-- platform family (`hopper`, `hopper_grace`, `blackwell_grace`, `cdna3`, `cdna4`, etc.)
-- model class
-- engine support tier
-- topology compatibility
-- cache / transport compatibility
-
-Support states:
-
-- `supported`
-- `degraded`
-- `unsupported`
-- `unknown`
-
-Examples:
-
-- Grace-coherent lanes reject non-Grace GPUs
-- `OffloadingConnector` lanes require single-endpoint vLLM
-- `LMCache` lanes require split topology
-- `NIXL` lanes degrade when neither RDMA nor a high-speed interconnect is available
-- preview engines such as TRT-LLM and Dynamo surface as degraded rather than silently passing
-
-## Built-in benchmark assets
-
-InferScope ships packaged resources under:
-
-- `src/inferscope/benchmarks/workloads/`
-- `src/inferscope/benchmarks/experiment_specs/`
-
-These built-ins are available from both the CLI and MCP server.
-
-## Core commands
-
-```bash
-# discover built-ins
-inferscope benchmark-workloads
-inferscope benchmark-experiments
-inferscope benchmark-matrix --workload-class tool_agent --engine sglang
-
-# inspect a concrete run plan
-inferscope benchmark-plan tool-agent http://localhost:8000
-
-# inspect a support-aware plan for a specific GPU / model / engine
-inferscope benchmark-plan long-context-kv-offload-rag http://localhost:8000 \
-  --experiment vllm-single-endpoint-long-context-rag-baseline \
-  --model Qwen3.5-72B \
-  --gpu gb200 \
-  --num-gpus 4 \
-  --engine vllm
-
-# replay a workload against an endpoint
-inferscope benchmark coding-long-context http://localhost:8000
-
-# compare two saved artifacts
-inferscope benchmark-compare before.json after.json
-
-# materialize a deployment stack bundle
-inferscope benchmark-stack-plan vllm-single-endpoint-baseline h100
-inferscope benchmark-stack-plan vllm-single-endpoint-offloading-connector h200
-inferscope benchmark-stack-plan vllm-disagg-prefill-lmcache-grace gb200 --num-gpus 4
+```text
+~/.inferscope/benchmarks/
 ```
 
-The stack-plan path is important: it uses the same recommendation DAG that powers the MCP. That keeps the benchmark launch plan aligned with the engine/profile decision the operator sees elsewhere.
+## Procedural expansion
 
-## Matrix catalog
+InferScope still supports procedural expansion for the supported packaged probe workload.
 
-InferScope now ships a structured benchmark matrix catalog over its packaged assets.
-
-The catalog is intended to answer questions like:
-
-- which workloads target **Blackwell Grace** long-context overflow studies?
-- which packaged lanes are focused on **tool-calling** and **SGLang**?
-- which experiments are **reference** lanes versus **topology probes**?
-
-The matrix is built from metadata carried directly on packaged workloads and experiment specs:
-
-- `benchmark_role`
-- `target_gpu_families`
-- `target_model_classes`
-- `focus_areas`
-
-Available surfaces:
-
-- CLI: `inferscope benchmark-matrix`
-- MCP: `tool_get_benchmark_matrix`
-
-Example:
-
-```bash
-inferscope benchmark-matrix \
-  --gpu-family blackwell_grace \
-  --focus-area kv_offload
-```
-
-That returns:
-
-- filtered workload descriptors
-- filtered experiment descriptors
-- suggested workload/experiment pairings
-
-## Benchmark strategy layer
-
-InferScope now builds directly on top of the packaged benchmark catalog to plan the right operator workflow.
-
-The benchmark-strategy surface answers:
-
-- which workload should be primary for this model + GPU + workload mode?
-- which benchmark lanes should be compared first?
-- when should the operator run baseline vs offload vs disaggregated studies?
-- how should a live runtime profile reorder that suite?
-
-Available surfaces:
-
-- CLI: `inferscope benchmark-strategy`
-- MCP: `tool_plan_benchmark_strategy`
-
-Example:
-
-```bash
-inferscope benchmark-strategy Qwen3.5-72B gb200 \
-  --workload long_context_rag \
-  --num-gpus 4 \
-  --avg-prompt-tokens 32768 \
-  --endpoint http://localhost:8000
-```
-
-This bridges three layers:
-
-1. optimizer recommendation
-2. packaged benchmark suite selection
-3. runtime profiling and tuning preview
-
-For long-context RAG on our benchmark, the intended progression is now:
-
-1. `vllm-single-endpoint-long-context-rag-baseline`
-2. `vllm-single-endpoint-offloading-connector`
-3. `vllm-disagg-prefill-lmcache-rag`
-4. `vllm-disagg-prefill-lmcache-grace` on Grace systems
-
-## Procedural built-ins
-
-Some built-ins can be procedurally expanded at runtime.
-
-Current support:
-
-- `tool-agent`
-- `coding-long-context`
-
-Static operator-focused built-ins also ship directly:
-
-- `long-context-kv-offload-rag`
-
-Supported procedural options:
+Available knobs:
 
 - `--synthetic-requests`
 - `--synthetic-input-tokens`
 - `--synthetic-output-tokens`
 - `--synthetic-seed`
-- `--context-file` for `coding-long-context`
+- `--context-file` (CLI only)
 
 Example:
 
 ```bash
-inferscope benchmark-plan tool-agent http://localhost:8000 \
-  --synthetic-requests 8 \
-  --synthetic-input-tokens 4096 \
-  --synthetic-output-tokens 512
-```
-
-```bash
-inferscope benchmark coding-long-context http://localhost:8000 \
+uv run inferscope benchmark-plan \
+  kimi-k2-long-context-coding \
+  http://localhost:8000 \
+  --gpu h200 \
+  --num-gpus 8 \
   --synthetic-requests 4 \
   --synthetic-input-tokens 32768 \
   --synthetic-output-tokens 768 \
   --context-file ./repo_context.txt
 ```
 
-These commands still resolve to a standard `WorkloadPack` and write a normal `BenchmarkArtifact`.
+## Relationship to profiling
 
-## MCP surfaces
+The benchmark layer is not the product center.
+The profiling layer is.
 
-The benchmark MCP is now meant to be directly usable for real benchmark orchestration, not just catalog lookup.
+The intended operator loop is:
 
-Important surfaces:
+1. profile the live deployment
+2. run a narrow probe
+3. compare artifacts or compare runtime vs probe behavior
+4. decide whether KV policy, cache routing, or topology changed anything meaningful
 
-- `tool_resolve_benchmark_plan`
-- `tool_run_benchmark`
-- `tool_plan_benchmark_strategy`
-- `tool_generate_benchmark_stack_plan`
+## What is still missing
 
-These now return or embed:
+The benchmark layer is narrower now, but it is not finished.
 
-- support status
-- GPU ISA
-- engine support tier
-- benchmark execution settings
-- observed runtime metrics after execution
+High-value missing pieces are still:
 
-## Relationship to ISB-1
+- deeper KV-tier and offload metrics in artifacts
+- phase-aware telemetry for prefill vs decode vs handoff
+- stronger provenance on artifact manifests
+- gap-analysis logic that turns runtime + probe evidence into concrete remediation steps
 
-InferScope built-ins should map back to the stable ISB-1 families rather than inventing a second benchmark taxonomy.
-
-Current mapping:
-
-- `tool-agent` → ISB-1 `agent`
-- `coding-long-context` → ISB-1 `coding`
-- `long-context-kv-offload-rag` → ISB-1 `rag`
-
-This lets the MCP surface move quickly without destabilizing the benchmark standard.
-
-## Troubleshooting
-
-Common issues when running benchmarks:
-
-| Problem | Cause | Fix |
-|---------|-------|-----|
-| `Connection refused` on benchmark run | Endpoint not running or wrong URL | Verify the serving endpoint is up: `curl http://localhost:8000/v1/models` |
-| `Model not found` in plan resolution | Model name doesn't match registry | Use `inferscope benchmark-plan <workload> <endpoint> --model <name>` with an exact registry name, or check `inferscope recommend --list-models` |
-| `unsupported` status in support payload | GPU/topology/engine combination is gated | Check the `issues` array in the support response — each issue has a `code` and `reason` explaining the gate |
-| `degraded` status for NIXL transport | No RDMA / high-speed interconnect detected | Expected on commodity networks — benchmark still runs but results may not reflect production performance |
-| `preview_engine` degraded warning | TRT-LLM or Dynamo selected | These are preview planning targets — switch to `vllm` or `sglang` for production benchmarks |
-| Prometheus metrics empty | Endpoint doesn't expose `/metrics` | Verify engine metrics are enabled (vLLM: enabled by default, SGLang: `--enable-metrics`) |
-| `tool_parse_success_rate: 0.0` | Model not producing valid JSON tool calls | Check model supports structured output; try a larger model or adjust `--synthetic-output-tokens` |
-| Permission denied writing artifacts | `~/.inferscope/benchmarks/` not writable | Set `INFERSCOPE_CACHE_DIR` to a writable path, or `mkdir -p ~/.inferscope/benchmarks` |
-| AMD GPU not recognized | GPU name not in registry | Use `mi300x` or `mi355x` as the `--gpu` value; AMD is day-one supported for planning and gating |
-
-## Legacy compatibility
-
-Legacy repo-style references continue to resolve for packaged built-ins, for example:
-
-- `benchmarks/workloads/coding-long-context.yaml`
-- `benchmarks/experiment_specs/vllm-single-endpoint-baseline.yaml`
-
-Use the short built-in names for new automation and docs.
-
-## Recommended comparison matrix
-
-For long-context inference work, use these experiments together:
-
-1. `vllm-single-endpoint-baseline`
-2. `vllm-single-endpoint-offloading-connector`
-3. `vllm-disagg-prefill-lmcache-grace`
-
-This gives a practical progression from GPU-resident baseline → host spill → LMCache/disaggregated overflow.
-
-## Artifact location
-
-InferScope benchmark artifacts default to:
-
-```text
-~/.inferscope/benchmarks/
-```
-
-This keeps runtime output out of the source tree and makes the MCP behavior match the CLI behavior.
+That missing work is fine.
+What is no longer fine is pretending InferScope needs a generic benchmark framework while those operator-grade pieces are still absent.

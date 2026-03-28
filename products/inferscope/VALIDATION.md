@@ -19,7 +19,7 @@ NN-YYYY-MM-DD-name.md
 
 ## Current validation contract
 
-As of **March 25, 2026**, InferScope should be considered valid when the checks below pass.
+As of **March 28, 2026**, InferScope should be considered valid when the checks below pass.
 
 ### Automated checks (copy-paste runnable)
 
@@ -46,15 +46,13 @@ The `inferscope-package-smoke` target builds a wheel, installs it in an isolated
 The test suite should cover the following areas. If your change touches any of these, verify the relevant tests still pass or add new ones:
 
 - [ ] Runtime profiling: telemetry capture, profiling orchestration, CLI registration, MCP-safe wrapper behavior
-- [ ] NVIDIA recommendation paths: **H100**, **H200**, **B200**, **GB200**
-- [ ] AMD recommendation paths: **MI300X**, **MI355X** (planning and support gating)
-- [ ] Compiler regression: explicit **B200 vs GB200** separation
-- [ ] Benchmark launchers: plans inherit the same H200/B200/GB200 policy as the MCP
-- [ ] Benchmark launchers: explicit **OffloadingConnector** and **LMCache + Grace** long-context lanes
-- [ ] Benchmark catalog: packaged descriptor metadata and filtered matrix generation across CLI, MCP, and Python entrypoints
-- [ ] Benchmark strategy: suite planning and runtime-bridge prioritization
-- [ ] Benchmark support: GPU/model/ISA-aware gating, preview/degraded paths, AMD ISA recognition
+- [ ] Production target contract: `production_target.py` remains the single scope authority
+- [ ] Supported InferScope lane: `Kimi-K2.5` on `h100`, `h200`, `b200`, `b300`
+- [ ] Benchmark probe resolution: shared `probe_resolution.py` logic for CLI + MCP
+- [ ] Benchmark support: GPU/model/topology gating for the narrowed probe lane
 - [ ] Benchmark runtime: TTFT / TPOT / ITL / throughput / session-failure semantics
+- [ ] Procedural benchmark expansion: packaged built-ins only, with CLI-only `context_file`
+- [ ] MCP narrowing: no benchmark matrix / strategy / stack-plan tools remain in the public server surface
 
 ## Validation report cross-references
 
@@ -62,8 +60,8 @@ The test suite should cover the following areas. If your change touches any of t
 |-------------------|--------------------------|
 | [01 — AI-first validation](validations/01-2026-03-23-ai-first-validation.md) | Initial release `[0.1.0]` |
 | [02 — Benchmark stress test plan](validations/02-2026-03-23-benchmark-and-stress-test-plan.md) | Initial release `[0.1.0]` |
-| [03 — Runtime profiling v1](validations/03-2026-03-25-runtime-profiling-v1.md) | `[Unreleased]` runtime profiling, benchmark strategy |
-| [04 — Hopper/Blackwell hardening](validations/04-2026-03-25-hopper-blackwell-hardening.md) | `[Unreleased]` platform policy, benchmark launchers, compiler regression |
+| [03 — Runtime profiling v1](validations/03-2026-03-25-runtime-profiling-v1.md) | `[Unreleased]` runtime profiling, narrowed probe surface |
+| [04 — Hopper/Blackwell hardening](validations/04-2026-03-25-hopper-blackwell-hardening.md) | `[Unreleased]` platform policy, scope hardening, compiler regression |
 
 ## Notes
 
@@ -71,5 +69,5 @@ The test suite should cover the following areas. If your change touches any of t
 - If docs drift from code, trust the current packaged CLI and MCP surfaces.
 - Procedural benchmark generation is limited to selected packaged built-ins, not arbitrary YAML file paths.
 - Runtime profiling is Prometheus-first in v1 and does not persist profiles to disk by default.
-- TRT-LLM and Dynamo are still preview planning targets in InferScope even when InferenceX publishes results for them.
-- AMD MI300X / MI355X are day-one supported for planning and benchmark gating; NVIDIA Hopper/Blackwell is the primary validated path.
+- InferScope's public benchmark and MCP contract is now intentionally narrower than the broader planning code still present in the repo.
+- If docs drift from code, trust `production_target.py`, the retained CLI benchmark commands, and the retained MCP benchmark tools.

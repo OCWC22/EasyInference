@@ -10,34 +10,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 Validation: [03-runtime-profiling-v1](validations/03-2026-03-25-runtime-profiling-v1.md), [04-hopper-blackwell-hardening](validations/04-2026-03-25-hopper-blackwell-hardening.md)
 
 ### Added
-- Shared Hopper/Blackwell platform policy used by the recommendation DAG, validators, and compilers
-- Explicit support-tier metadata for engine recommendations and compiled engine configs
-- New NVIDIA regression coverage for H100, H200, B200, and GB200 recommendation paths
-- New benchmark launcher regression coverage to ensure benchmark stack plans inherit the same H200/Hopper policy as the MCP
-- Structured benchmark matrix catalog across packaged workloads and experiment specs, exposed through both CLI and MCP
-- Benchmark strategy layer that maps model + GPU + workload intent to the right packaged benchmark suite and optional live profiling bridge
-- Day-one AMD MI300X (gfx942) and MI355X (gfx950) support for planning, benchmark gating, and support assessment
-- AGENTS.md at monorepo root for coding agent onboarding
-- Comprehensive SDLC documentation: prerequisites, configuration, test conventions, troubleshooting, and dependency flow diagrams
-- New long-context benchmark workload and experiment lanes for:
-  - single-endpoint `OffloadingConnector`
-  - disaggregated `LMCache` with Grace-aware overflow modeling
-  - single-endpoint long-context RAG baseline
-  - disaggregated LMCache-backed long-context RAG lane for non-Grace systems
+- Shared Hopper/Blackwell platform policy used by the recommendation path and support validation
+- Shared `probe_resolution.py` to keep CLI and MCP benchmark-plan logic on one narrowed contract
+- New product docs that explicitly position InferScope as a runtime profiling + narrow probe product
+- Audit/target-architecture document at `docs/AUDIT-TARGET-ARCHITECTURE.md`
 
 ### Changed
-- Engine ranking now derives its top pick from the full recommendation DAG instead of a separate heuristic
-- DeepSeek Hopper defaults now respect model hints only when they remain memory-valid (`H100 -> AWQ fallback / TP=8`, `H200 -> FP8 / TP=8`)
-- Blackwell FP4 recommendations now flow through the main optimizer path
-- Grace coherent overflow is surfaced as an advisory memory tier instead of being conflated with plain HBM fit
-- Benchmark metadata now has an explicit `grace_coherent` cache tier for realistic long-context operator studies
-- Packaged benchmark workloads and experiments now carry explicit role/GPU/model/focus metadata for matrix filtering and catalog discovery
+- `production_target.py` is now the single supported-contract authority
+- Benchmark CLI is narrowed to `benchmark-plan`, `benchmark`, and `benchmark-compare`
+- Benchmark MCP is narrowed to production contract, probe resolution, probe execution, artifact load, and artifact comparison
+- The top-level MCP server no longer presents InferScope as a generic hardware/model/recommendation toolbox
+- Default benchmark-plan resolution now flows through the aggregated Dynamo Kimi probe lane
+- Benchmark docs and root docs now describe InferScope as a deployment-diagnostics product rather than a benchmark framework
 
-### Fixed
-- vLLM compiler no longer infers `GB200` from `192 GB` memory size
-- TRT-LLM compiler now uses `batched_token_budget` correctly
-- Benchmark launcher workload mapping now recognizes `long_context_rag`
-- Benchmark catalog loading now accepts the existing `nixl` experiment lane and resolves experiment workload classes correctly
+### Removed
+- Benchmark matrix public surfaces
+- Benchmark strategy public surfaces
+- Benchmark stack-plan and stack materialization public surfaces
+- Dead benchmark launcher and strategy modules
+- Duplicate `optimization/target_profile.py` scope definition
 
 ## [0.1.0] - 2026-03-23
 

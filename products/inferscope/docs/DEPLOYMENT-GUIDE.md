@@ -2,70 +2,70 @@
 
 InferScope is meant to sit close to the operator.
 
-Its primary deployment value is not model hosting by itself; it is the ability to profile, validate, tune, and benchmark serving changes through a CLI or MCP.
+Its deployment value is not model hosting by itself. Its value is the ability to profile a real deployment, run a narrow probe, and compare evidence before and after a change.
 
 ## Recommended use
 
-### Open-source users
+### Local or staging use
 
-Use InferScope locally to:
+Use InferScope to:
 
-- select an engine and serving profile (vLLM/SGLang on NVIDIA, vLLM on AMD)
-- validate a config before launch
 - profile a local or remote endpoint through Prometheus metrics
-- benchmark a local or remote OpenAI-compatible endpoint
-- compare saved artifacts after a tuning change
+- resolve the supported probe plan for the current deployment lane
+- run a probe against the endpoint
+- compare saved artifacts after a tuning or topology change
 
-### Enterprise users
+### Fleet-facing use
 
-Use InferScope as a read-only planning and validation layer in front of your serving fleet.
+Use InferScope as a read-only diagnostics layer in front of a serving fleet.
 
 Typical flow:
 
-1. generate a recommendation for the target hardware and workload
-2. profile the live or staging endpoint
-3. review bottlenecks and audit findings
-4. preview scheduler/cache tuning changes
-5. benchmark before and after the change
-6. compare artifacts and promote only when the review is acceptable
+1. profile the live or staging endpoint
+2. review bottlenecks and audit findings
+3. run the supported probe before a change
+4. apply the change
+5. run the probe again
+6. compare artifacts and decide whether the change was actually useful
 
 ## MCP-first workflow
 
-This is the highest-leverage deployment pattern in the repo.
+The highest-value MCP flow is now narrower than before.
 
-The same packaged profiling and benchmark subsystems are available through:
+Retained benchmark/profiling surfaces are:
 
-- `inferscope profile-runtime`, `audit`, `check`, `memory`, `cache`
-- `inferscope benchmark-*` commands
-- `inferscope serve` MCP tools
+- `tool_profile_runtime`
+- `tool_get_production_contract`
+- `tool_resolve_benchmark_plan`
+- `tool_run_benchmark`
+- `tool_compare_benchmarks`
+- `tool_get_benchmark_artifact`
 
-That means a human operator and an MCP client can inspect the same live endpoint, resolve the same workload, run the same replay, and compare the same artifact model.
+InferScope is no longer positioned as a generic MCP toolkit for hardware catalogs or benchmark strategy planning.
 
-## Procedural bridge workloads
+## Current product lane
 
-Two built-ins matter most today:
+The public deployment contract is currently narrowed to:
 
-- `tool-agent` for MCP and tool-calling flows
-- `coding-long-context` for repository-scale coding and review flows
+- model: `Kimi-K2.5`
+- production engine: `dynamo`
+- comparison engine: `vllm`
+- workload pack: `kimi-k2-long-context-coding`
+- GPUs: `h100`, `h200`, `b200`, `b300`
 
-Use them when validating coding agents, MCP servers, or long-context tuning changes.
+This is the lane the benchmark and MCP docs assume.
 
 ## Runtime storage
 
-Artifacts default to `~/.inferscope/benchmarks/`. Keep this path writable and treat it as operational evidence, not disposable scratch space.
+Artifacts default to `~/.inferscope/benchmarks/`.
+Treat that path as operational evidence, not disposable scratch space.
 
 Runtime profiles are returned directly to the CLI or MCP caller in v1. They are not written to disk by default.
 
-## GPU platform support
-
-- **NVIDIA Hopper/Blackwell** (H100, H200, B200, GB200): primary validated path, full recommendation + profiling + benchmark support
-- **AMD MI300X / MI355X**: day-one support for planning, benchmark gating, and support assessment; profiling support follows NVIDIA parity
-- GPU telemetry: DCGM (port 9400) for NVIDIA, AMD DME (port 5000) for AMD — both assumed on a trusted network
-
 ## Profiling boundary
 
-`src/inferscope/profiling/` is the isolated seam for runtime profiling today and profiler/kernel work later.
+`src/inferscope/profiling/` is the seam for runtime diagnostics today and deeper profiler/kernel work later.
 
 - v1 ships Prometheus-based runtime profiling
-- future work can add trace execution helpers and kernel-facing integrations there (`nsys` for NVIDIA, `rocprofv3` for AMD)
-- benchmark orchestration should keep consuming shared telemetry models rather than reimplementing profiling logic
+- future work can add deeper trace and kernel-facing integrations there
+- probe execution should keep consuming shared telemetry models rather than rebuilding profiling logic
