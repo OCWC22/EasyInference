@@ -137,7 +137,7 @@ class DynamoCompiler(ConfigCompiler):
             "namespace": namespace,
             "session_affinity": session_affinity,
             "tiers": ["gpu_hbm"] + (["cpu_dram"] if split_topology or profile.cache.kv_tiering != "gpu_only" else []),
-            "connector": profile.topology.disagg_connector or "lmcache",
+            "connector": profile.topology.disagg_connector or "LMCacheConnectorV1",
             "prefix_cache_expected": profile.cache.prefix_cache,
         }
         observability = {
