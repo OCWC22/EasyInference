@@ -311,6 +311,106 @@ _register(
     )
 )
 
+# --- Qwen3 Coder family (Coding-focused MoE) ---
+
+_register(
+    ModelVariant(
+        name="Qwen3-Coder-480B-A35B-Instruct",
+        family="Qwen3 Coder",
+        model_class=ModelClass.CLASSICAL_MOE,
+        params_total_b=480,
+        params_active_b=35,
+        model_type="moe",
+        context_length=262144,
+        attention_type="GQA",
+        kv_heads=8,
+        head_dim=128,
+        layers=62,
+        experts_total=160,
+        experts_active=8,
+        vocab_size=151936,
+        serving={
+            "support_tier": "benchmark_supported",
+            "kv_estimation_mode": "exact",
+            "hf_id": "Qwen/Qwen3-Coder-480B-A35B-Instruct",
+            "hf_id_fp8": "Qwen/Qwen3.5-397B-A17B-FP8",
+            "tp_fp8_h100": 8,
+            "tp_fp8_h200": 8,
+            "tp_fp8_b200": 4,
+            "tp_fp8_b300": 4,
+            "recommended_topology": {
+                "fp8": {"h100": "tp8", "h200": "tp8", "b200": "tp4", "b300": "tp4"},
+            },
+            "vllm_flags": "--trust-remote-code",
+            "dynamo_backend": "vllm",
+        },
+    )
+)
+
+_register(
+    ModelVariant(
+        name="Qwen3-Coder-30B-A3B-Instruct",
+        family="Qwen3 Coder",
+        model_class=ModelClass.CLASSICAL_MOE,
+        params_total_b=30,
+        params_active_b=3,
+        model_type="moe",
+        context_length=262144,
+        attention_type="GQA",
+        kv_heads=4,
+        head_dim=128,
+        layers=48,
+        experts_total=128,
+        experts_active=8,
+        vocab_size=151936,
+        serving={
+            "support_tier": "benchmark_supported",
+            "kv_estimation_mode": "exact",
+            "hf_id": "Qwen/Qwen3-Coder-30B-A3B-Instruct",
+            "tp_fp8_h100": 1,
+            "tp_fp8_h200": 1,
+            "tp_fp8_b200": 1,
+            "tp_fp8_b300": 1,
+            "recommended_topology": {
+                "fp8": {"h100": "tp1", "h200": "tp1", "b200": "tp1", "b300": "tp1"},
+            },
+            "vllm_flags": "--trust-remote-code",
+            "dynamo_backend": "vllm",
+        },
+    )
+)
+
+_register(
+    ModelVariant(
+        name="Qwen3-Coder-Next",
+        family="Qwen3 Coder",
+        model_class=ModelClass.QWEN35_HYBRID,
+        params_total_b=80,
+        params_active_b=3,
+        model_type="moe",
+        context_length=262144,
+        attention_type="hybrid",
+        kv_heads=2,
+        head_dim=128,
+        layers=48,
+        experts_total=512,
+        experts_active=11,
+        vocab_size=151936,
+        serving={
+            "support_tier": "planning_preview",
+            "kv_estimation_mode": "heuristic",
+            "hf_id": "Qwen/Qwen3-Coder-Next",
+            "tp_fp8_h100": 2,
+            "tp_fp8_h200": 2,
+            "vllm_flags": "--trust-remote-code",
+            "warnings": [
+                "Hybrid attention (Gated DeltaNet + standard) — KV cache math is heuristic only.",
+                "DeltaNet layers have compressed state, not full KV. Actual KV usage will be lower than calculated.",
+            ],
+        },
+    )
+)
+
 # --- GLM family ---
 
 _register(
