@@ -40,7 +40,7 @@ APP_NAME = "qwen3-coder-next-h200"
 _WEIGHT_DIR = "/model-weights/Qwen3-Coder-Next-FP8"
 
 vllm_image = (
-    modal.Image.debian_slim(python_version="3.11")
+    modal.Image.from_registry("nvidia/cuda:12.8.0-devel-ubuntu24.04", add_python="3.11")
     .pip_install(
         "vllm>=0.10.0",
         "transformers>=4.51.0",
@@ -49,6 +49,7 @@ vllm_image = (
     .env({
         "HF_HUB_ENABLE_HF_TRANSFER": "1",
         "VLLM_WORKER_MULTIPROC_METHOD": "spawn",
+        "CUDA_HOME": "/usr/local/cuda",
     })
 )
 
