@@ -1,0 +1,320 @@
+{
+  "trace_id": "real_claude_41d4cd15-5dd",
+  "dataset_version": "0.1.0",
+  "source_type": "real",
+  "workload_family": "coding",
+  "language": "en",
+  "tokenizer": {
+    "name": "cl100k_base",
+    "version": "1.0"
+  },
+  "session": {
+    "session_id": "41d4cd15-5dd7-44d5-a1f6-fb8b11e31c12",
+    "goal": "Generate a SessionTraceV0 JSON object for inference benchmarking. Workload family: coding. Target: 128k+ cumulative tokens, 30 turns. Goal: Full repo audit with security review, performance profiling,",
+    "contains_tools": true,
+    "contains_rag": false,
+    "contains_branching": false,
+    "contains_multimodal": false
+  },
+  "turns": [
+    {
+      "turn_id": 1,
+      "parent_turn_id": null,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "Generate a SessionTraceV0 JSON object for inference benchmarking. Workload family: coding. Target: 128k+ cumulative tokens, 30 turns. Goal: Full repo audit with security review, performance profiling, and fixes across a large Python project. Include many tool turns with file reads, grep, bash, edits. Include two alternative fix attempts where one fails. Include log and code content blocks. session.contains_tools: true, session.contains_branching: true. Include replay fields (prefix_group_id, prefix_overlap_ratio: 0.65, idle_windows_ms: [0,5000,30000,300000,10000,60000], arrival_pattern: \"reactivation_heavy\") and kv_pressure fields (cold_start: true, tier: \"NVMe\", cache_expectation: \"reactivated\", eviction_risk_score: 0.85). turn_id must be integers. Return one JSON object only, no markdown fencing.\n"
+        }
+      ],
+      "timestamp": "2026-04-01T03:43:01.325Z",
+      "input_tokens": 188,
+      "output_tokens": 0,
+      "cumulative_tokens": 188
+    },
+    {
+      "turn_id": 2,
+      "parent_turn_id": 1,
+      "role": "assistant",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "(assistant response)"
+        }
+      ],
+      "timestamp": "2026-04-01T03:43:04.222Z",
+      "input_tokens": 23920,
+      "output_tokens": 41,
+      "cumulative_tokens": 24149
+    },
+    {
+      "turn_id": 3,
+      "parent_turn_id": 2,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "[Glob] {\"pattern\": \"**/session_trace*\"}",
+          "metadata": {
+            "tool_name": "Glob"
+          }
+        }
+      ],
+      "timestamp": "2026-04-01T03:43:04.585Z",
+      "input_tokens": 23920,
+      "output_tokens": 41,
+      "cumulative_tokens": 48110
+    },
+    {
+      "turn_id": 4,
+      "parent_turn_id": 3,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": ""
+        }
+      ],
+      "timestamp": "2026-04-01T03:43:04.685Z",
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cumulative_tokens": 48110
+    },
+    {
+      "turn_id": 5,
+      "parent_turn_id": 4,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "[Glob] {\"pattern\": \"**/SessionTrace*\"}",
+          "metadata": {
+            "tool_name": "Glob"
+          }
+        }
+      ],
+      "timestamp": "2026-04-01T03:43:05.005Z",
+      "input_tokens": 23920,
+      "output_tokens": 41,
+      "cumulative_tokens": 72071
+    },
+    {
+      "turn_id": 6,
+      "parent_turn_id": 5,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "[Glob] {\"pattern\": \"**/synthetic_v0/**\"}",
+          "metadata": {
+            "tool_name": "Glob"
+          }
+        }
+      ],
+      "timestamp": "2026-04-01T03:43:05.067Z",
+      "input_tokens": 23920,
+      "output_tokens": 187,
+      "cumulative_tokens": 96178
+    },
+    {
+      "turn_id": 7,
+      "parent_turn_id": 6,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": ""
+        }
+      ],
+      "timestamp": "2026-04-01T03:43:05.273Z",
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cumulative_tokens": 96178
+    },
+    {
+      "turn_id": 8,
+      "parent_turn_id": 7,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": ""
+        }
+      ],
+      "timestamp": "2026-04-01T03:43:05.148Z",
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cumulative_tokens": 96178
+    },
+    {
+      "turn_id": 9,
+      "parent_turn_id": 8,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "code",
+          "text": "[Read] {\"file_path\": \"/Users/romirjain/.superset/worktrees/EasyInference/important-emu/products/isb1/workloads/session_trace.py\"}",
+          "metadata": {
+            "tool_name": "Read"
+          }
+        }
+      ],
+      "timestamp": "2026-04-01T03:43:13.263Z",
+      "input_tokens": 24324,
+      "output_tokens": 34,
+      "cumulative_tokens": 120536
+    },
+    {
+      "turn_id": 10,
+      "parent_turn_id": 9,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": ""
+        }
+      ],
+      "timestamp": "2026-04-01T03:43:13.265Z",
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cumulative_tokens": 120536
+    },
+    {
+      "turn_id": 11,
+      "parent_turn_id": 10,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "code",
+          "text": "[Read] {\"file_path\": \"/Users/romirjain/.superset/worktrees/EasyInference/important-emu/products/isb1/workloads/synthetic_v0/traces/lc1_085c3589.json\"}",
+          "metadata": {
+            "tool_name": "Read"
+          }
+        }
+      ],
+      "timestamp": "2026-04-01T03:43:14.182Z",
+      "input_tokens": 24324,
+      "output_tokens": 34,
+      "cumulative_tokens": 144894
+    },
+    {
+      "turn_id": 12,
+      "parent_turn_id": 11,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": ""
+        }
+      ],
+      "timestamp": "2026-04-01T03:43:14.317Z",
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cumulative_tokens": 144894
+    },
+    {
+      "turn_id": 13,
+      "parent_turn_id": 12,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "code",
+          "text": "[Read] {\"file_path\": \"/Users/romirjain/.superset/worktrees/EasyInference/important-emu/products/isb1/workloads/synthetic_v0/traces/synthetic/long_chat/lc1/lc1_91a44730.json\"}",
+          "metadata": {
+            "tool_name": "Read"
+          }
+        }
+      ],
+      "timestamp": "2026-04-01T03:43:14.900Z",
+      "input_tokens": 24324,
+      "output_tokens": 34,
+      "cumulative_tokens": 169252
+    },
+    {
+      "turn_id": 14,
+      "parent_turn_id": 13,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": ""
+        }
+      ],
+      "timestamp": "2026-04-01T03:43:15.105Z",
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cumulative_tokens": 169252
+    },
+    {
+      "turn_id": 15,
+      "parent_turn_id": 14,
+      "role": "assistant",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "(assistant response)"
+        }
+      ],
+      "timestamp": "2026-04-01T03:44:01.586Z",
+      "input_tokens": 46115,
+      "output_tokens": 8,
+      "cumulative_tokens": 215375
+    },
+    {
+      "turn_id": 16,
+      "parent_turn_id": 15,
+      "role": "assistant",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "{\"trace_id\":\"coding_audit_9f3c17a2\",\"dataset_version\":\"0.1.0\",\"source_type\":\"synthetic\",\"workload_family\":\"coding\",\"language\":\"en\",\"tokenizer\":{\"name\":\"cl100k_base\",\"version\":\"1.0\"},\"session\":{\"session_id\":\"sess-a81d4e07-2c9b-4f8a-91e3-7b5c02d8f319\",\"goal\":\"Full repo audit with security review, performance profiling, and fixes across a large Python project\",\"contains_tools\":true,\"contains_rag\":false,\"contains_branching\":true,\"contains_multimodal\":false},\"turns\":[{\"turn_id\":1,\"parent_turn_id\":null,\"role\":\"user\",\"content_blocks\":[{\"type\":\"text\",\"text\":\"I need a full audit of this Python project \u2014 it's a FastAPI-based inference gateway that routes requests to multiple model backends. We've had some security incidents (possible SQL injection in the audit log module, plus an auth bypass reported by a pentester), performance regressions (p99 latency jumped from 120ms to 450ms after last deploy), and general code quality concerns. The repo is about 45k lines across ~180 files.\\n\\nHere's the structure:\\n```\\ninference-gateway/\\n  app/\\n    main.py                  # FastAPI app, middleware, startup\\n    auth/\\n      handler.py             # JWT + API key auth\\n      middleware.py          # Auth middleware, rate limiting\\n      models.py              # User, APIKey, Session SQLAlchemy models\\n      permissions.py         # RBAC permission checks\\n    api/\\n      v1/\\n        routes.py            # /v1/inference, /v1/models, /v1/health\\n        schemas.py           # Pydantic request/response models\\n        dependencies.py      # FastAPI dependency injection\\n      v2/\\n        routes.py            # /v2/inference (streaming), /v2/batch\\n        schemas.py\\n    db/\\n      connection.py          # SQLAlchemy async engine + session factory\\n      queries.py             # Raw SQL query builders for audit log\\n      migrations/            # Alembic migrations\\n    models/\\n      orm.py                 # All SQLAlchemy ORM models\\n      registry.py            # Model backend registry\\n    backends/\\n      vllm_backend.py        # vLLM backend adapter\\n      trtllm_backend.py      # TRT-LLM backend adapter\\n      dynamo_backend.py      # Dynamo backend adapter\\n      base.py                # Abstract backend interface\\n    telemetry/\\n      metrics.py             # Prometheus metrics\\n      tracing.py             # OpenTelemetry tracing\\n      profiling.py           # cProfile/py-spy integration\\n    cache/\\n      redis_cache.py         # Response caching\\n      kv_cache.py            # KV cache state tracking\\n    config.py                # Settings via pydantic-settings\\n    security.py              # Input sanitization, SSRF protection\\n  tests/\\n    test_auth.py\\n    test_inference.py\\n    test_audit.py\\n    conftest.py\\n  deploy/\\n    docker-compose.yml\\n    k8s/\\n```\\n\\nI want you to:\\n1. Find and fix the SQL injection in the audit log module\\n2. Investigate and fix the auth bypass\\n3. Profile and fix the p99 latency regression\\n4. Flag any other security or correctness issues\\n\\nStart by reading the key files and grepping for dangerous patterns.\",\"uri\":null,\"mime_type\":null,\"metadata\":{}}],\"timestamp\":\"2026-03-31T10:00:00.000Z\",\"input_tokens\":1200,\"output_tokens\":0,\"cumulative_tokens\":1200},{\"turn_id\":2,\"parent_turn_id\":1,\"role\":\"assistant\",\"content_blocks\":[{\"type\":\"text\",\"text\":\"I'll approach this systematically. Let me start with the highest-risk areas first:\\n\\n**Phase 1 \u2014 Security (SQL injection + auth bypass)**\\n1. Read `db/queries.py` \u2014 the audit log module with reported SQL injection\\n2. Read `auth/handler.py` and `auth/middleware.py` \u2014 investigate auth bypass\\n3. Grep for raw SQL, f-string SQL, and `.format()` patterns across the codebase\\n4. Grep for authentication/authorization bypass patterns\\n\\n**Phase 2 \u2014 Performance**\\n5. Read `app/main.py` for middleware chain (middleware order affects latency)\\n6. Read the ORM models and query patterns for N+1 issues\\n7. Profile the hot path: request \u2192 auth \u2192 route \u2192 backend \u2192 response\\n8. Check connection pool configuration\\n\\n**Phase 3 \u2014 General audit**\\n9. Input validation, SSRF, secrets handling\\n10. Error handling patterns, exception swallowing\\n\\nLet me start by reading the critical files and running security-focused greps.\",\"uri\":null,\"mime_type\":null,\"metadata\":{}}],\"timestamp\":\"2026-03-31T10:00:08.000Z\",\"input_tokens\":0,\"output_tokens\":2800,\"cumulative_tokens\":4000},{\"turn_id\":3,\"parent_turn_id\":2,\"role\":\"tool\",\"content_blocks\":[{\"type\":\"text\",\"text\":\"[Read: app/main.py]\\nShowing file contents with line numbers:\"},{\"type\":\"code\",\"text\":\"# app/main.py\\nimport logging\\nimport time\\nfrom contextlib import asynccontextmanager\\nfrom typing import AsyncGenerator\\n\\nfrom fastapi import FastAPI, Request, Response\\nfrom fastapi.middleware.cors import CORSMiddleware\\nfrom starlette.middleware.base import BaseHTTPMiddleware\\n\\nfrom app.auth.middleware import AuthMiddleware, RateLimitMiddleware\\nfrom app.db.connection import engine, async_session_factory, init_db\\nfr"
+        }
+      ],
+      "timestamp": "2026-04-01T03:50:34.902Z",
+      "input_tokens": 46115,
+      "output_tokens": 32128,
+      "cumulative_tokens": 293618
+    }
+  ],
+  "replay": {
+    "prefix_group_id": "grp_claude_41d4cd15",
+    "prefix_overlap_ratio": 0.832,
+    "reuse_distance_turns": 2,
+    "reuse_distance_seconds": 393,
+    "estimated_kv_bytes_peak": 46978880,
+    "branch_count": 0,
+    "idle_windows_ms": [
+      0,
+      2897,
+      363,
+      100,
+      320,
+      62,
+      206,
+      0,
+      8115,
+      2,
+      917,
+      135,
+      583,
+      205,
+      46481,
+      393316
+    ],
+    "arrival_pattern": "reactivation_heavy"
+  },
+  "kv_pressure": {
+    "cold_start": true,
+    "warm_cache_hit_rate": 0.6653449628640525,
+    "estimated_offload_bytes": 23489440,
+    "estimated_reload_bytes": 11744720,
+    "tier": "CPU",
+    "cache_expectation": "reactivated",
+    "eviction_risk_score": 0.95
+  },
+  "provenance": {
+    "generator_model": "claude-code-real",
+    "generator_prompt_version": "real-transcript-v1",
+    "pipeline_version": "0.1.0"
+  }
+}

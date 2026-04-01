@@ -1,0 +1,1248 @@
+{
+  "trace_id": "real_codex_019c53f7-af5",
+  "dataset_version": "0.1.0",
+  "source_type": "real",
+  "workload_family": "coding",
+  "language": "en",
+  "tokenizer": {
+    "name": "o200k_base",
+    "version": "1.0"
+  },
+  "session": {
+    "session_id": "019c53f7-af56-73d3-a92a-718147cfda4b",
+    "goal": "# AGENTS.md instructions for /Users/romirjain/Desktop/hikaflow/hikaflow.debugger\n\n<INSTRUCTIONS>\n## Skills\nA skill is a set of local instructions to follow that is stored in a `SKILL.md` file. Below i",
+    "contains_tools": true,
+    "contains_rag": false,
+    "contains_branching": false,
+    "contains_multimodal": false
+  },
+  "turns": [
+    {
+      "turn_id": 1,
+      "parent_turn_id": null,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "# AGENTS.md instructions for /Users/romirjain/Desktop/hikaflow/hikaflow.debugger\n\n<INSTRUCTIONS>\n## Skills\nA skill is a set of local instructions to follow that is stored in a `SKILL.md` file. Below is the list of skills that can be used. Each entry includes a name, description, and file path so you can open the source for full instructions when using a specific skill.\n### Available skills\n- vercel-react-best-practices: React and Next.js performance optimization guidelines from Vercel Engineering. This skill should be used when writing, reviewing, or refactoring React/Next.js code to ensure optimal performance patterns. Triggers on tasks involving React components, Next.js pages, data fetching, bundle optimization, or performance improvements. (file: /Users/romirjain/Desktop/hikaflow/hikaflow.debugger/.agents/skills/vercel-react-best-practices/SKILL.md)\n- skill-creator: Guide for creating effective skills. This skill should be used when users want to create a new skill (or update an existing skill) that extends Codex's capabilities with specialized knowledge, workflows, or tool integrations. (file: /Users/romirjain/.codex/skills/.system/skill-creator/SKILL.md)\n- skill-installer: Install Codex skills into $CODEX_HOME/skills from a curated list or a GitHub repo path. Use when a user asks to list installable skills, install a curated skill, or install a skill from another repo (including private repos). (file: /Users/romirjain/.codex/skills/.system/skill-installer/SKILL.md)\n### How to use skills\n- Discovery: The list above is the skills available in this session (name + description + file path). Skill bodies live on disk at the listed paths.\n- Trigger rules: If the user names a skill (with `$SkillName` or plain text) OR the task clearly matches a skill's description shown above, you must use that skill for that turn. Multiple mentions mean use them all. Do not carry skills across turns unless re-mentioned.\n- Missing/blocked: If a named skill isn't in the list or the path can't be read, say so briefly and continue with the best fallback.\n- How to use a skill (progressive disclosure):\n  1) After deciding to use a skill, open its `SKILL.md`. Read only enough to follow the workflow.\n  2) When `SKILL.md` references relative paths (e.g., `scripts/foo.py`), resolve them relative to the skill directory listed above first, and only consider other paths if needed.\n  3) If `SKILL.md` points to extra folders such as `references/`, load only the specific files needed for the request; don't bulk-load everything.\n  4) If `scripts/` exist, prefer running or patching them instead of retyping large code blocks.\n  5) If `assets/` or templates exist, reuse them instead of recreating from scratch.\n- Coordination and sequencing:\n  - If multiple skills apply, choose the minimal set that covers the request and state the order you'll use them.\n  - Announce which skill(s) you're using and why (one short line). If you skip an obvious skill, say why.\n- Context hygiene:\n  - Keep context small: summarize long sections instead of pasting them; only load extra files when needed.\n  - Avoid deep reference-chasing: prefer opening only files directly linked from `SKILL.md` unless you're blocked.\n  - When variants exist (frameworks, providers, domains), pick only the relevant reference file(s) and note that choice.\n- Safety and fallback: If a skill can't be applied cleanly (missing files, unclear instructions), state the issue, pick the next-best approach, and continue.\n</INSTRUCTIONS>"
+        }
+      ],
+      "timestamp": "2026-02-12T22:27:47.262Z",
+      "input_tokens": 1016,
+      "output_tokens": 0,
+      "cumulative_tokens": 1016
+    },
+    {
+      "turn_id": 2,
+      "parent_turn_id": 1,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "<environment_context>\n  <cwd>/Users/romirjain/Desktop/hikaflow/hikaflow.debugger</cwd>\n  <shell>bash</shell>\n</environment_context>"
+        }
+      ],
+      "timestamp": "2026-02-12T22:27:47.262Z",
+      "input_tokens": 8,
+      "output_tokens": 0,
+      "cumulative_tokens": 1024
+    },
+    {
+      "turn_id": 3,
+      "parent_turn_id": 2,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "Audit platform quality gaps to make this tool 'as good as possible and useful': UX/reporting, actionable next steps quality, flaky detection workflow, doctor checks, telemetry/metrics, testing gaps, and CI quality gates. Return a comprehensive improvement backlog with dependencies and sequencing."
+        }
+      ],
+      "timestamp": "2026-02-12T22:27:47.262Z",
+      "input_tokens": 80,
+      "output_tokens": 0,
+      "cumulative_tokens": 1104
+    },
+    {
+      "turn_id": 4,
+      "parent_turn_id": 3,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "[exec_command] {\"cmd\":\"pwd\"}",
+          "metadata": {
+            "tool_name": "exec_command"
+          }
+        }
+      ],
+      "timestamp": "2026-02-12T22:27:49.954Z",
+      "input_tokens": 0,
+      "output_tokens": 2,
+      "cumulative_tokens": 1106
+    },
+    {
+      "turn_id": 5,
+      "parent_turn_id": 4,
+      "role": "execution",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "Chunk ID: 9df667\nWall time: 0.0507 seconds\nProcess exited with code 0\nOriginal token count: 13\nOutput:\n/Users/romirjain/Desktop/hikaflow/hikaflow.debugger\n"
+        }
+      ],
+      "timestamp": "2026-02-12T22:27:50.052Z",
+      "input_tokens": 36,
+      "output_tokens": 0,
+      "cumulative_tokens": 1142
+    },
+    {
+      "turn_id": 6,
+      "parent_turn_id": 5,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "[exec_command] {\"cmd\":\"echo \\\"Starting audit request: need platform quality gaps backlog for UX/reporting, actionable next steps, flaky detection, doctor checks, telemetry/metrics, testing gaps, CI quality gates. First step: inspect repo structure and relevant docs.\\\"\"}",
+          "metadata": {
+            "tool_name": "exec_command"
+          }
+        }
+      ],
+      "timestamp": "2026-02-12T22:27:52.263Z",
+      "input_tokens": 0,
+      "output_tokens": 64,
+      "cumulative_tokens": 1206
+    },
+    {
+      "turn_id": 7,
+      "parent_turn_id": 6,
+      "role": "execution",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "Chunk ID: 8fbd1e\nWall time: 0.0523 seconds\nProcess exited with code 0\nOriginal token count: 60\nOutput:\nStarting audit request: need platform quality gaps backlog for UX/reporting, actionable next steps, flaky detection, doctor checks, telemetry/metrics, testing gaps, CI quality gates. First step: inspect repo structure and relevant docs.\n"
+        }
+      ],
+      "timestamp": "2026-02-12T22:27:52.363Z",
+      "input_tokens": 96,
+      "output_tokens": 0,
+      "cumulative_tokens": 1302
+    },
+    {
+      "turn_id": 8,
+      "parent_turn_id": 7,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "[exec_command] {\"cmd\":\"ls\"}",
+          "metadata": {
+            "tool_name": "exec_command"
+          }
+        }
+      ],
+      "timestamp": "2026-02-12T22:27:53.667Z",
+      "input_tokens": 0,
+      "output_tokens": 2,
+      "cumulative_tokens": 1304
+    },
+    {
+      "turn_id": 9,
+      "parent_turn_id": 8,
+      "role": "execution",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "Chunk ID: 972a57\nWall time: 0.0517 seconds\nProcess exited with code 0\nOriginal token count: 330\nOutput:\n=10.0\n=2.2\nCODEBASE_IMPROVEMENT_PROMPTS.md\nCOMPETITIVE_IMPROVEMENTS.md\nDIVERGENCE_CODES.md\nDockerfile\nDockerfile.worker\nMakefile\nREADME.md\nSECURITY_AUDIT_REPORT.md\nSUPPORTED.md\nUNSUPPORTED.md\n__pycache__\napi\narxiv.md\naudit\nautodebug\nautodebug.egg-info\nautodebug_probe\nautodebug_replay\ncompetitors.md\nconftest.py\ncoverage.xml\ncurrentfeatures.md\ndashboards\ndocker-compose.airgapped.yml\ndocker-compose.selfhosted.yml\ndocker-compose.yml\ndogfood-results\ndogfood_runner.py\nexamples\nfeatureplan.md\nfeatures.md\nfly.toml\ngo-probe\ngoogle39452e37a294f104.html\ngoogle75a8c89fbe6ad923.html\nhelm\nhikaflow\nhikaflow-debugger.2026-01-29.private-key.pem\nhtmlcov\nide\ninitiative_backlog.md\nissues.md\nissues10.md\nissues11.md\nissues12.md\nissues2.md\nissues3.md\nissues4.md\nissues5.md\nissues5_verified.md\nissues6.md\nissues6_verified.md\nissues7.md\nissues7_verified.md\nissues8_verified.md\nissues9.md\nissuesreaal.md\njava-probe\njunit.xml\nmcp_server\nmigrations\nmvp.md\nnode-probe\npatterns.json\nplanning\nplans\nplaywright.config.ts\npostmvp_plan.md\nprogress.md\nprompts\npyproject.toml\nrailway.worker.json\nrepro_zoo\nrequirements-dev.txt\nrequirements.txt\nroadmap.md\nrust-probe\nscreenshots\nscripts\nsdk\nsearch.md\nsecrets.md\nself_hosted.md\nsupabase\nsupabase_schema.sql\ntest_capture.py\ntesting.md\ntests\ntranscript.md\nuserfeatures.md\nweb\nworker\nworker-deploy\n"
+        }
+      ],
+      "timestamp": "2026-02-12T22:27:53.767Z",
+      "input_tokens": 224,
+      "output_tokens": 0,
+      "cumulative_tokens": 1528
+    },
+    {
+      "turn_id": 10,
+      "parent_turn_id": 9,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "[exec_command] {\"cmd\":\"sed -n '1,120p' README.md\"}",
+          "metadata": {
+            "tool_name": "exec_command"
+          }
+        }
+      ],
+      "timestamp": "2026-02-12T22:27:56.129Z",
+      "input_tokens": 0,
+      "output_tokens": 8,
+      "cumulative_tokens": 1536
+    },
+    {
+      "turn_id": 11,
+      "parent_turn_id": 10,
+      "role": "execution",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "Chunk ID: 7a3949\nWall time: 0.0523 seconds\nProcess exited with code 0\nOriginal token count: 952\nOutput:\n# AutoDebug\n\n**Deterministic test replay and autonomous debugging with LLM-powered fix generation.**\n\nAutoDebug captures all external dependencies (HTTP, SQL, Redis, MongoDB, AWS, etc.) during test execution, enabling deterministic replay and automated fix generation.\n\n## Features\n\n- **Dependency Capture** - Records HTTP, SQL, Redis, MongoDB, gRPC, AWS S3 calls\n- **Deterministic Replay** - Replay tests with exact same external responses\n- **Flakiness Detection** - Identify non-deterministic tests automatically\n- **Transcript Minimization** - Delta debugging to find minimal failing case\n- **Autonomous Debugging** - LLM-powered fix generation with proof certificates\n- **CI Integration** - GitHub Actions, GitLab CI, CircleCI support\n\n## Installation\n\n```bash\npip install autodebug\n\n# With all optional dependencies\npip install autodebug[all]\n\n# Or specific extras\npip install autodebug[probe]  # Full dependency capture\npip install autodebug[llm]    # LLM-powered debugging\n```\n\n## Quick Start\n\n> **Note:** The legacy `autodebug` CLI is deprecated. Use `hikaflow` for all new workflows.\n\n### 1. Authenticate\n\n```bash\nhikaflow login\n```\n\n### 2. Capture a failing test\n\n```bash\n# Run your test under Hikaflow instrumentation\nhikaflow run -- pytest tests/test_api.py::test_user_creation -x\n\n# Output:\n# Run id: abc123\n# Local bundle path: .autodebug/runs/abc123/\n```\n\n### 3. Debug interactively (requires LLM API key)\n\n```bash\nexport ANTHROPIC_API_KEY=REDACTED  # or OPENAI_API_KEY\n\nhikaflow debug\n```\n\n## CLI Commands\n\n### Core Commands\n\n| Command | Description |\n|---------|-------------|\n| `hikaflow setup` | Guided setup: doctor, login, init |\n| `hikaflow login` | Authenticate via browser or device code |\n| `hikaflow logout` | Clear stored credentials |\n| `hikaflow whoami` | Show current authentication status |\n| `hikaflow doctor` | Check environment and dependencies |\n| `hikaflow status` | Show project status and recent errors |\n| `hikaflow run` | Run a command under instrumentation |\n| `hikaflow errors` | List recent production errors |\n| `hikaflow inspect` | Inspect a specific error by ID |\n| `hikaflow debug` | Interactive AI debugging session |\n| `hikaflow watch` | Watch for new errors in real time |\n\n### `hikaflow replay` \u2014 Transcript replay & analysis\n\n| Command | Description |\n|---------|-------------|\n| `replay diff` | Compare two transcripts |\n| `replay export` | Export to HAR/curl/Postman |\n| `replay minimize` | Delta-debug to smallest failing case |\n| `replay debug` | Interactive transcript debugger |\n| `replay share` | Share a run via public link |\n| `replay repro` | Reproduce a run locally |\n| `replay prod` | Replay a production error locally |\n| `replay optimize` | Optimize a bundle for storage |\n| `replay auto` | Autonomous debug workflow |\n| `replay analyze` | Analyze a failure for root cause |\n\n### `hikaflow flaky` \u2014 Flakiness detection & manageme"
+        }
+      ],
+      "timestamp": "2026-02-12T22:27:56.232Z",
+      "input_tokens": 912,
+      "output_tokens": 0,
+      "cumulative_tokens": 2448
+    },
+    {
+      "turn_id": 12,
+      "parent_turn_id": 11,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "[exec_command] {\"cmd\":\"echo \\\"Reviewed README for platform capabilities (agent workflow, flaky detection commands, telemetry hooks). Next: inspect docs around quality and issues backlog to identify gaps.\\\"\"}",
+          "metadata": {
+            "tool_name": "exec_command"
+          }
+        }
+      ],
+      "timestamp": "2026-02-12T22:27:57.614Z",
+      "input_tokens": 0,
+      "output_tokens": 48,
+      "cumulative_tokens": 2496
+    },
+    {
+      "turn_id": 13,
+      "parent_turn_id": 12,
+      "role": "execution",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "Chunk ID: f43b64\nWall time: 0.0513 seconds\nProcess exited with code 0\nOriginal token count: 44\nOutput:\nReviewed README for platform capabilities (agent workflow, flaky detection commands, telemetry hooks). Next: inspect docs around quality and issues backlog to identify gaps.\n"
+        }
+      ],
+      "timestamp": "2026-02-12T22:27:57.713Z",
+      "input_tokens": 80,
+      "output_tokens": 0,
+      "cumulative_tokens": 2576
+    },
+    {
+      "turn_id": 14,
+      "parent_turn_id": 13,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "[exec_command] {\"cmd\":\"rg -n \\\"doctor\\\" -n\"}",
+          "metadata": {
+            "tool_name": "exec_command"
+          }
+        }
+      ],
+      "timestamp": "2026-02-12T22:28:00.383Z",
+      "input_tokens": 0,
+      "output_tokens": 8,
+      "cumulative_tokens": 2584
+    },
+    {
+      "turn_id": 15,
+      "parent_turn_id": 14,
+      "role": "execution",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "Chunk ID: 8bbcbd\nWall time: 0.0519 seconds\nProcess exited with code 2\nOriginal token count: 2322\nOutput:\nissuesreaal.md:128:- **F-006** | **MEDIUM** | M-131: `--json` global flag not supported by `doctor` command | Where: autodebug/cli_v2.py | Source: `audit/issues/infrastructure/M-131.md`\nissuesreaal.md:129:- **F-007** | **MEDIUM** | M-132: `doctor` exits code 1 for non-critical warnings | Where: autodebug/cli_v2.py | Source: `audit/issues/infrastructure/M-132.md`\nfeatures.md:419:- `hikaflow doctor` - Check environment\nscripts/repl_dogfood.py:65:        \"generate tests for autodebug/doctor.py\",\ncurrentfeatures.md:32:- `hikaflow doctor` - Check environment and dependencies\ndogfood_runner.py:40:    (\"read_file\", \"read autodebug/doctor.py\"),\nautodebug/agent/tools.py:1292:        from autodebug.doctor import format_report, run_doctor\nautodebug/agent/tools.py:1296:                run_doctor,\nautodebug/agent/tools.py:1298:                timeout_msg=\"Error: Environment diagnostics timed out after 30s. Network or credential checks may be slow. Try running 'hikaflow doctor' directly.\",\nautodebug/agent/tools.py:2754:            from autodebug.doctor import run_doctor\nautodebug/agent/tools.py:2782:                    run_doctor,\nautodebug/agent/tools.py:2796:                                run_doctor,\nautodebug/doctor.py:1:\"\"\"AutoDebug doctor - environment diagnostics.\"\"\"\nautodebug/doctor.py:201:                \"description\": f\"Created via doctor for {repo_slug}\",\nautodebug/doctor.py:428:def run_doctor(verbose: bool = False) -> Dict[str, Any]:\nautodebug/doctor.py:429:    \"\"\"Run all doctor checks and return results.\"\"\"\nautodebug/doctor.py:488:    \"\"\"Format doctor results as a string (plain text fallback).\"\"\"\nautodebug/doctor.py:523:    \"\"\"Format doctor results using Rich for colored terminal output.\"\"\"\nautodebug/cli_errors.py:24:        \"Check your network connection and run: hikaflow doctor\",\nautodebug/cli_errors.py:29:        \"Check your connection or try again. Run: hikaflow doctor\",\nautodebug/cli_errors.py:162:        console.print(\"  [dim]Try: hikaflow doctor[/]\")\nroadmap.md:74:- `autodebug doctor`\nroadmap.md:207:- `autodebug doctor`\nautodebug/cli_v2.py:14:    hikaflow doctor             # Check environment setup\nautodebug/cli_v2.py:742:def doctor(\nautodebug/cli_v2.py:750:    from autodebug.doctor import format_report_rich, run_doctor\nautodebug/cli_v2.py:754:    results = run_doctor(verbose=verbose)\nautodebug/cli_v2.py:780:            results = run_doctor(verbose=verbose)\nautodebug/cli_v2.py:804:    \"\"\"Guided setup: doctor \u2192 login \u2192 init.\"\"\"\nautodebug/cli_v2.py:806:    from autodebug.doctor import format_report_rich, run_doctor\nautodebug/cli_v2.py:821:    results = run_doctor(verbose=verbose)\nautodebug/cli_v2.py:826:        results = run_doctor(verbose=verbose)\nautodebug/cli_v2.py:1010:            output.error(\"Cannot connect to API.\", \"Check connection or run: hikaflow doctor\")\nautodebug/cli_v2.py:1037:        \"  [green]hikaflow doctor[/]            "
+        }
+      ],
+      "timestamp": "2026-02-12T22:28:00.604Z",
+      "input_tokens": 508,
+      "output_tokens": 0,
+      "cumulative_tokens": 3092
+    },
+    {
+      "turn_id": 16,
+      "parent_turn_id": 15,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "[exec_command] {\"cmd\":\"echo \\\"Mapped doctor references across CLI, audit docs, and issues lists; now need to collect information for other focus areas (UX/reporting, flaky detection, telemetry, CI, etc.) from backlog files.\\\"\"}",
+          "metadata": {
+            "tool_name": "exec_command"
+          }
+        }
+      ],
+      "timestamp": "2026-02-12T22:28:03.274Z",
+      "input_tokens": 0,
+      "output_tokens": 58,
+      "cumulative_tokens": 3150
+    },
+    {
+      "turn_id": 17,
+      "parent_turn_id": 16,
+      "role": "execution",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "Chunk ID: f65d43\nWall time: 0.0524 seconds\nProcess exited with code 0\nOriginal token count: 49\nOutput:\nMapped doctor references across CLI, audit docs, and issues lists; now need to collect information for other focus areas (UX/reporting, flaky detection, telemetry, CI, etc.) from backlog files.\n"
+        }
+      ],
+      "timestamp": "2026-02-12T22:28:03.374Z",
+      "input_tokens": 90,
+      "output_tokens": 0,
+      "cumulative_tokens": 3240
+    },
+    {
+      "turn_id": 18,
+      "parent_turn_id": 17,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "[exec_command] {\"cmd\":\"sed -n '1,200p' initiative_backlog.md\"}",
+          "metadata": {
+            "tool_name": "exec_command"
+          }
+        }
+      ],
+      "timestamp": "2026-02-12T22:28:06.325Z",
+      "input_tokens": 0,
+      "output_tokens": 8,
+      "cumulative_tokens": 3248
+    },
+    {
+      "turn_id": 19,
+      "parent_turn_id": 18,
+      "role": "execution",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "Chunk ID: 943a24\nWall time: 0.0509 seconds\nProcess exited with code 0\nOriginal token count: 1756\nOutput:\n# Hikaflow Determinism + Tooling Initiative Backlog\n\nStatus date: 2026-02-12\n\n## How to use this backlog\n- Execute in order by phase gates.\n- Treat each item as a deliverable ticket.\n- Do not start a gate-dependent item until its gate criteria are met.\n\n## Current implementation snapshot\n- Replay determinism foundations exist (task IDs, SQL tx sequence checks, env guard).\n- Grounding modules exist, but tool dependency policy is not enforced.\n- Canonicalization exists, but SQL replay normalization is still mostly string-level.\n- Metrics exist, but initiative-specific rollups/benchmark gates are missing.\n\n## Phase 1 (Weeks 1-4): Deterministic Replay\n\n### P1.1 Async scheduling determinism (Commit-critical)\n1. Build async task graph capture in probe layer.\n- Files:\n  - `autodebug_probe/correlation.py`\n  - `autodebug_probe/runtime_capture.py`\n  - `autodebug_probe/http_capture.py`\n  - `autodebug_probe/aiosqlite_patch.py`\n  - `autodebug_probe/aiomysql_patch.py`\n- Deliverables:\n  - Stable task node IDs (create/start/await/complete edges).\n  - Global monotonic sequence for async events.\n  - Persisted graph metadata in transcript artifacts.\n- Acceptance:\n  - Replaying `asyncio.gather` fixture preserves observed completion ordering.\n  - `ASYNC_ORDER` divergence drops vs baseline fixtures.\n\n2. Enforce deterministic replay ordering constraints.\n- Files:\n  - `autodebug_replay/transcripts.py`\n  - `autodebug_replay/asyncpg_replay.py`\n  - `autodebug_replay/aiosqlite_replay.py`\n  - `autodebug_replay/aiomysql_replay.py`\n- Deliverables:\n  - Replay index supports ordering constraints by task edge/sequence.\n  - Clear divergence diagnostics showing expected/actual edge.\n- Acceptance:\n  - Deterministic pass on async fixture matrix (at least 20 scenarios).\n\n### P1.2 Thread ordering + SQL/env hardening\n3. Thread I/O boundary ordering constraints (not full scheduler).\n- Files:\n  - `autodebug_probe/runtime_capture.py`\n  - `autodebug_probe/recorder.py`\n  - `autodebug_replay/runtime.py`\n  - `autodebug_replay/transcripts.py`\n- Deliverables:\n  - Record thread ID + I/O boundary sequence.\n  - Replay enforces observed per-thread boundary ordering.\n- Acceptance:\n  - Threaded fixture suite shows reduced interleaving divergences.\n\n4. SQL replay ordering + canonical mismatch diagnostics.\n- Files:\n  - `autodebug_replay/sql_replay.py`\n  - `autodebug_replay/aiosqlite_replay.py`\n  - `autodebug_replay/aiomysql_replay.py`\n  - `autodebug_replay/asyncpg_replay.py`\n- Deliverables:\n  - Unified SQL divergence payload schema (tx_id, seq, statement fingerprint).\n  - Replay error classification split: order mismatch vs semantic mismatch.\n- Acceptance:\n  - `SQL_DIVERGENCE` false positives reduced on existing replay fixtures.\n\n5. Env capture refinement (reduce false `UNCAPTURED_ENV_ACCESS`).\n- Files:\n  - `autodebug_probe/env_patch.py`\n  - `autodebug_replay/env_replay.py`\n  - `autodebug_replay/runt"
+        }
+      ],
+      "timestamp": "2026-02-12T22:28:06.425Z",
+      "input_tokens": 698,
+      "output_tokens": 0,
+      "cumulative_tokens": 3946
+    },
+    {
+      "turn_id": 20,
+      "parent_turn_id": 19,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "[exec_command] {\"cmd\":\"sed -n '1,200p' testing.md\"}",
+          "metadata": {
+            "tool_name": "exec_command"
+          }
+        }
+      ],
+      "timestamp": "2026-02-12T22:28:08.475Z",
+      "input_tokens": 0,
+      "output_tokens": 8,
+      "cumulative_tokens": 3954
+    },
+    {
+      "turn_id": 21,
+      "parent_turn_id": 20,
+      "role": "execution",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "Chunk ID: 63439b\nWall time: 0.0517 seconds\nProcess exited with code 0\nOriginal token count: 1231\nOutput:\n# Hikaflow Debugger Testing Guide\n\nThis document outlines all testable features and their verification status.\n\n## Quick Test Commands\n\n```bash\n# Run all unit tests\npython -m pytest tests/ -v\n\n# Run with coverage\npython -m pytest tests/ --cov=autodebug --cov=autodebug_probe --cov=autodebug_replay --cov=worker\n\n# Run specific test category\npython -m pytest tests/test_validation.py -v\n```\n\n---\n\n## 1. Core Replay Features\n\n### 1.1 HTTP Replay (requests/httpx)\n**Status:** \u2705 VERIFIED\n\nCaptures HTTP requests and replays exact responses without network access.\n\n```bash\n# Create test file\ncat > /tmp/test_http.py << 'EOF'\nimport requests\n\ndef test_http_call():\n    resp = requests.get(\"https://api.github.com/zen\")\n    print(f\"Response: {resp.text}\")\n    assert resp.status_code == 200\n    # Intentional failure to capture\n    assert \"foo\" in resp.text, f\"Expected 'foo' in: {resp.text}\"\nEOF\n\n# Capture\nRUN_ID=$(uuidgen | tr '[:upper:]' '[:lower:]')\nmkdir -p .autodebug/runs/$RUN_ID\nAUTODEBUG_RUN_ID=$RUN_ID python -c \"from autodebug_probe import runtime; runtime.initialize()\" && \\\nAUTODEBUG_RUN_ID=$RUN_ID python -m pytest /tmp/test_http.py -v --autodebug\n\n# Build harness and run in Docker\npython -c \"from pathlib import Path; from worker.harness import build_harness; build_harness(Path('.autodebug/runs/$RUN_ID'), Path('/tmp/harness.tar.gz'))\"\n# ... extract, add test file, build docker, run with --network=none\n```\n\n**Verification:** Response body matches exactly during replay.\n\n---\n\n### 1.2 Time/Random Replay\n**Status:** \u2705 VERIFIED\n\nCaptures `time.time()`, `random.randint()`, `uuid.uuid4()` etc. and replays exact values.\n\n```bash\ncat > /tmp/test_random.py << 'EOF'\nimport random\n\ndef test_random():\n    values = [random.randint(1, 100) for _ in range(3)]\n    print(f\"Values: {values}\")\n    assert values[0] == 999  # Will fail, but replay returns same values\nEOF\n\n# Capture and replay - values will be identical\n```\n \n---\n\n### 1.3 SQL/PostgreSQL Replay\n**Status:** \u2705 CAPTURE VERIFIED\n\nCaptures SQL queries and result sets, replays without database.\n\n```bash\n# Requires: PostgreSQL running locally\n# docker run -d -p 5432:5432 -e POSTGRES_PASSWORD=test postgres:15\n\ncat > /tmp/test_sql.py << 'EOF'\nimport psycopg2\n\ndef test_sql():\n    conn = psycopg2.connect(\"postgresql://postgres:test@localhost/postgres\")\n    cur = conn.cursor()\n    cur.execute(\"SELECT 1 + 1 as result\")\n    result = cur.fetchone()[0]\n    assert result == 2\n    cur.close()\n    conn.close()\nEOF\n```\n\n**To Test:**\n1. Start PostgreSQL container\n2. Capture test with autodebug probe\n3. Build harness\n4. Run in Docker with `--network=none`\n5. Verify SQL results replay correctly\n\n---\n\n### 1.4 Redis Replay\n**Status:** \u2705 CAPTURE VERIFIED\n\nCaptures Redis commands and responses.\n\n```bash\n# Requires: Redis running locally\n# docker run -d -p 6379:6379 redis:7\n\ncat > /tmp/test_redis.py << 'EOF'\nimport redis\n\ndef test_redis"
+        }
+      ],
+      "timestamp": "2026-02-12T22:28:08.579Z",
+      "input_tokens": 768,
+      "output_tokens": 0,
+      "cumulative_tokens": 4722
+    },
+    {
+      "turn_id": 22,
+      "parent_turn_id": 21,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "[exec_command] {\"cmd\":\"echo \\\"Captured testing guide contents: core replay verifications and flaky pattern detection statuses. Next step: extract insights on UX/reporting, actionable steps, telemetry, CI from issues and progress docs.\\\"\"}",
+          "metadata": {
+            "tool_name": "exec_command"
+          }
+        }
+      ],
+      "timestamp": "2026-02-12T22:28:11.003Z",
+      "input_tokens": 0,
+      "output_tokens": 56,
+      "cumulative_tokens": 4778
+    },
+    {
+      "turn_id": 23,
+      "parent_turn_id": 22,
+      "role": "execution",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "Chunk ID: bd517b\nWall time: 0.0513 seconds\nProcess exited with code 0\nOriginal token count: 52\nOutput:\nCaptured testing guide contents: core replay verifications and flaky pattern detection statuses. Next step: extract insights on UX/reporting, actionable steps, telemetry, CI from issues and progress docs.\n"
+        }
+      ],
+      "timestamp": "2026-02-12T22:28:11.099Z",
+      "input_tokens": 88,
+      "output_tokens": 0,
+      "cumulative_tokens": 4866
+    },
+    {
+      "turn_id": 24,
+      "parent_turn_id": 23,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "[exec_command] {\"cmd\":\"rg -n \\\"telemetry\\\" -n\"}",
+          "metadata": {
+            "tool_name": "exec_command"
+          }
+        }
+      ],
+      "timestamp": "2026-02-12T22:28:12.834Z",
+      "input_tokens": 0,
+      "output_tokens": 8,
+      "cumulative_tokens": 4874
+    },
+    {
+      "turn_id": 25,
+      "parent_turn_id": 24,
+      "role": "execution",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "Chunk ID: 616ac6\nWall time: 0.0506 seconds\nProcess exited with code 2\nOriginal token count: 62790\nOutput:\nTotal output lines: 217\n\npyproject.toml:120:    \"opentelemetry-sdk>=1.20.0\",\npyproject.toml:121:    \"opentelemetry-exporter-otlp>=1.20.0\",\npyproject.toml:122:    \"opentelemetry-instrumentation-asyncpg>=0.44b0\",\npyproject.toml:123:    \"opentelemetry-instrumentation-aiohttp-client>=0.44b0\",\npyproject.toml:124:    \"opentelemetry-instrumentation-redis>=0.44b0\",\npyproject.toml:125:    \"opentelemetry-instrumentation-requests>=0.44b0\",\npyproject.toml:126:    \"opentelemetry-instrumentation-httpx>=0.44b0\",\npyproject.toml:127:    \"opentelemetry-instrumentation-sqlalchemy>=0.44b0\",\nissues12.md:14:- Web recorder telemetry: dropped events, upload latency, periodic stats (queue size, memory, hardware concurrency)\nissues12.md:24:- No CPU overhead telemetry (browser limits).\nplanning/44_structlog_logging.md:84:        from opentelemetry import trace\nplanning/52_competitive_analysis_jan2026.md:377:- **CodeStream**: IDE-native telemetry\nplanning/35_observability.md:372:from opentelemetry import trace\nplanning/35_observability.md:373:from opentelemetry.sdk.trace import TracerProvider\nplanning/35_observability.md:374:from opentelemetry.sdk.trace.export import BatchSpanProcessor\nplanning/35_observability.md:375:from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter\nplanning/35_observability.md:376:from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor\nplanning/35_observability.md:377:from opentelemetry.instrumentation.httpx import HTTPXClientInstrumentor\nplanning/35_observability.md:378:from opentelemetry.instrumentation.sqlalchemy import SQLAlchemyInstrumentor\nplanning/35_observability.md:379:from opentelemetry.sdk.resources import Resource\nplanning/35_observability.md:380:from opentelemetry.semconv.resource import ResourceAttributes\nplanning/35_observability.md:510:from opentelemetry import trace\nplanning/35_observability.md:511:from opentelemetry.propagate import extract, inject\nautodebug_probe/prod_mode.py:57:    from opentelemetry import trace as otel_trace\nautodebug_probe/prod_mode.py:58:    from opentelemetry.trace import get_current_span, SpanKind\nautodebug_probe/otel_integration.py:14:    from opentelemetry import trace\nautodebug_probe/otel_integration.py:15:    from opentelemetry.sdk.trace import TracerProvider, ReadableSpan\nautodebug_probe/otel_integration.py:16:    from opentelemetry.sdk.trace.export import SpanExporter, SpanExportResult\nautodebug_probe/otel_integration.py:225:        from opentelemetry.sdk.trace.export import SimpleSpanProcessor\nautodebug_probe/otel_integration.py:240:        self._try_instrument(\"opentelemetry.instrumentation.requests\", \"RequestsInstrumentor\")\nautodebug_probe/otel_integration.py:241:        self._try_instrument(\"opentelemetry.instrumentation.httpx\", \"HTTPXClientInstrumentor\")\nautodebug_probe/otel_integration.py:242:        self._try_instrument(\"opentelemetry.instrumentation"
+        }
+      ],
+      "timestamp": "2026-02-12T22:28:13.056Z",
+      "input_tokens": 312,
+      "output_tokens": 0,
+      "cumulative_tokens": 5186
+    },
+    {
+      "turn_id": 26,
+      "parent_turn_id": 25,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "[exec_command] {\"cmd\":\"echo \\\"Telemetry hooks are widespread: OpenTelemetry deps, telemetry router, and existing audit findings. Next, I need quality info on UX/reporting, actionable steps, flaky workflows, CI gates, from backlog docs.\\\"\"}",
+          "metadata": {
+            "tool_name": "exec_command"
+          }
+        }
+      ],
+      "timestamp": "2026-02-12T22:28:15.735Z",
+      "input_tokens": 0,
+      "output_tokens": 58,
+      "cumulative_tokens": 5244
+    },
+    {
+      "turn_id": 27,
+      "parent_turn_id": 26,
+      "role": "execution",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "Chunk ID: e2b3fc\nWall time: 0.0505 seconds\nProcess exited with code 0\nOriginal token count: 52\nOutput:\nTelemetry hooks are widespread: OpenTelemetry deps, telemetry router, and existing audit findings. Next, I need quality info on UX/reporting, actionable steps, flaky workflows, CI gates, from backlog docs.\n"
+        }
+      ],
+      "timestamp": "2026-02-12T22:28:15.831Z",
+      "input_tokens": 90,
+      "output_tokens": 0,
+      "cumulative_tokens": 5334
+    },
+    {
+      "turn_id": 28,
+      "parent_turn_id": 27,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "[exec_command] {\"cmd\":\"rg -n \\\"CI\\\" issues*.md\"}",
+          "metadata": {
+            "tool_name": "exec_command"
+          }
+        }
+      ],
+      "timestamp": "2026-02-12T22:28:19.569Z",
+      "input_tokens": 0,
+      "output_tokens": 8,
+      "cumulative_tokens": 5342
+    },
+    {
+      "turn_id": 29,
+      "parent_turn_id": 28,
+      "role": "execution",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "Chunk ID: 21e3e7\nWall time: 0.0502 seconds\nProcess exited with code 0\nOriginal token count: 129\nOutput:\nissues7_verified.md:217:- **Description**: `[..8]` slice could panic on multi-byte UTF-8 (UUID is ASCII, so safe in practice).\nissues9.md:39:4. Implement secrets scanning in CI/CD\nissues9.md:533:### Docker Container Security (CIS Benchmarks)\nissues9.md:534:Findings against CIS Docker Benchmark 1.6.0:\nissues9.md:631:3. Add security scanning to CI/CD\nissuesreaal.md:236:- **L-007** | **HIGH** | H-96: E2E tests not included in CI pipeline | Where: .github/workflows/ci.yml | Source: `audit/issues/testing/H-96.md`\n"
+        }
+      ],
+      "timestamp": "2026-02-12T22:28:19.684Z",
+      "input_tokens": 152,
+      "output_tokens": 0,
+      "cumulative_tokens": 5494
+    },
+    {
+      "turn_id": 30,
+      "parent_turn_id": 29,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "[exec_command] {\"cmd\":\"rg -n \\\"UX\\\" -n\"}",
+          "metadata": {
+            "tool_name": "exec_command"
+          }
+        }
+      ],
+      "timestamp": "2026-02-12T22:28:21.995Z",
+      "input_tokens": 0,
+      "output_tokens": 8,
+      "cumulative_tokens": 5502
+    },
+    {
+      "turn_id": 31,
+      "parent_turn_id": 30,
+      "role": "execution",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "Chunk ID: 64d19f\nWall time: 0.2519 seconds\nProcess exited with code 2\nOriginal token count: 2334\nOutput:\nissues6.md:279:| W12 | dashboard/projects/page.tsx | 69 | UX | Alert used for error handling - blocking UX |\nissues6.md:283:| W16 | dashboard/runs/[id]/page.tsx | 598-634 | UX | Missing disabled state during form submissions |\nissues6.md:292:| W20 | dashboard/settings/page.tsx | 106-108 | UX | No loading state for settings changes |\nissues5.md:210:| 4 | `dashboard/projects/page.tsx` | 69 | Using alert() for errors - blocking and poor UX |\nissues12.md:46:- No \u201ccausal slice\u201d UX on session page.\nissues10.md:32:| Medium | 3 | Poor UX/reliability |\nissues10.md:251:| UX Quality | Best (like `gh auth login`) | Good |\nissues10.md:267:3. Good enough UX (generate once in dashboard)\nissues10.md:362:| B. OAuth Device Flow | Best UX | Clerk doesn't support | No (future) |\nissues10.md:363:| C. Keep manual JWT | No work | Terrible UX | No |\nissues10.md:741:| CLI Auth | Device Flow, API Keys, Manual JWT | API Keys | Clerk supports it now, simple, good UX |\ncurrentfeatures.md:242:| `01_cli_design.md` | CLI commands and UX |\nplans/plan-73-ai-session-highlights.md:7:Replay without summaries is time-expensive; highlights are a UX multiplier.\nplans/plan-73-ai-session-highlights.md:21:3) UX integration (2\u20133 weeks)\nplans/plan-71-frontend-backend-correlation.md:7:The product differentiator is a single chain from UX to reproducible backend failure.\nplans/plan-71-frontend-backend-correlation.md:26:5) UX surfacing (2 weeks)\nplans/comprehensive_codebase_improvements.md:54:- **P1 (High)**: Major performance issues, significant UX problems, blocking features, reliability issues\nplans/comprehensive_codebase_improvements.md:282:- **Poor UX**: Users wait too long\nplans/comprehensive_codebase_improvements.md:287:3. **Add streaming responses** for better UX\nplans/plan-67-web-session-replay-sdk.md:7:Web replay is table stakes and the anchor for full-stack UX. The repo already has a replay UI; the missing piece is capture.\nplans/plan-66-full-stack-session-replay.md:71:Phase 4: Dashboard Playback + UX (4\u20136 weeks)\nplans/plan-66-full-stack-session-replay.md:104:3) UX\nissues6_verified.md:194:| W12 | Alert for errors | REAL ISSUE - Poor UX |\ncompetitors.md:81:| 34 | **Haystack Software** | S2024 | Code review platform with visual walkthrough on infinite canvas | Code review UX |\nplans/plan-74-cli-session-workflow.md:17:1) CLI UX (2 weeks)\nissues7.md:733:- **Category**: UX\nissues7.md:738:- **Category**: UX\nissues7.md:785:- **Category**: UX\naudit/issues/infrastructure/H-209.md:22:Terrible UX \u2014 users see a wall of identical errors. Should detect missing keys early and give one actionable message like: \"LLM strategy requires ANTHROPIC_API_KEY or OPENAI_API_KEY. Set one and retry.\"\nissues9.md:452:| M91-M124 | Various | Accessibility, UX, performance |\nautodebug/agent/tools.py:3003:                            [\"git\", \"diff\", \"--name-only\", \"--diff-filter=ACMRTUXB\", base, \"HEAD\"],\nautodebug/"
+        }
+      ],
+      "timestamp": "2026-02-12T22:28:22.405Z",
+      "input_tokens": 740,
+      "output_tokens": 0,
+      "cumulative_tokens": 6242
+    },
+    {
+      "turn_id": 32,
+      "parent_turn_id": 31,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "[exec_command] {\"cmd\":\"rg -n \\\"actionable\\\" -n\"}",
+          "metadata": {
+            "tool_name": "exec_command"
+          }
+        }
+      ],
+      "timestamp": "2026-02-12T22:28:25.271Z",
+      "input_tokens": 0,
+      "output_tokens": 8,
+      "cumulative_tokens": 6250
+    },
+    {
+      "turn_id": 33,
+      "parent_turn_id": 32,
+      "role": "execution",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "Chunk ID: 5a1366\nWall time: 0.0509 seconds\nProcess exited with code 2\nOriginal token count: 958\nOutput:\nplans/comprehensive_codebase_improvements.md:967:**Issue**: Generic error messages, no actionable guidance\nCODEBASE_IMPROVEMENT_PROMPTS.md:421:Do NOT attempt to revoke tokens - just output the actionable list for the user.\nplanning/54_ai_wow_features.md:320:        prompt = f\"\"\"You are explaining a flaky test to a developer. Be clear and actionable.\nplanning/54_ai_wow_features.md:1658:        \"\"\"Generate actionable recommendations.\"\"\"\nplanning/23_autonomous_debugging.md:50:Classify failures into actionable categories:\nplanning/23_autonomous_debugging.md:171:    \"\"\"Parse LLM response into actionable hypotheses.\"\"\"\nplanning/52_competitive_analysis_jan2026.md:6:After extensive research across 25+ competitors in the testing, debugging, and observability space, this document provides a detailed competitive landscape analysis and actionable recommendations for Hikaflow to maintain and expand its competitive position.\napi/ai/pr_reviewer.py:4:providing actionable feedback before code is merged.\napi/ai/flaky_predictor.py:671:        \"\"\"Generate actionable recommendations.\"\"\"\napi/ai/root_cause_analyzer.py:457:        prompt = f\"\"\"You are explaining a flaky test to a developer. Be clear and actionable.\naudit/issues/infrastructure/H-209.md:22:Terrible UX \u2014 users see a wall of identical errors. Should detect missing keys early and give one actionable message like: \"LLM strategy requires ANTHROPIC_API_KEY or OPENAI_API_KEY. Set one and retry.\"\napi/routers/ai.py:984:    providing actionable feedback before code is merged.\nautodebug/cli_errors.py:3:Provides actionable error messages that tell users what to DO,\nautodebug/cli_errors.py:20:# Map common error conditions to actionable remediation messages\nautodebug/cli_errors.py:78:    \"\"\"Decorator that wraps CLI commands with actionable error handling.\nautodebug/learning/pattern_matcher.py:359:    actionable recommendations.\nautodebug/llm_first/multi_run_analyzer.py:1094:    \"\"\"Generate actionable recommendations based on analysis.\nautodebug/llm_first/debate.py:1044:6. Suggests a concrete, actionable fix with specific code location\nautodebug/llm_first/debate.py:1307:- 1.0: Very promising, leads to actionable root cause\naudit/subagents.md:726:2. Are HTTP error codes mapped to actionable messages?\naudit/subagents.md:739:5. Are diagnostic messages actionable?\naudit/subagents.md:918:5. Are error messages actionable?\naudit/findings/cli/F4/2026-02-06.md:10:- HTTP codes 401/403/404/429/500/502/503 mapped to actionable messages\naudit/findings/ai-pipeline/C3/2026-02-07.md:55:  prompt = f\"\"\"You are explaining a flaky test to a developer. Be clear and actionable.\naudit/findings/ai-pipeline/C6/2026-02-07.md:115:- **Recommendation**: (1) Add a `post_inline_findings()` method that calls `create_pr_review_comment` for each finding at the specific file and line. (2) Use GitHub's ` ```suggestion ` markdown syntax (via the existing"
+        }
+      ],
+      "timestamp": "2026-02-12T22:28:25.497Z",
+      "input_tokens": 602,
+      "output_tokens": 0,
+      "cumulative_tokens": 6852
+    },
+    {
+      "turn_id": 34,
+      "parent_turn_id": 33,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "[exec_command] {\"cmd\":\"echo \\\"Logged actionable guidance references (audit subagents, CLI errors) and plan to extract more specifics for flaky workflow, metrics, CI gate docs. Next focus: gather CI/testing docs for gaps.\\\"\"}",
+          "metadata": {
+            "tool_name": "exec_command"
+          }
+        }
+      ],
+      "timestamp": "2026-02-12T22:28:27.329Z",
+      "input_tokens": 0,
+      "output_tokens": 58,
+      "cumulative_tokens": 6910
+    },
+    {
+      "turn_id": 35,
+      "parent_turn_id": 34,
+      "role": "execution",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "Chunk ID: ff0636\nWall time: 0.0518 seconds\nProcess exited with code 0\nOriginal token count: 48\nOutput:\nLogged actionable guidance references (audit subagents, CLI errors) and plan to extract more specifics for flaky workflow, metrics, CI gate docs. Next focus: gather CI/testing docs for gaps.\n"
+        }
+      ],
+      "timestamp": "2026-02-12T22:28:27.428Z",
+      "input_tokens": 90,
+      "output_tokens": 0,
+      "cumulative_tokens": 7000
+    },
+    {
+      "turn_id": 36,
+      "parent_turn_id": 35,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "[exec_command] {\"cmd\":\"sed -n '1,200p' audit/findings/testing/M1/2026-02-07.md\"}",
+          "metadata": {
+            "tool_name": "exec_command"
+          }
+        }
+      ],
+      "timestamp": "2026-02-12T22:28:30.633Z",
+      "input_tokens": 0,
+      "output_tokens": 8,
+      "cumulative_tokens": 7008
+    },
+    {
+      "turn_id": 37,
+      "parent_turn_id": 36,
+      "role": "execution",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "Chunk ID: fbce56\nWall time: 0.0518 seconds\nProcess exited with code 0\nOriginal token count: 667\nOutput:\n# M1: Test Coverage Gaps\n\n**Scanner**: M1 | **Date**: 2026-02-07 | **Status**: SIGNIFICANT GAPS FOUND\n\n## Findings\n\n### Summary Statistics\n- **Total API endpoints**: 143 across 10 routers\n- **Endpoints with tests**: ~44 (~30% coverage)\n- **Source files with ZERO tests**: 40+\n- **Total tests passing**: 3035\n\n### CRITICAL Coverage Gaps (No Tests At All)\n\n#### Integration Layer (4 files)\n- `api/integrations/slack.py` \u2014 SlackNotifier (4 methods, 0 tests)\n- `api/integrations/teams.py` \u2014 TeamsNotifier (3 methods, 0 tests)\n- `api/integrations/discord.py` \u2014 DiscordNotifier (2 methods, 0 tests)\n- `api/integrations/linear.py` \u2014 LinearIntegration (3 methods, 0 tests)\n\n#### API Routers (Untested Endpoints)\n- `api/cli_auth.py` \u2014 3 OAuth endpoints \u2014 NO TESTS\n- `api/jobs.py` \u2014 5+ job trigger endpoints \u2014 NO TESTS\n- `api/learning.py` \u2014 3 endpoints \u2014 NO TESTS\n- `api/routers/telemetry.py` \u2014 3 OTel endpoints \u2014 NO TESTS\n- `api/routers/integrations.py` \u2014 4 integration endpoints \u2014 NO TESTS\n- `api/routers/patterns.py` \u2014 3 pattern endpoints \u2014 NO TESTS\n\n#### Worker Tasks (5 files)\n- `worker/tasks/embeddings.py` \u2014 NO TESTS\n- `worker/tasks/replay.py` \u2014 NO TESTS\n- `worker/tasks/retention.py` \u2014 NO TESTS\n- `worker/tasks/patterns.py` \u2014 NO TESTS\n- `worker/tasks/grouping.py` \u2014 MINIMAL TESTS\n\n#### Detection Modules (8 files with ZERO coverage)\n- `autodebug/detection/llm_analyzer.py`\n- `autodebug/detection/contract_drift.py`\n- `autodebug/detection/data_patterns.py`\n- `autodebug/detection/dependency_helper.py`\n- `autodebug/detection/io_sbfl.py`\n- `autodebug/detection/issue_grouping.py`\n- `autodebug/detection/regex_analyzer.py`\n- `autodebug/detection/timeout_predictor.py`\n\n#### AI Modules (8 of 12 untested)\n- `api/ai/agentic_fixer.py`, `api/ai/analysis_cache.py`, `api/ai/pr_reviewer.py`, `api/ai/replay_chat.py`\n- `api/ai/verification_runner.py`, `api/ai/verified_fixer.py`, `api/ai/self_healer.py`, `api/ai/root_cause_analyzer.py`\n\n### Well-Tested Modules\n- `autodebug/detection/adaptive_n.py`, `autodebug/detection/sbfl.py`, `autodebug/detection/timing_analyzer.py`\n- `autodebug/detection/transcript_analyzer.py`, `autodebug/detection/exception_classifier.py`\n- `autodebug/detection/early_flake.py`, `autodebug/healing/locks.py`, `autodebug/healing/patterns.py`\n- `autodebug/strategies/bandit_selector.py`, `api/auth.py`, `api/validation.py`\n\n### Test Infrastructure Issues\n- pytest timeout issues: test_dora_metrics, test_dx_metrics, test_streaming_transcripts, test_validation, test_api_endpoints, test_issue_groups\n- No integration test suite for worker tasks\n- No property-based tests for detection modules\n\n**Issue**: M-35\n"
+        }
+      ],
+      "timestamp": "2026-02-12T22:28:30.733Z",
+      "input_tokens": 576,
+      "output_tokens": 0,
+      "cumulative_tokens": 7584
+    },
+    {
+      "turn_id": 38,
+      "parent_turn_id": 37,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "[exec_command] {\"cmd\":\"sed -n '1,200p' audit/issues/testing/H-96.md\"}",
+          "metadata": {
+            "tool_name": "exec_command"
+          }
+        }
+      ],
+      "timestamp": "2026-02-12T22:28:32.561Z",
+      "input_tokens": 0,
+      "output_tokens": 8,
+      "cumulative_tokens": 7592
+    },
+    {
+      "turn_id": 39,
+      "parent_turn_id": 38,
+      "role": "execution",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "Chunk ID: 6618ed\nWall time: 0.0515 seconds\nProcess exited with code 0\nOriginal token count: 164\nOutput:\n# H-96: E2E tests not included in CI pipeline\n\n- **Severity**: HIGH\n- **Area**: Testing\n- **Agent**: M5\n- **Found**: 2026-02-07\n\n## Description\n\nThe CI/CD pipeline runs lint, unit tests, property tests, integration tests, security scans, and Docker builds, but does not include any Playwright E2E test step. The `tests/e2e/` directory is entirely unused in CI. Frontend regressions will not be caught before merge.\n\n## File\n\n`.github/workflows/ci.yml`\n\n## Recommendation\n\nAdd a Playwright E2E job to the CI pipeline that starts the Next.js dev server, installs Playwright browsers, and runs `npx playwright test` for at least the unauthenticated tests.\n"
+        }
+      ],
+      "timestamp": "2026-02-12T22:28:32.663Z",
+      "input_tokens": 230,
+      "output_tokens": 0,
+      "cumulative_tokens": 7822
+    },
+    {
+      "turn_id": 40,
+      "parent_turn_id": 39,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "[exec_command] {\"cmd\":\"rg -n \\\"flaky\\\" issues*.md\"}",
+          "metadata": {
+            "tool_name": "exec_command"
+          }
+        }
+      ],
+      "timestamp": "2026-02-12T22:28:34.874Z",
+      "input_tokens": 0,
+      "output_tokens": 8,
+      "cumulative_tokens": 7830
+    },
+    {
+      "turn_id": 41,
+      "parent_turn_id": 40,
+      "role": "execution",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "Chunk ID: 94a7da\nWall time: 0.0518 seconds\nProcess exited with code 0\nOriginal token count: 380\nOutput:\nissues9.md:492:| L66 | tests/test_retry.py | Time-dependent flaky tests |\nissuesreaal.md:44:- **A-009** | **HIGH** | \u2705 DONE (2026-02-12): `/flaky-tests` now computes true `total_count` before slicing page | Where: api/routers/dashboard.py:196-210 | Source: `audit/issues/backend-api/H-57.md`\nissuesreaal.md:115:- **E-004** | **HIGH** | H-210: flaky detect reports excessive false positives for ORDER_DEPENDENCY | Where: autodebug/healing/patterns.py | Source: `audit/issues/infrastructure/H-210.md`\nissuesreaal.md:116:- **E-005** | **HIGH** | H-211: flaky detect duplicates patterns per line (time.sleep + sleep) | Where: autodebug/healing/patterns.py | Source: `audit/issues/infrastructure/H-211.md`\nissuesreaal.md:117:- **E-006** | **HIGH** | H-212: flaky heal --strategy template only covers 1 of 10 pattern categories | Where: autodebug/healing/ | Source: `audit/issues/infrastructure/H-212.md`\nissuesreaal.md:124:- **F-002** | **HIGH** | H-209: flaky heal --strategy llm spams 20 identical error messages | Where: autodebug/cli_v2.py | Source: `audit/issues/infrastructure/H-209.md`\nissuesreaal.md:157:- **H-003** | **HIGH** | H-63: Quarantine routes missing userId check [HIGH] | Where: web/src/app/api/flaky-tests/quarantine/ | Source: `audit/issues/frontend/H-63.md`\nissuesreaal.md:298:- **P-017** | **HIGH** | H-213: Production API returns 500 on multiple endpoints | Where: POST /v1/runs/{id}/finalize, POST /v1/sessions/{id}/share, GET /v1/flaky-tests (+more) | Source: `audit/issues/backend-api/H-213.md`\n"
+        }
+      ],
+      "timestamp": "2026-02-12T22:28:34.983Z",
+      "input_tokens": 352,
+      "output_tokens": 0,
+      "cumulative_tokens": 8182
+    },
+    {
+      "turn_id": 42,
+      "parent_turn_id": 41,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "[exec_command] {\"cmd\":\"sed -n '1,200p' audit/issues/infrastructure/H-210.md\"}",
+          "metadata": {
+            "tool_name": "exec_command"
+          }
+        }
+      ],
+      "timestamp": "2026-02-12T22:28:37.765Z",
+      "input_tokens": 0,
+      "output_tokens": 8,
+      "cumulative_tokens": 8190
+    },
+    {
+      "turn_id": 43,
+      "parent_turn_id": 42,
+      "role": "execution",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "Chunk ID: 1899bd\nWall time: 0.0515 seconds\nProcess exited with code 0\nOriginal token count: 279\nOutput:\n# H-210: flaky detect reports excessive false positives for ORDER_DEPENDENCY\n\n| Field | Value |\n|-------|-------|\n| Severity | HIGH |\n| Status | OPEN |\n| Section | CLI Dogfood |\n| Found | 2026-02-08 |\n| Scanner | Manual (dogfood) |\n\n## Location\n- **File**: `autodebug/healing/patterns.py` (Shared Mutable State detector)\n\n## Description\nThe ORDER_DEPENDENCY \"Shared Mutable State\" detector flags any `dict[\"key\"]` pattern as shared mutable state, including:\n- Local variables: `analysis[\"key\"] = value` inside a test method\n- Function return values: `summary[\"count\"]`\n- Constant lookups: `PATTERNS_BY_ID[\"test\"]`\n\nIn `test_healing.py`, 13/20 detections are false positives \u2014 local dictionary access inside test methods flagged as \"shared mutable state.\"\n\n## Impact\n1527 total ORDER_DEPENDENCY patterns across the test suite (88% of all detections). Most are false positives, making the tool's output noisy and untrustworthy.\n\n## Suggested Fix\nThe regex should require class-level or module-level assignment (not local variables). Check indentation level or use AST parsing to distinguish local vs shared state.\n"
+        }
+      ],
+      "timestamp": "2026-02-12T22:28:37.867Z",
+      "input_tokens": 352,
+      "output_tokens": 0,
+      "cumulative_tokens": 8542
+    },
+    {
+      "turn_id": 44,
+      "parent_turn_id": 43,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "[exec_command] {\"cmd\":\"sed -n '1,200p' audit/issues/infrastructure/H-211.md\"}",
+          "metadata": {
+            "tool_name": "exec_command"
+          }
+        }
+      ],
+      "timestamp": "2026-02-12T22:28:40.859Z",
+      "input_tokens": 0,
+      "output_tokens": 8,
+      "cumulative_tokens": 8550
+    },
+    {
+      "turn_id": 45,
+      "parent_turn_id": 44,
+      "role": "execution",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "Chunk ID: 63380c\nWall time: 0.0511 seconds\nProcess exited with code 0\nOriginal token count: 232\nOutput:\n# H-211: flaky detect duplicates patterns per line (time.sleep + sleep)\n\n| Field | Value |\n|-------|-------|\n| Severity | HIGH |\n| Status | OPEN |\n| Section | CLI Dogfood |\n| Found | 2026-02-08 |\n| Scanner | Manual (dogfood) |\n\n## Location\n- **File**: `autodebug/healing/patterns.py` (ASYNC_WAIT sleep detector)\n\n## Description\nFor a single `time.sleep(5)` call, two separate patterns are detected:\n1. `time.sleep(` \u2014 matched by one regex\n2. `sleep(5)` \u2014 matched by another regex\n\nLines 151, 234, 272 in `test_healing.py` each report 2 detections for the same call. This doubles the count and produces duplicate fix suggestions.\n\n## Impact\nInflated pattern counts (6 ASYNC_WAIT instead of 3). Duplicate heal attempts waste LLM calls and produce conflicting fixes.\n\n## Suggested Fix\nDeduplicate patterns by (file, line, category) \u2014 if two patterns match the same line in the same category, keep only the more specific one.\n"
+        }
+      ],
+      "timestamp": "2026-02-12T22:28:40.960Z",
+      "input_tokens": 330,
+      "output_tokens": 0,
+      "cumulative_tokens": 8880
+    },
+    {
+      "turn_id": 46,
+      "parent_turn_id": 45,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "[exec_command] {\"cmd\":\"sed -n '1,200p' audit/issues/infrastructure/H-212.md\"}",
+          "metadata": {
+            "tool_name": "exec_command"
+          }
+        }
+      ],
+      "timestamp": "2026-02-12T22:28:42.496Z",
+      "input_tokens": 0,
+      "output_tokens": 8,
+      "cumulative_tokens": 8888
+    },
+    {
+      "turn_id": 47,
+      "parent_turn_id": 46,
+      "role": "execution",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "Chunk ID: bf70ac\nWall time: 0.0513 seconds\nProcess exited with code 0\nOriginal token count: 277\nOutput:\n# H-212: flaky heal --strategy template only covers 1 of 10 pattern categories\n\n| Field | Value |\n|-------|-------|\n| Severity | HIGH |\n| Status | OPEN |\n| Section | CLI Dogfood |\n| Found | 2026-02-08 |\n| Scanner | Manual (dogfood) |\n\n## Location\n- **File**: `autodebug/healing/` (fix templates)\n\n## Description\n`flaky heal --strategy template` has a 5% success rate. Of 20 detected patterns across 3 categories (ASYNC_WAIT, ORDER_DEPENDENCY, PLATFORM), only 1 pattern (Hardcoded Temp Directory / PLATFORM) has a template fix. The remaining 19 all report \"No fix strategy available.\"\n\nCategories without template fixes:\n- ASYNC_WAIT (Hardcoded Sleep) \u2014 6 detections, 0 fixes\n- ORDER_DEPENDENCY (Global State Mutation, Shared Mutable State) \u2014 13 detections, 0 fixes\n\n## Impact\nThe template strategy is essentially useless for the two most common flaky test categories. Users who don't have LLM API keys cannot get any fixes.\n\n## Suggested Fix\nAdd template fixes for at least ASYNC_WAIT (replace `time.sleep(N)` with `await asyncio.sleep(N)` or polling loop) and ORDER_DEPENDENCY (add cleanup fixture).\n"
+        }
+      ],
+      "timestamp": "2026-02-12T22:28:42.597Z",
+      "input_tokens": 376,
+      "output_tokens": 0,
+      "cumulative_tokens": 9264
+    },
+    {
+      "turn_id": 48,
+      "parent_turn_id": 47,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "[exec_command] {\"cmd\":\"sed -n '1,200p' audit/issues/infrastructure/H-209.md\"}",
+          "metadata": {
+            "tool_name": "exec_command"
+          }
+        }
+      ],
+      "timestamp": "2026-02-12T22:28:46.225Z",
+      "input_tokens": 0,
+      "output_tokens": 8,
+      "cumulative_tokens": 9272
+    },
+    {
+      "turn_id": 49,
+      "parent_turn_id": 48,
+      "role": "execution",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "Chunk ID: 32eca8\nWall time: 0.0518 seconds\nProcess exited with code 0\nOriginal token count: 233\nOutput:\n# H-209: flaky heal --strategy llm spams 20 identical error messages\n\n| Field | Value |\n|-------|-------|\n| Severity | HIGH |\n| Status | OPEN |\n| Section | CLI Dogfood |\n| Found | 2026-02-08 |\n| Scanner | Manual (dogfood) |\n\n## Location\n- **File**: `autodebug/cli_v2.py` (flaky heal command)\n\n## Description\nWhen ANTHROPIC_API_KEY/OPENAI_API_KEY is not set, `flaky heal --strategy llm` prints the same error 20 times (once per pattern):\n```\nLLM call failed: \"Could not resolve authentication method...\"\n```\ninstead of checking for API keys upfront and failing once with a clear message.\n\n## Impact\nTerrible UX \u2014 users see a wall of identical errors. Should detect missing keys early and give one actionable message like: \"LLM strategy requires ANTHROPIC_API_KEY or OPENAI_API_KEY. Set one and retry.\"\n\n## Suggested Fix\nAdd API key validation before the healing loop starts. If using LLM strategy, check keys exist and fail fast.\n"
+        }
+      ],
+      "timestamp": "2026-02-12T22:28:46.325Z",
+      "input_tokens": 336,
+      "output_tokens": 0,
+      "cumulative_tokens": 9608
+    },
+    {
+      "turn_id": 50,
+      "parent_turn_id": 49,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "[exec_command] {\"cmd\":\"sed -n '200,280p' issues6.md\"}",
+          "metadata": {
+            "tool_name": "exec_command"
+          }
+        }
+      ],
+      "timestamp": "2026-02-12T22:28:50.147Z",
+      "input_tokens": 0,
+      "output_tokens": 8,
+      "cumulative_tokens": 9616
+    },
+    {
+      "turn_id": 51,
+      "parent_turn_id": 50,
+      "role": "execution",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "Chunk ID: 853434\nWall time: 0.0513 seconds\nProcess exited with code 0\nOriginal token count: 1115\nOutput:\n| J33 | Main.java | 64-70 | Error Handling | Incomplete error output in non-debug mode |\n| J34 | ProbeDataSource.java | 1161-1199 | Code Quality | MockResultSet missing implementation details |\n| J35 | Replayer.java | 253-271 | Code Quality | Redis args comparison only checks first arg |\n\n---\n\n## Python Worker Issues\n\n### Critical Severity (5)\n\n| # | File | Line | Category | Description |\n|---|------|------|----------|-------------|\n| P1 | db.py | 69 | Security | SQL injection via URL parameter - run_id not escaped |\n| P2 | storage.py | 64-75 | Security | Path traversal vulnerability in download_bundle |\n| P3 | harness.py | 109-132 | Security | Arbitrary file write via _rewrite_paths |\n| P4 | validate.py | 225 | Security | Unvalidated tar archive extraction - path traversal risk |\n| P5 | validate.py | 70, 237 | Security | Subprocess injection via Docker tag |\n\n### High Severity (5)\n\n| # | File | Line | Category | Description |\n|---|------|------|----------|-------------|\n| P6 | main.py | 19 | Code Quality | Missing type hint on signal handler frame parameter |\n| P7 | queue.py | 68 | Error Handling | Bare Exception handler swallows all errors |\n| P8 | queue.py | 43-44 | Error Handling | Silent failure in dead letter queue operations |\n| P9 | validate.py | 130-135 | Error Handling | Subprocess error handling doesn't distinguish error types |\n| P10 | validate.py | 134 | Bug | Unbounded recursion risk in retry logic |\n\n### Medium Severity (5)\n\n| # | File | Line | Category | Description |\n|---|------|------|----------|-------------|\n| P11 | normalize.py | 64-75 | Resource | Missing resource cleanup on JSON parse errors |\n| P12 | validate.py | 39 | Type Hints | Missing type hint for stack parameter |\n| P13 | main.py | 174-191 | Error Handling | Error stack trace truncated to 2000 chars |\n| P14 | validate.py | 17-30 | Validation | Environment variable integer parsing without upper bounds |\n| P15 | optimize.py | 216 | Logic | Division by zero potential (protected by conditional) |\n\n### Low Severity (7)\n\n| # | File | Line | Category | Description |\n|---|------|------|----------|-------------|\n| P16 | queue.py | 68 | Code Quality | Bare except without binding variable |\n| P17 | main.py | 181-183 | Code Quality | Inconsistent error reporting format |\n| P18 | validate.py | 79 | Performance | Memory leak risk from exception references |\n| P19 | slice.py | 47-63 | Error Handling | No validation of JSON record structure |\n| P20 | optimize.py | 38-45 | Code Quality | Incomplete type hints in dataclass |\n| P21 | storage.py | 35-41 | Security | Potential information disclosure via error messages |\n| P22 | storage.py | 70, 85 | Code Quality | Hardcoded timeout values - should be constants |\n\n---\n\n## Web Dashboard Issues\n\n### Critical Severity (3)\n\n| # | File | Line | Category | Description |\n|---|------|------|----------|-------------|\n| W1 | api/settings/api-ke"
+        }
+      ],
+      "timestamp": "2026-02-12T22:28:50.191Z",
+      "input_tokens": 1066,
+      "output_tokens": 0,
+      "cumulative_tokens": 10682
+    },
+    {
+      "turn_id": 52,
+      "parent_turn_id": 51,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "[exec_command] {\"cmd\":\"sed -n '280,360p' issues6.md\"}",
+          "metadata": {
+            "tool_name": "exec_command"
+          }
+        }
+      ],
+      "timestamp": "2026-02-12T22:28:52.865Z",
+      "input_tokens": 0,
+      "output_tokens": 8,
+      "cumulative_tokens": 10690
+    },
+    {
+      "turn_id": 53,
+      "parent_turn_id": 52,
+      "role": "execution",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "Chunk ID: 55620d\nWall time: 0.0510 seconds\nProcess exited with code 0\nOriginal token count: 677\nOutput:\n| W13 | api/runs/route.ts | 39-42 | Performance | No pagination handling for large datasets |\n| W14 | dashboard/billing/page.tsx | 459 | Accessibility | Missing ARIA labels on interactive elements |\n| W15 | dashboard/settings/github/page.tsx | 55, 80 | Validation | Missing environment variable validation |\n| W16 | dashboard/runs/[id]/page.tsx | 598-634 | UX | Missing disabled state during form submissions |\n\n### Low Severity (4)\n\n| # | File | Line | Category | Description |\n|---|------|------|----------|-------------|\n| W17 | Multiple files | 21 occurrences | Code Quality | Console.error in production code |\n| W18 | middleware.ts | - | Security | No security headers (CSP, X-Frame-Options) |\n| W19 | All fetch calls | - | Performance | No request timeout handling |\n| W20 | dashboard/settings/page.tsx | 106-108 | UX | No loading state for settings changes |\n\n---\n\n## 2025-2026 Security Research Findings\n\nBased on web research conducted on current best practices:\n\n### Node.js (January 2026)\n- CVE-2025-59466: async_hooks stack exhaustion DoS vulnerability\n- Recommendation: Update to Node.js 22.x LTS with latest security patches\n- Consider using `node:worker_threads` for isolation instead of global state\n\n### Go (January 2026)\n- CVE-2025-61726: net/http DoS vulnerability in HTTP/2 handling\n- CVE-2025-68121: crypto/tls session resumption security issue\n- Recommendation: Update to Go 1.26.x with security patches\n\n### Rust Deterministic Testing\n- Emerging frameworks: Turmoil, Madsim, Fracture\n- These provide deterministic async runtime simulation\n- Could improve replay reliability\n\n---\n\n## Recommendations\n\n### Immediate (Critical - Do First)\n\n1. **Fix path traversal vulnerabilities** (P2, P3, P4, R6)\n2. **Add input validation** (W2, P1)\n3. **Implement CSRF protection** (W3)\n4. **Fix race conditions** (G1, G2, N7, N8, J4)\n\n### High Priority\n\n1. **Add rate limiting** to web dashboard APIs (W5)\n2. **Fix memory exhaustion** in Java probe (J1)\n3. **Handle auth token failures** (W7)\n4. **Add ProbeError::Config variant** to Rust (R1)\n5. **Enforce max_body_size** in Rust (R2)\n\n### Medium Priority\n\n1. Improve error handling consistency across all probes\n2. Add proper resource cleanup mechanisms\n3. Implement request timeouts in web dashboard\n4. Add security headers to web middleware\n5. Improve type safety in TypeScript code\n\n### Low Priority\n\n1. Clean up dead code\n2. Add missing type hints\n3. Improve logging consistency\n4. Add accessibility attributes\n5. Document magic numbers\n\n---\n\n## Verification Checklist\n\nBefore closing each issue:\n- [ ] Reproduce the issue\n- [ ] Implement fix\n- [ ] Add regression test\n- [ ] Review fix for side effects\n- [ ] Update documentation if needed\n\n"
+        }
+      ],
+      "timestamp": "2026-02-12T22:28:52.965Z",
+      "input_tokens": 874,
+      "output_tokens": 0,
+      "cumulative_tokens": 11564
+    },
+    {
+      "turn_id": 54,
+      "parent_turn_id": 53,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "[exec_command] {\"cmd\":\"sed -n '1,200p' issues12.md\"}",
+          "metadata": {
+            "tool_name": "exec_command"
+          }
+        }
+      ],
+      "timestamp": "2026-02-12T22:28:56.504Z",
+      "input_tokens": 0,
+      "output_tokens": 8,
+      "cumulative_tokens": 11572
+    },
+    {
+      "turn_id": 55,
+      "parent_turn_id": 54,
+      "role": "execution",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "Chunk ID: 7f1067\nWall time: 0.0510 seconds\nProcess exited with code 0\nOriginal token count: 754\nOutput:\n# Issues 12 - Plan 67\u201377 Scan (Jan 29, 2026)\n\n## Scan status\n- Scanned 232 markdown files (57,272 lines). 7 files timed out consistently on read:\n  - repro_zoo/_artifacts/2a612a8d-bab0-4e79-992e-f96200ee6aab/harness/README.md\n  - repro_zoo/_artifacts/32d0e76a-48f4-45b2-a56c-f699fa194b76/harness/README.md\n  - repro_zoo/_artifacts/572dd719-1e13-4c08-bd31-85852f5845e6/harness/README.md\n  - repro_zoo/_artifacts/aad6f300-1aae-4502-b116-7aa58ec095e4/harness/README.md\n  - repro_zoo/_artifacts/a6105c2f-00aa-40cb-ad89-9e9af9a1e761/harness/README.md\n  - repro_zoo/_artifacts/9f0e2ad3-4a9e-4be5-b9e3-dbd4254521e6/harness/README.md\n  - repro_zoo/_artifacts/b0b596bd-f13c-46c0-9637-4f1f57746d59/harness/README.md\n\n## Implemented since last sweep\n- Web recorder telemetry: dropped events, upload latency, periodic stats (queue size, memory, hardware concurrency)\n- Mobile SDKs: view tree snapshots (iOS/Android), error + network events (iOS/Android/Flutter/RN), masking rules for native snapshots\n- Session ingestion rate limits (create/chunk/finalize) via shared limiter\n- Retention purge task + API job endpoint for session retention\n- Worker metrics for session processing outcomes\n\n## Remaining gaps vs plans 67\u201377 (excluding VS Code/JetBrains)\n\n### Plan 67 (Web Session Replay SDK)\n- No recorder test suite (masking, cross-browser, load/regression).\n- No CPU overhead telemetry (browser limits).\n- No per-project sampling controls.\n\n### Plan 68 (Mobile Session Replay SDKs)\n- Capture is still manual (no automatic input/view tree hooks, no native network/error interception).\n- No React Native / Flutter native bridges.\n- No performance/battery test coverage.\n\n### Plan 69 (Ingestion/Storage)\n- No quota model beyond rate limits.\n- No ingest latency/failure dashboards.\n- Retention is not scheduled (job exists, no scheduler).\n- No storage growth/cost metrics.\n\n### Plan 70 (Privacy/Data Minimization)\n- No RBAC/token-scoped replay permissions.\n- No privacy test suite.\n- Mobile masking not enforced for all event types.\n- No UI for retention policy management.\n\n### Plan 71 (Frontend/Backend Correlation)\n- Mobile trace propagation missing.\n- No \u201ccausal slice\u201d UX on session page.\n\n### Plan 72 (AI Issue Grouping)\n- No explainable merge policy + rollback.\n- No evaluation metrics pipeline for false-merge rate.\n\n### Plan 73 (AI Session Highlights)\n- LLM summaries optional but no redaction safeguards.\n- No quality evaluation pipeline.\n\n### Plan 74 (CLI Session Workflow)\n- No shareable URL generation.\n- No auto-linking to backend runs from CLI.\n- No \u201clocal replay open\u201d feature.\n\n### Plan 75 (IDE + MCP Integration)\n- MCP server not spec-compliant (no schema validation/caching).\n- Agent workflows not documented.\n\n### Plan 76 (Self-Hosted/Air-Gapped)\n- No local LLM option.\n- No SSO/SAML.\n- No backup/DR tooling.\n- No upgrade tooling.\n\n### Plan 77 (Concurrency/Causal Consistency)\n- Partial task"
+        }
+      ],
+      "timestamp": "2026-02-12T22:28:56.613Z",
+      "input_tokens": 768,
+      "output_tokens": 0,
+      "cumulative_tokens": 12340
+    },
+    {
+      "turn_id": 56,
+      "parent_turn_id": 55,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "[exec_command] {\"cmd\":\"sed -n '200,320p' issues10.md\"}",
+          "metadata": {
+            "tool_name": "exec_command"
+          }
+        }
+      ],
+      "timestamp": "2026-02-12T22:28:58.843Z",
+      "input_tokens": 0,
+      "output_tokens": 8,
+      "cumulative_tokens": 12348
+    },
+    {
+      "turn_id": 57,
+      "parent_turn_id": 56,
+      "role": "execution",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "Chunk ID: 9d8ad9\nWall time: 0.0512 seconds\nProcess exited with code 0\nOriginal token count: 1165\nOutput:\nrecorder.deps_aws.open()       # \u274c Not displayed\nrecorder.deps_mongodb.open()   # \u274c Not displayed\n```\n\n**Dashboard only renders**: HTTP, SQL, Redis\n\n**Impact**: Users with AWS/gRPC/MongoDB don't see half their I/O data.\n\n---\n\n## Research Findings\n\n### Finding 1: Next.js API Patterns (Route Handlers vs Server Actions)\n\n**Research Sources**:\n- [Next.js Discussion #72919](https://github.com/vercel/next.js/discussions/72919)\n- [Wisp CMS: Server Actions vs API Routes](https://www.wisp.blog/blog/server-actions-vs-api-routes-in-nextjs-15-which-should-i-use)\n- [MakerKit: Server Actions vs Route Handlers](https://makerkit.dev/blog/tutorials/server-actions-vs-route-handlers)\n\n**Key Findings**:\n\n| Aspect | Route Handlers | Server Actions |\n|--------|---------------|----------------|\n| HTTP Methods | GET, POST, PUT, DELETE, etc. | POST only (CSRF protection) |\n| Caching | Can be cached | Never cached |\n| External Access | Yes (webhooks, mobile apps) | No (React components only) |\n| Type Safety | Manual | End-to-end automatic |\n| Use Case | APIs, proxying, webhooks | Form submissions, mutations |\n\n**Best Practice for Proxying**:\n> \"Route Handlers can act as a proxy or middle layer to another existing backend. You might intercept requests, handle authentication, transform data, and then pass the request along to an upstream API.\"\n\n**Recommendation**: Use **Route Handlers** for `/api/runs` since it needs to:\n1. Proxy to external Python backend\n2. Support multiple HTTP methods\n3. Be callable from client-side fetches\n4. Support caching\n\n---\n\n### Finding 2: CLI Authentication (Device Flow vs API Keys)\n\n**Research Sources**:\n- [Clerk API Keys Documentation](https://clerk.com/docs/guides/development/machine-auth/api-keys)\n- [GitHub CLI Auth Implementation](https://github.com/cli/cli/discussions/6291)\n- [WorkOS CLI Auth Guide](https://workos.com/blog/how-to-build-browser-based-oauth-into-your-cli-with-workos)\n\n**Comparison**:\n\n| Aspect | OAuth Device Flow | Clerk API Keys |\n|--------|------------------|----------------|\n| UX Quality | Best (like `gh auth login`) | Good |\n| Security | Excellent (short-lived tokens) | Good (revocable) |\n| Implementation | Complex (~500 LOC) | Simple (~50 LOC) |\n| Clerk Support | \u274c Not supported | \u2705 Public Beta |\n| Token Lifetime | Configurable | Long-lived |\n| Requires Browser | Yes (one-time) | Yes (to generate) |\n\n**How GitHub CLI Does It**:\n> \"We are using the OAuth Device Flow mode of authentication, where there is no final redirect to localhost, and instead the CLI polls the API for a token to check if the user has completed the browser flow.\"\n\n**Clerk's Limitation**:\n> \"If you are looking for support for the OAuth client credentials flow, Clerk does not yet support it.\"\n\n**Recommendation**: Use **Clerk API Keys** because:\n1. Clerk doesn't support Device Flow yet\n2. API Keys are simple to implement\n3. Good enough UX (generate o"
+        }
+      ],
+      "timestamp": "2026-02-12T22:28:58.943Z",
+      "input_tokens": 830,
+      "output_tokens": 0,
+      "cumulative_tokens": 13178
+    },
+    {
+      "turn_id": 58,
+      "parent_turn_id": 57,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "[exec_command] {\"cmd\":\"rg -n \\\"actionable\\\" audit/subagents.md\"}",
+          "metadata": {
+            "tool_name": "exec_command"
+          }
+        }
+      ],
+      "timestamp": "2026-02-12T22:29:04.806Z",
+      "input_tokens": 0,
+      "output_tokens": 8,
+      "cumulative_tokens": 13186
+    },
+    {
+      "turn_id": 59,
+      "parent_turn_id": 58,
+      "role": "execution",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "Chunk ID: cb6cde\nWall time: 0.0519 seconds\nProcess exited with code 0\nOriginal token count: 35\nOutput:\n726:2. Are HTTP error codes mapped to actionable messages?\n739:5. Are diagnostic messages actionable?\n918:5. Are error messages actionable?\n"
+        }
+      ],
+      "timestamp": "2026-02-12T22:29:04.922Z",
+      "input_tokens": 72,
+      "output_tokens": 0,
+      "cumulative_tokens": 13258
+    },
+    {
+      "turn_id": 60,
+      "parent_turn_id": 59,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "[exec_command] {\"cmd\":\"sed -n '700,760p' audit/subagents.md\"}",
+          "metadata": {
+            "tool_name": "exec_command"
+          }
+        }
+      ],
+      "timestamp": "2026-02-12T22:29:08.157Z",
+      "input_tokens": 0,
+      "output_tokens": 8,
+      "cumulative_tokens": 13266
+    },
+    {
+      "turn_id": 61,
+      "parent_turn_id": 60,
+      "role": "execution",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "Chunk ID: 17443b\nWall time: 0.0513 seconds\nProcess exited with code 0\nOriginal token count: 470\nOutput:\n\n### F2 \u2014 CLI Auth Flows\n```\nScan autodebug/auth.py, autodebug/oauth.py, autodebug/config.py:\n1. Is PKCE flow implemented correctly (verifier, challenge, S256)?\n2. Is state parameter validated for CSRF protection?\n3. Is token storage secure (file permissions)?\n4. Is token refresh working?\n5. Is device auth flow correct?\n6. Are error messages helpful without leaking secrets?\n```\n\n### F3 \u2014 CLI Output & Formatting\n```\nScan autodebug/cli_output.py:\n1. Is JSON mode correctly suppressing console output?\n2. Is no-color mode working for all output types?\n3. Are Rich tables/panels/progress bars used consistently?\n4. Are there any edge cases where output is garbled?\n5. Does the formatter handle Unicode correctly?\n```\n\n### F4 \u2014 CLI Error Handling\n```\nScan autodebug/cli_errors.py:\n1. Are all common exception types mapped?\n2. Are HTTP error codes mapped to actionable messages?\n3. Is the MRO-based parent class fallback correct?\n4. Are error messages helpful and not confusing?\n5. Are there any exceptions that slip through unhandled?\n```\n\n### F5 \u2014 CLI Upgrade & Doctor\n```\nScan autodebug/upgrade.py and autodebug/doctor.py:\n1. Is the PyPI version check non-blocking?\n2. Is the 24hr cache working correctly?\n3. Is version comparison correct (semver)?\n4. Does the doctor command check all critical dependencies?\n5. Are diagnostic messages actionable?\n```\n\n### F6 \u2014 CLI v1 Deprecation\n```\nScan autodebug/cli.py:\n1. Is the deprecation warning displayed correctly?\n2. Are all v1 commands still functional (for backward compat)?\n3. Is the migration path to v2 documented?\n4. Are there any v1-only features not in v2?\n```\n\n---\n\n## SECTION G: Worker System (8 agents)\n\n### G1 \u2014 Worker Main Loop\n```\nScan worker/main.py:\n1. Is the polling loop correct (main queue, retry queue)?\n2. Is exponential backoff implemented correctly?\n3. Are job types routed to the correct handlers?\n"
+        }
+      ],
+      "timestamp": "2026-02-12T22:29:08.258Z",
+      "input_tokens": 616,
+      "output_tokens": 0,
+      "cumulative_tokens": 13882
+    },
+    {
+      "turn_id": 62,
+      "parent_turn_id": 61,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "[exec_command] {\"cmd\":\"rg -n \\\"quality gate\\\" -n\"}",
+          "metadata": {
+            "tool_name": "exec_command"
+          }
+        }
+      ],
+      "timestamp": "2026-02-12T22:29:11.914Z",
+      "input_tokens": 0,
+      "output_tokens": 10,
+      "cumulative_tokens": 13892
+    },
+    {
+      "turn_id": 63,
+      "parent_turn_id": 62,
+      "role": "execution",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "Chunk ID: e6d1e5\nWall time: 0.4712 seconds\nProcess exited with code 2\nOriginal token count: 745\nOutput:\nscripts/test_quality_gate.py:2:\"\"\"Test quality gate script for CI.\nscripts/test_quality_gate.py:166:    parser = argparse.ArgumentParser(description=\"Test quality gate checker\")\ntests/test_quality_gates.py:1:\"\"\"Test quality gates - ensure the test suite itself is high quality.\nfeatureplan.md:49:**Missing 1: No quality gate / merge blocking.** Hikaflow's Gate posts a PR comment with \"block/warn/pass\" recommendation, but doesn't integrate as a required GitHub check that actually blocks the merge. Datadog's Quality Gates product lets you create rules like \"block merge if PR introduces new flaky tests\" and enforces them as required checks on GitHub and Azure DevOps. Trunk's merge queue inherently blocks flaky tests via anti-flake protection. Hikaflow's Gate is advisory-only \u2014 it can tell you a test is flaky but can't prevent the merge. A developer can ignore the comment and merge anyway.\naudit/scan-log.md:492:**Trigger**: Systematic deep scan of all remaining research-enhanced agents. Each agent performed web research on state-of-the-art (arXiv papers, GitHub repos, industry practices) before auditing code. Covers agent system, analysis pipeline, autonomous debugging, learning system, LLM-first modules, validation/quality gates, visual regression, chaos engineering, flaky predictor, root cause analyzer, PR reviewer, analysis cache, healing detector, and strategy registry.\naudit/scan-log.md:544:- Also removed dead test stub (test_prop_transcripts.py) and updated quality gate allowed_orphans\naudit/findings/autodebug-advanced/P6/2026-02-07.md:185:### [LOW] L-01: Security scan gate missing from quality gates\naudit/subagents.md:1490:3. Are quality gates enforced before PR creation? What gates exist (test pass,\naudit/findings/testing/M2/2026-02-07.md:187:2. **Meta-tests enforce quality**: `test_meta.py` is an excellent practice \u2014 it enforces no empty test files, no duplicate test names, all fixtures used, no bare `assert True`, minimum test count (1970+), and per-package test coverage. This is a strong quality gate.\naudit/findings/advanced-modules/_index.md:21:- Are quality gates enforced before PR creation?\naudit/findings/advanced-modules/_index.md:31:- **P6**: Validation & quality gates\nrg: audit/findings/worker/_index.md: Operation timed out (os error 60)\nrg: audit/findings/performance/_index.md: Operation timed out (os error 60)\nrg: audit/findings/ide/_index.md: Operation timed out (os error 60)\nrg: audit/findings/database/_index.md: Operation timed out (os error 60)\nrg: audit/findings/cli/_index.md: Operation timed out (os error 60)\nrg: audit/findings/security/N5/2026-02-08.md: Operation timed out (os error 60)\nrg: audit/findings/frontend-data/_index.md: Operation timed out (os error 60)\nrg: audit/findings/documentation/_index.md: Operation timed out (os error 60)\nrg: audit/findings/backend-api/_index.md: Operation timed out (os error 60)\nrg: supaba"
+        }
+      ],
+      "timestamp": "2026-02-12T22:29:12.547Z",
+      "input_tokens": 714,
+      "output_tokens": 0,
+      "cumulative_tokens": 14606
+    },
+    {
+      "turn_id": 64,
+      "parent_turn_id": 63,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "[exec_command] {\"cmd\":\"sed -n '1,160p' featureplan.md\"}",
+          "metadata": {
+            "tool_name": "exec_command"
+          }
+        }
+      ],
+      "timestamp": "2026-02-12T22:29:15.490Z",
+      "input_tokens": 0,
+      "output_tokens": 8,
+      "cumulative_tokens": 14614
+    },
+    {
+      "turn_id": 65,
+      "parent_turn_id": 64,
+      "role": "execution",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "Chunk ID: fa12c2\nWall time: 0.0512 seconds\nProcess exited with code 0\nOriginal token count: 5397\nOutput:\n# Hikaflow Feature Critique \u2014 Feb 2026\n\nFeature-by-feature teardown grounded in what competitors actually ship, what's on arxiv/GitHub, and what the spec gets wrong or misses.\n\n---\n\n## Tool 1: Test Result Ingestion \u2014 Adequate but Missing a Key Feature\n\n**What's fine:** JUnit XML + multi-format ingestion, CI env var detection, infra failure protection at 80% threshold. All table-stakes, all correct.\n\n**What's missing: Impacted Tests Detection.** Datadog's Ruby library (datadog-ci-rb, released late 2025) now includes \"Impacted Tests Detection\" \u2014 it automatically identifies tests whose source code was modified in the current PR, marks them with a `@test.is_modified` tag, and when Early Flake Detection is enabled, those modified tests get retried up to 10x to detect newly introduced flakiness. This works at *line-level granularity*, not just file-level. Hikaflow's ingestion pipeline has no concept of \"this test was modified in this PR\" vs \"this test was untouched.\" The Gate feature (Tool 3) does `NewTestDetector` for *new* tests but doesn't flag *modified* tests. Modified tests that become flaky are a huge category \u2014 the test existed, someone changed it, now it flakes. Hikaflow's current pipeline would have to wait until the test produces inconsistent results historically before flagging it.\n\n**Recommendation:** Add `ModifiedTestDetector` to the Gate pipeline. Use git diff + AST comparison to identify tests whose body changed (not just new tests). Run those modified tests N times at PR time, same as new tests. This is lower-lift than full TIA and delivers 80% of the flaky-prevention value.\n\n**What's over-spec'd:** The rate limit of 100 uploads/hr/project is oddly specific for a spec doc. Either remove it (operational detail) or justify why it's 100 and not 200. Trunk and Datadog don't publish upload rate limits in their user-facing docs.\n\n---\n\n## Tool 2: I/O Transcript Capture & Replay \u2014 Genuine Moat, But Three Gaps\n\n**What's genuinely unique:** The monkey-patching approach for capturing HTTP/SQL/Redis/gRPC at the library level without code changes is real differentiation. Neither Trunk (JUnit XML only) nor Datadog (APM tracing, which is production-side not test-side) nor any academic tool (FlakyGuard uses static call graphs, not runtime I/O transcripts) has this. This is the right moat to invest in.\n\n**Gap 1: No local variable capture at failure point.** The spec says \"Local variable snapshots at failure\" but doesn't explain the mechanism. Meanwhile, Datadog shipped \"Failed Test Replay\" which captures local variable data in the topmost frame of a test's error stack trace using their debugger agent (`source:dd_debugger` tag). They also have \"Exception Replay\" which captures local variables for *all* frames at exception time. Hikaflow's I/O transcripts capture what the test *did* (HTTP calls, SQL queries) but not what the test *had in memory* when "
+        }
+      ],
+      "timestamp": "2026-02-12T22:29:15.591Z",
+      "input_tokens": 916,
+      "output_tokens": 0,
+      "cumulative_tokens": 15530
+    },
+    {
+      "turn_id": 66,
+      "parent_turn_id": 65,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "[exec_command] {\"cmd\":\"sed -n '1,200p' audit/issues/infrastructure/M-132.md\"}",
+          "metadata": {
+            "tool_name": "exec_command"
+          }
+        }
+      ],
+      "timestamp": "2026-02-12T22:29:23.498Z",
+      "input_tokens": 0,
+      "output_tokens": 8,
+      "cumulative_tokens": 15538
+    },
+    {
+      "turn_id": 67,
+      "parent_turn_id": 66,
+      "role": "execution",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "Chunk ID: b0d2e2\nWall time: 0.0511 seconds\nProcess exited with code 0\nOriginal token count: 157\nOutput:\n# M-132: `doctor` exits code 1 for non-critical warnings\n\n| Field | Value |\n|-------|-------|\n| Severity | MEDIUM |\n| Status | OPEN |\n| Section | CLI Dogfood |\n| Found | 2026-02-08 |\n| Scanner | Manual (dogfood) |\n\n## Location\n- **File**: `autodebug/cli_v2.py` (doctor command)\n\n## Description\n`hikaflow doctor` exits with code 1 when there's only 1 unsupported dependency (trio) and 1 warning (responses package). 10/11 checks pass. Exit code 1 means \"failure\" in CI/CD, which breaks pipelines unnecessarily.\n\n## Suggested Fix\nExit 0 for warnings-only. Exit 1 only for actual failures (missing credentials, no network, etc.).\n"
+        }
+      ],
+      "timestamp": "2026-02-12T22:29:23.628Z",
+      "input_tokens": 236,
+      "output_tokens": 0,
+      "cumulative_tokens": 15774
+    },
+    {
+      "turn_id": 68,
+      "parent_turn_id": 67,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "[exec_command] {\"cmd\":\"sed -n '1,200p' audit/issues/infrastructure/M-131.md\"}",
+          "metadata": {
+            "tool_name": "exec_command"
+          }
+        }
+      ],
+      "timestamp": "2026-02-12T22:29:26.293Z",
+      "input_tokens": 0,
+      "output_tokens": 8,
+      "cumulative_tokens": 15782
+    },
+    {
+      "turn_id": 69,
+      "parent_turn_id": 68,
+      "role": "execution",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "Chunk ID: 3b531d\nWall time: 0.0595 seconds\nProcess exited with code 0\nOriginal token count: 158\nOutput:\n# M-131: `--json` global flag not supported by `doctor` command\n\n| Field | Value |\n|-------|-------|\n| Severity | MEDIUM |\n| Status | OPEN |\n| Section | CLI Dogfood |\n| Found | 2026-02-08 |\n| Scanner | Manual (dogfood) |\n\n## Location\n- **File**: `autodebug/cli_v2.py` (doctor command)\n\n## Description\n`hikaflow doctor --json` fails with \"No such option: --json\". The `--json` flag is declared as a global option but doesn't work with the `doctor` subcommand, likely because it uses Typer's callback mechanism incorrectly.\n\n## Suggested Fix\nEnsure global options propagate to all subcommands, or add `--json` explicitly to `doctor`.\n"
+        }
+      ],
+      "timestamp": "2026-02-12T22:29:26.425Z",
+      "input_tokens": 236,
+      "output_tokens": 0,
+      "cumulative_tokens": 16018
+    },
+    {
+      "turn_id": 70,
+      "parent_turn_id": 69,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "[exec_command] {\"cmd\":\"echo \\\"Documented doctor/doctor-specific issues (M-131/M-132) and flaky workflow gaps (H-209-H-212); now collating insights to craft final backlog covering each requested area.\\\"\"}",
+          "metadata": {
+            "tool_name": "exec_command"
+          }
+        }
+      ],
+      "timestamp": "2026-02-12T22:29:31.690Z",
+      "input_tokens": 0,
+      "output_tokens": 42,
+      "cumulative_tokens": 16060
+    },
+    {
+      "turn_id": 71,
+      "parent_turn_id": 70,
+      "role": "execution",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "Chunk ID: 298079\nWall time: 0.0519 seconds\nProcess exited with code 0\nOriginal token count: 43\nOutput:\nDocumented doctor/doctor-specific issues (M-131/M-132) and flaky workflow gaps (H-209-H-212); now collating insights to craft final backlog covering each requested area.\n"
+        }
+      ],
+      "timestamp": "2026-02-12T22:29:31.799Z",
+      "input_tokens": 74,
+      "output_tokens": 0,
+      "cumulative_tokens": 16134
+    },
+    {
+      "turn_id": 72,
+      "parent_turn_id": 71,
+      "role": "assistant",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "Improvement backlog covering each requested dimension, with dependencies/sequencing called out:\n\n**UX/Reporting**\n- Create a \u201ccausal slice\u201d timeline + richer failure narrative on the session page so users can jump straight from a failed run to the most likely root-cause trace nodes (`issues12.md`, Plan\u202f71). Dependencies: transcript diff data must already be normalized and tagged with divergence reasons; sequence this after the replay minimizer is stable so the slice stays concise.\n- Replace blocking `alert()` handling and missing form affordances with inline banners, loading/disabled states, and clearer validation feedback on the dashboard pages flagged in `issues6.md` (projects, runs, settings). Sequence: start with the error/submit-path flows before adding new reporting cards so users can actually act on the data that follows.\n- Add a \u201cTest-health / cost of flakiness\u201d dashboard inspired by `featureplan.md`\u2019s missing metrics (pipelines failed, CI minutes wasted, dollars saved). Dependency: metric instrumentation (see Telemetry/metrics below); sequence this after the new metrics are emitted so the UI can surface real numbers rather than placeholders.\n\n**Actionable Next Steps Quality**\n- Improve CLI/reporting error guidance so each failure ends with \u201cwhat to do next\u201d instead of a wall of repeats (`audit/issues/infrastructure/H-209.md`, audit subagent prompts 718\u2011740). Sequence: validate API-key checks before healing loops and doctor runs so we can describe a single remediation; afterward extend CLI error mapping (`autodebug/cli_errors.py`) to cover newly surfaced errors.\n- Enrich the doctor/setup UX with inline remediation pointers (e.g., \u201cInstall Docker (v25.0+) and rerun doctor\u201d) and ensure both Rich/JSON outputs include remediation URLs so automation (CI or dashboards) can parse next steps. Dependency: extend `run_doctor()` results to include structured action items; sequence before making doctor a CI gate so the guidance is machine-readable when downstream pipelines consume it.\n\n**Flaky Detection Workflow**\n- Stop ORDER_DEPENDENCY false positives by distinguishing module/class state from locals (ref `audit/issues/infrastructure/H-210.md`) and deduplicate overlapping pattern hits (`H-211`). Sequence: adjust the AST/regex logic first, then re-run dogfood suite before touching detection counts in the UI to avoid churn.\n- Expand template fixes beyond PLATFORM patterns so `flaky heal --strategy template` covers ASYNC_WAIT and ORDER_DEPENDENCY (per `H-212`). Dependencies: define reusable fix snippets for each category and wire them into the template dispatcher; sequence this before advertising template strategy to non-LLM users.\n- Fail fast on missing LLM API keys and surface a single actionable message instead of N repeated errors (`H-209`). Dependency: add a preflight key check to the healing loop; sequence before any LLM-heavy dogfood/demo runs so the UX is fixed before more users are hit.\n\n**Doctor Checks**\n- Fix doctor\u2019s CLI plumbing so `hikaflow doctor --json` honours the global flag without queueing through Typer callbacks (`M-131`). Sequence: adjust Typer wiring, verify with `tests/test_cli_v2.py`, then release so automation can consume machine-readable outputs.\n- Make doctor exit codes sensible (`M-132`): warnings-only runs should exit 0 while actual failures stay nonzero. Sequence: do this after the check status model already captures \u201cseverity\u201d per check so the new exit-code logic strictly follows the severity taxonomy.\n\n**Telemetry/Metrics**\n- Implement the initiative backlog\u2019s metrics registry (initiative_backlog.md task 12) so we emit the missing counters (`agent.tool_calls.per_fix`, replay divergence counts, grounding-first rate, etc.) to the dashboard/telemetry router. Dependency: ensure `api/routers/telemetry.py` models enforce limits before emitting; sequence this before dashboard wiring so the new cards have data to plot.\n- Add tests for the telemetry router\u2019s OTLP endpoints (noted absent in `audit/findings/testing/M1.md`). Sequence: write integration/smoke tests (e.g., POST `/otel/flakiness/event`) before shipping telemetry instrumentation so regressions are caught early and gate automation can rely on them.\n\n**Testing Gaps**\n- Target the critical \u201cno tests at all\u201d modules from `audit/findings/testing/M1.md`: integrations (`api/integrations/xxx`), key routers (`api/routers/telemetry.py`, `api/cli_auth.py`, etc.), worker tasks, detection modules, and AI components. Dependency: set up deterministic fixtures/mocks for each subsystem; sequence by tackling high-impact routers first (telemetry/cl gauth/jobs) so APIs used by CI/doctor have coverage early.\n- Extend the meta-test/quality-gate scaffolding to cover the newly tested directories (build on existing `test_meta.py` practice from `M2`). Sequence: add coverage enforcement once base tests exist so the gate can block regressions instead of flagging the absence of tests.\n\n**CI Quality Gates**\n- Add a Playwright E2E job to `.github/workflows/ci."
+        }
+      ],
+      "timestamp": "2026-02-12T22:29:47.657Z",
+      "input_tokens": 0,
+      "output_tokens": 1656,
+      "cumulative_tokens": 17790
+    }
+  ],
+  "replay": {
+    "prefix_group_id": "grp_codex_019c53f7",
+    "prefix_overlap_ratio": 0.7,
+    "reuse_distance_turns": 2,
+    "reuse_distance_seconds": 2,
+    "estimated_kv_bytes_peak": 2846400,
+    "branch_count": 0,
+    "idle_windows_ms": [
+      0,
+      0,
+      0,
+      2692,
+      98,
+      2211,
+      100,
+      1304,
+      100,
+      2362,
+      103,
+      1382,
+      99,
+      2670,
+      221,
+      2670,
+      100,
+      2951,
+      100,
+      2050
+    ],
+    "arrival_pattern": "steady_interactive"
+  },
+  "kv_pressure": {
+    "cold_start": true,
+    "warm_cache_hit_rate": 0.5599999999999999,
+    "estimated_offload_bytes": 0,
+    "estimated_reload_bytes": 0,
+    "tier": "HBM",
+    "cache_expectation": "warm",
+    "eviction_risk_score": 0.08895
+  },
+  "provenance": {
+    "generator_model": "codex-real",
+    "generator_prompt_version": "real-transcript-v1",
+    "pipeline_version": "0.1.0"
+  }
+}

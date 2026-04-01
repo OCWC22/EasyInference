@@ -1,0 +1,247 @@
+{
+  "trace_id": "real_codex_019d4706-861",
+  "dataset_version": "0.1.0",
+  "source_type": "real",
+  "workload_family": "coding",
+  "language": "en",
+  "tokenizer": {
+    "name": "o200k_base",
+    "version": "1.0"
+  },
+  "session": {
+    "session_id": "019d4706-8613-7720-9439-5d302ad1a6b9",
+    "goal": "# AGENTS.md instructions for /Users/romirjain/.superset/worktrees/EasyInference/important-emu/products/isb1\n\n<INSTRUCTIONS>\n# AGENTS.md \u2014 Machine-Readable Onboarding for Coding Agents\n\nThis file helps",
+    "contains_tools": true,
+    "contains_rag": false,
+    "contains_branching": false,
+    "contains_multimodal": false
+  },
+  "turns": [
+    {
+      "turn_id": 1,
+      "parent_turn_id": null,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "# AGENTS.md instructions for /Users/romirjain/.superset/worktrees/EasyInference/important-emu/products/isb1\n\n<INSTRUCTIONS>\n# AGENTS.md \u2014 Machine-Readable Onboarding for Coding Agents\n\nThis file helps AI coding agents (Claude Code, Codex, Copilot Workspace, etc.) navigate the EasyInference monorepo without prior context.\n\n## Repository Identity\n\n- **Name:** EasyInference\n- **Remote:** https://github.com/OCWC22/EasyInference.git\n- **Structure:** Two-product monorepo with a shared root for docs, CI, and Make targets\n- **Primary language:** Python 3.11+\n- **Package manager:** `uv` (InferScope), `pip` (ISB-1)\n\n## Products\n\n| Product | Path | Purpose | Package Manager | CLI Entry |\n|---------|------|---------|----------------|-----------|\n| **InferScope** | `products/inferscope/` | Operator CLI + MCP for inference tuning, profiling, benchmarks | `uv` | `inferscope` |\n| **ISB-1** | `products/isb1/` | Reproducible benchmark standard, harness, analysis | `pip` | `isb1` |\n\n**`inferscope-bench/`** is a local donor harness (InferenceX fork). It is NOT a product \u2014 do not modify it for feature work. Its ideas are absorbed into `products/inferscope/src/inferscope/benchmarks/`.\n\n## Routing: Where to Make Changes\n\n| Task | Target Directory |\n|------|-----------------|\n| Recommendation / optimization / engine logic | `products/inferscope/src/inferscope/optimization/`, `engines/` |\n| Benchmark workloads, replay, artifacts | `products/inferscope/src/inferscope/benchmarks/` |\n| Runtime profiling | `products/inferscope/src/inferscope/profiling/` |\n| GPU / model metadata | `products/inferscope/src/inferscope/hardware/`, `models/` |\n| CLI commands | `products/inferscope/src/inferscope/cli*.py` |\n| MCP tools | `products/inferscope/src/inferscope/server*.py` |\n| ISB-1 benchmark harness | `products/isb1/harness/` |\n| ISB-1 workload generators | `products/isb1/workloads/` |\n| ISB-1 analysis / reporting | `products/isb1/analysis/` |\n| Root docs / CI / Makefile | Repository root |\n\n## Dependency Direction (InferScope)\n\n```\nhardware \u2500\u2510\nmodels \u2500\u2500\u2500\u2524\n           \u251c\u2500\u2192 optimization \u2500\u2192 engines\n           \u2502         \u2502\n           \u2502         \u25bc\n           \u251c\u2500\u2192 telemetry \u2500\u2192 profiling\n           \u2502         \u2502\n           \u2502         \u25bc\n           \u2514\u2500\u2192 benchmarks \u2500\u2192 tools\n                     \u2502\n                     \u25bc\n              cli*.py / server*.py\n```\n\n- `optimization` does NOT depend on `benchmarks`\n- `benchmarks` depends on `telemetry` and `optimization`\n- CLI and MCP compose everything \u2014 they are leaf nodes\n\n## GPU Platform Coverage\n\n| Vendor | Supported GPUs | ISA | Status |\n|--------|---------------|-----|--------|\n| NVIDIA Hopper | H100, H200, GH200 | sm_90a | Production |\n| NVIDIA Blackwell | B200, B300, GB200, GB300 | sm_100, sm_103 | Production |\n| AMD CDNA3 | MI300X | gfx942 | Day-one support |\n| AMD CDNA4 | MI355X | gfx950 | Day-one support |\n\nNVIDIA Hopper/Blackwell is the primary validation path. AMD is supported for planning, benchmark gating, and support assessment.\n\n## Development Setup\n\n```bash\n# InferScope (most common)\ncd products/inferscope\nuv sync --dev\ncp .env.example .env  # optional, for INFERSCOPE_DEBUG etc.\n\n# ISB-1\ncd products/isb1\npip install -e \".[dev,quality]\"\n```\n\n## Validation Commands\n\n### InferScope (run from `products/inferscope/`)\n\n```bash\nuv run ruff check src/ tests/          # lint\nuv run ruff format --check src/ tests/  # format check\nuv run mypy src/inferscope/             # type check\nuv run pytest tests/ -v --tb=short      # unit tests\nuv run bandit -r src/inferscope/ -c pyproject.toml -ll  # security\n```\n\n### ISB-1 (run from `products/isb1/`)\n\n```bash\npython -m ruff check .\npython -m black --check .\npytest tests/ -v --tb=short\n```\n\n### From the monorepo root\n\n```bash\nmake all-checks  # runs both products\n```\n\n## Test Conventions (InferScope)\n\n- Tests live in `products/inferscope/tests/`\n- `conftest.py` adds `src/` to `sys.path` \u2014 no editable install required\n- Use `pytest.mark.asyncio` for async tests\n- Use `httpx.MockTransport` for mocking HTTP endpoints (not `unittest.mock.patch`)\n- Use `pytest.mark.integration` for cross-module tests\n- Use `pytest.mark.live_engine` for tests requiring a running inference endpoint\n- Never import from `inferscope-bench/` \u2014 it is not on the Python path\n- Test files follow `test_<module>_<area>.py` naming\n\n## Commit and PR Conventions\n\n- Branch from `main`\n- Keep scope tight \u2014 one concern per PR\n- Update docs when CLI or MCP behavior changes\n- Run the relevant product validation before opening a PR\n- Do not commit `.env` files, `inferscope-bench.tar.gz`, or the `inferscope-bench/` donor tree\n\n## Files to Never Modify for Feature Work\n\n- `inferscope-bench/` \u2014 donor harness, read-only reference\n- `inferscope-bench.tar.gz` \u2014 archive of the donor\n- `.env` files \u2014 local configuration, gitignored\n- `uv.lock` \u2014 managed by `uv`, do not hand-edit\n\n## Key Contracts\n\n- `WorkloadPack` \u2014 the standard benchmark workload container\n- `BenchmarkArtifact` \u2014 the standard benchmark output container\n- "
+        }
+      ],
+      "timestamp": "2026-04-01T03:11:48.337Z",
+      "input_tokens": 4414,
+      "output_tokens": 0,
+      "cumulative_tokens": 4414
+    },
+    {
+      "turn_id": 2,
+      "parent_turn_id": 1,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "<environment_context>\n  <cwd>/Users/romirjain/.superset/worktrees/EasyInference/important-emu/products/isb1</cwd>\n  <shell>bash</shell>\n</environment_context>"
+        }
+      ],
+      "timestamp": "2026-04-01T03:11:48.337Z",
+      "input_tokens": 8,
+      "output_tokens": 0,
+      "cumulative_tokens": 4422
+    },
+    {
+      "turn_id": 3,
+      "parent_turn_id": 2,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "You are generating a single canonical SessionTraceV0 object for inference benchmarking.\n\nGoal:\nCreate a synthetic but realistic long-context trace that is useful for benchmarking KV cache reuse, offloading, long-context growth, multi-turn reasoning, and tool-driven agent workflows.\n\nHard requirements:\n- Output valid JSON only.\n- Must conform to SessionTraceV0 schema exactly.\n- Must include replay and kv_pressure fields.\n- Must preserve realistic turn structure.\n- Must not produce generic textbook chat.\n- Must produce a trace that would stress a real inference system.\n\nWorkload family: long_chat\nTarget context bin: 8k_16k\nPlanned goal: Plan a database migration strategy with tradeoff analysis\nNumber of turns: 14\nTool pattern: []\nBranch pattern: none\nIdle windows ms: [0, 1000, 8000, 2000]\nExpected prefix overlap ratio: 0.82\nExpected cache state: warm\nContains RAG/retrieval: False\n\nSpecific instructions:\n- Strongly emphasize agents, tool use, coding, and reasoning.\n- Include messy but plausible user behavior.\n- Include realistic tool outputs, logs, diffs, or retrieval chunks where appropriate.\n- Include prior-turn references after turn 5.\n- Ensure cumulative context grows naturally toward the target bin.\n- Do not create idealized or perfectly clean conversations.\n- Do not use ShareGPT-style short, generic Q&A structure.\n- Do not emit training-only assistant polish.\n- Do not emit refusal-style safety boilerplate.\n\nThe SessionTraceV0 schema requires these top-level fields:\n- trace_id (string)\n- dataset_version (string, use \"0.1.0\")\n- source_type (string, use \"synthetic\")\n- workload_family (string: \"long_chat\" or \"coding\")\n- language (string, use \"en\")\n- tokenizer (object: {\"name\": \"cl100k_base\", \"version\": \"1.0\"})\n- session (object: session_id, goal, contains_tools, contains_rag, contains_branching, contains_multimodal)\n- turns (array of turn objects, each with: turn_id, parent_turn_id, role, content_blocks, timestamp, input_tokens, output_tokens, cumulative_tokens)\n- replay (object: prefix_group_id, prefix_overlap_ratio, reuse_distance_turns, reuse_distance_seconds, estimated_kv_bytes_peak, branch_count, idle_windows_ms, arrival_pattern)\n- kv_pressure (object: cold_start, warm_cache_hit_rate, estimated_offload_bytes, estimated_reload_bytes, tier, cache_expectation, eviction_risk_score)\n- provenance (object: generator_model, generator_prompt_version, pipeline_version)\n\nEach turn's content_blocks is an array of objects with: type (\"text\"|\"code\"|\"log\"|\"document\"), text, and optional uri/mime_type/metadata.\n\nReturn one JSON object only. No markdown fencing. No explanation.\n"
+        }
+      ],
+      "timestamp": "2026-04-01T03:11:48.337Z",
+      "input_tokens": 644,
+      "output_tokens": 0,
+      "cumulative_tokens": 5066
+    },
+    {
+      "turn_id": 4,
+      "parent_turn_id": 3,
+      "role": "assistant",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "Building the trace now. I\u2019m shaping a 14-turn long-context session with realistic pasted logs, schema diffs, and repeated prior-turn references, then I\u2019ll validate the JSON structure before returning it."
+        }
+      ],
+      "timestamp": "2026-04-01T03:13:31.884Z",
+      "input_tokens": 0,
+      "output_tokens": 58,
+      "cumulative_tokens": 5124
+    },
+    {
+      "turn_id": 5,
+      "parent_turn_id": 4,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "[exec_command] {\"cmd\":\"python3 - <<'PY'\\nimport json\\nfrom textwrap import dedent\\n\\nturns = []\\n\\ndef add_turn(turn_id, parent_turn_id, role, blocks, timestamp, input_tokens, output_tokens, cumulative_tokens):\\n    turns.append({\\n        \\\"turn_id\\\": turn_id,\\n        \\\"parent_turn_id\\\": parent_turn_id,\\n        \\\"role\\\": role,\\n        \\\"content_blocks\\\": blocks,\\n        \\\"timestamp\\\": timestamp,\\n        \\\"input_tokens\\\": input_tokens,\\n        \\\"output_tokens\\\": output_tokens,\\n        \\\"cumulative_tokens\\\": cumulative_tokens,\\n    })\\n\\nadd_turn(\\n    \\\"t001\\\",\\n    None,\\n    \\\"user\\\",\\n    [\\n        {\\n            \\\"type\\\": \\\"text\\\",\\n            \\\"text\\\": dedent(\\\"\\\"\\\"\\n                Need help planning a database migration, but not the generic blog-post answer. I want something I can actually take into a review with SRE + app leads.\\n\\n                Context dump, sorry if this is messy:\\n                - We run a multi-tenant billing + usage platform on Postgres 13.4 RDS, single write",
+          "metadata": {
+            "tool_name": "exec_command"
+          }
+        }
+      ],
+      "timestamp": "2026-04-01T03:19:02.468Z",
+      "input_tokens": 0,
+      "output_tokens": 186,
+      "cumulative_tokens": 5310
+    },
+    {
+      "turn_id": 6,
+      "parent_turn_id": 5,
+      "role": "execution",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "Chunk ID: bb25d7\nWall time: 0.0521 seconds\nProcess exited with code 1\nOriginal token count: 33\nOutput:\n  File \"<stdin>\", line 354\n    \"text\": dedent(\"\"\"\n                   ^^^\nSyntaxError: invalid syntax. Perhaps you forgot a comma?\n"
+        }
+      ],
+      "timestamp": "2026-04-01T03:19:02.639Z",
+      "input_tokens": 64,
+      "output_tokens": 0,
+      "cumulative_tokens": 5374
+    },
+    {
+      "turn_id": 7,
+      "parent_turn_id": 6,
+      "role": "assistant",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "The first pass failed on nested triple-quoted code blocks. I\u2019m fixing the generator so the final JSON is syntax-checked before I return it."
+        }
+      ],
+      "timestamp": "2026-04-01T03:19:23.187Z",
+      "input_tokens": 0,
+      "output_tokens": 46,
+      "cumulative_tokens": 5420
+    },
+    {
+      "turn_id": 8,
+      "parent_turn_id": 7,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "[exec_command] {\"cmd\":\"python3 - <<'PY'\\nimport json\\nfrom textwrap import dedent\\n\\nturns = []\\n\\ndef block(type_, text, **kwargs):\\n    d = {\\\"type\\\": type_, \\\"text\\\": dedent(text).strip()}\\n    d.update(kwargs)\\n    return d\\n\\ndef add_turn(turn_id, parent_turn_id, role, content_blocks, timestamp, input_tokens, output_tokens, cumulative_tokens):\\n    turns.append({\\n        \\\"turn_id\\\": turn_id,\\n        \\\"parent_turn_id\\\": parent_turn_id,\\n        \\\"role\\\": role,\\n        \\\"content_blocks\\\": content_blocks,\\n        \\\"timestamp\\\": timestamp,\\n        \\\"input_tokens\\\": input_tokens,\\n        \\\"output_tokens\\\": output_tokens,\\n        \\\"cumulative_tokens\\\": cumulative_tokens,\\n    })\\n\\nadd_turn(\\\"t001\\\", None, \\\"user\\\", [\\n    block(\\\"text\\\", '''\\n        Need help planning a database migration, but not the generic blog-post answer. I want something I can actually take into a review with SRE + app leads.\\n\\n        Context dump, sorry if this is messy:\\n        - We run a multi-tenant billing + us",
+          "metadata": {
+            "tool_name": "exec_command"
+          }
+        }
+      ],
+      "timestamp": "2026-04-01T03:23:46.440Z",
+      "input_tokens": 0,
+      "output_tokens": 188,
+      "cumulative_tokens": 5608
+    },
+    {
+      "turn_id": 9,
+      "parent_turn_id": 8,
+      "role": "execution",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "Chunk ID: e53398\nWall time: 0.0525 seconds\nProcess exited with code 0\nOriginal token count: 15869\nOutput:\n{\n  \"trace_id\": \"sessiontracev0_longchat_db_migration_8k16k_0001\",\n  \"dataset_version\": \"0.1.0\",\n  \"source_type\": \"synthetic\",\n  \"workload_family\": \"long_chat\",\n  \"language\": \"en\",\n  \"tokenizer\": {\n    \"name\": \"cl100k_base\",\n    \"version\": \"1.0\"\n  },\n  \"session\": {\n    \"session_id\": \"sess_dbmig_plan_20250214_a\",\n    \"goal\": \"Plan a database migration strategy with tradeoff analysis for moving a high-volume billing and ledger workload from Postgres 13 RDS to Postgres 15 Aurora while introducing schema changes and preserving correctness.\",\n    \"contains_tools\": true,\n    \"contains_rag\": false,\n    \"contains_branching\": false,\n    \"contains_multimodal\": false\n  },\n  \"turns\": [\n    {\n      \"turn_id\": \"t001\",\n      \"parent_turn_id\": null,\n      \"role\": \"user\",\n      \"content_blocks\": [\n        {\n          \"type\": \"text\",\n          \"text\": \"Need help planning a database migration, but not the generic blog-post answer. I want something I can actually take into a review with SRE + app leads.\\n\\nContext dump, sorry if this is messy:\\n- We run a multi-tenant billing + usage platform on Postgres 13.4 RDS, single writer, 3 read replicas.\\n- Main app is Python/SQLAlchemy. Two newer services are Go/GORM. There is also one ugly cron worker that still does raw SQL string formatting because apparently we enjoy risk.\\n- Peak traffic is weekdays 14:00-19:00 UTC. Quiet-ish overnight but not empty.\\n- We need to move to Postgres 15 and also fix schema mistakes we have been carrying for 2 years.\\n- The biggest mistake: our usage events and ledger rows are half append-only, half not, with JSONB blobs doing way too much work.\\n- Product wants zero visible downtime. SRE says they can maybe tolerate a brief read-only window if it is under 5 minutes and announced.\\n- Finance/legal requirement is basically \\\"no missing money, no duplicated ledger effects, and no phantom invoice events\\\".\\n- We already tried one dry run in staging with an in-place migration and it turned into table bloat + replica lag + rollback panic.\\n\\nWhat is changing logically:\\n1. `billing_events.payload` JSONB needs to be split so common fields become columns.\\n2. `ledger_entries.account_id` stays, but we want `(account_id, effective_at, id)` aligned for partitioning and retrieval.\\n3. We want to stop using the global bigint sequence for some new tables and move to UUIDv7 for externally referenced entities.\\n4. Old invoice state transitions are currently inferred from event order. We want an explicit `invoice_status_history` table.\\n\\nWhat makes this annoying:\\n- some downstream jobs read from replicas and assume replica lag is tiny;\\n- a Debezium connector feeds analytics + one fraud rule engine;\\n- pgbouncer is in transaction pooling mode;\\n- background workers do chunked upserts and retry on serialization failures;\\n- there are a few cross-table transactions where we create invoice rows and led"
+        }
+      ],
+      "timestamp": "2026-04-01T03:23:46.575Z",
+      "input_tokens": 812,
+      "output_tokens": 0,
+      "cumulative_tokens": 6420
+    },
+    {
+      "turn_id": 10,
+      "parent_turn_id": 9,
+      "role": "assistant",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "I have a schema-valid trace object. I\u2019m minifying it now so the full JSON can be emitted without any truncation artifacts."
+        }
+      ],
+      "timestamp": "2026-04-01T03:24:05.891Z",
+      "input_tokens": 0,
+      "output_tokens": 42,
+      "cumulative_tokens": 6462
+    },
+    {
+      "turn_id": 11,
+      "parent_turn_id": 10,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "[exec_command] {\"cmd\":\"python3 - <<'PY'\\nimport json\\nfrom textwrap import dedent\\n\\ndef block(type_, text, **kwargs):\\n    d = {\\\"type\\\": type_, \\\"text\\\": dedent(text).strip()}\\n    d.update(kwargs)\\n    return d\\n\\nturns = []\\nadd = lambda *args: turns.append({\\\"turn_id\\\": args[0], \\\"parent_turn_id\\\": args[1], \\\"role\\\": args[2], \\\"content_blocks\\\": args[3], \\\"timestamp\\\": args[4], \\\"input_tokens\\\": args[5], \\\"output_tokens\\\": args[6], \\\"cumulative_tokens\\\": args[7]})\\n\\nadd(\\\"t001\\\", None, \\\"user\\\", [block(\\\"text\\\", '''Need help planning a database migration, but not the generic blog-post answer. I want something I can actually take into a review with SRE + app leads.\\n\\nContext dump, sorry if this is messy:\\n- We run a multi-tenant billing + usage platform on Postgres 13.4 RDS, single writer, 3 read replicas.\\n- Main app is Python/SQLAlchemy. Two newer services are Go/GORM. There is also one ugly cron worker that still does raw SQL string formatting because apparently we enjoy risk.\\n- Peak traffi",
+          "metadata": {
+            "tool_name": "exec_command"
+          }
+        }
+      ],
+      "timestamp": "2026-04-01T03:28:15.120Z",
+      "input_tokens": 0,
+      "output_tokens": 246,
+      "cumulative_tokens": 6708
+    },
+    {
+      "turn_id": 12,
+      "parent_turn_id": 11,
+      "role": "execution",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "Chunk ID: 910dc8\nWall time: 0.0520 seconds\nProcess exited with code 0\nOriginal token count: 14607\nOutput:\n{\"trace_id\":\"sessiontracev0_longchat_db_migration_8k16k_0001\",\"dataset_version\":\"0.1.0\",\"source_type\":\"synthetic\",\"workload_family\":\"long_chat\",\"language\":\"en\",\"tokenizer\":{\"name\":\"cl100k_base\",\"version\":\"1.0\"},\"session\":{\"session_id\":\"sess_dbmig_plan_20250214_a\",\"goal\":\"Plan a database migration strategy with tradeoff analysis for moving a high-volume billing and ledger workload from Postgres 13 RDS to Postgres 15 Aurora while introducing schema changes and preserving correctness.\",\"contains_tools\":true,\"contains_rag\":false,\"contains_branching\":false,\"contains_multimodal\":false},\"turns\":[{\"turn_id\":\"t001\",\"parent_turn_id\":null,\"role\":\"user\",\"content_blocks\":[{\"type\":\"text\",\"text\":\"Need help planning a database migration, but not the generic blog-post answer. I want something I can actually take into a review with SRE + app leads.\\n\\nContext dump, sorry if this is messy:\\n- We run a multi-tenant billing + usage platform on Postgres 13.4 RDS, single writer, 3 read replicas.\\n- Main app is Python/SQLAlchemy. Two newer services are Go/GORM. There is also one ugly cron worker that still does raw SQL string formatting because apparently we enjoy risk.\\n- Peak traffic is weekdays 14:00-19:00 UTC. Quiet-ish overnight but not empty.\\n- We need to move to Postgres 15 and also fix schema mistakes we have been carrying for 2 years.\\n- The biggest mistake: our usage events and ledger rows are half append-only, half not, with JSONB blobs doing way too much work.\\n- Product wants zero visible downtime. SRE says they can maybe tolerate a brief read-only window if it is under 5 minutes and announced.\\n- Finance/legal requirement is basically \\\"no missing money, no duplicated ledger effects, and no phantom invoice events\\\".\\n- We already tried one dry run in staging with an in-place migration and it turned into table bloat + replica lag + rollback panic.\\n\\nWhat is changing logically:\\n1. `billing_events.payload` JSONB needs to be split so common fields become columns.\\n2. `ledger_entries.account_id` stays, but we want `(account_id, effective_at, id)` aligned for partitioning and retrieval.\\n3. We want to stop using the global bigint sequence for some new tables and move to UUIDv7 for externally referenced entities.\\n4. Old invoice state transitions are currently inferred from event order. We want an explicit `invoice_status_history` table.\\n\\nWhat makes this annoying:\\n- some downstream jobs read from replicas and assume replica lag is tiny;\\n- a Debezium connector feeds analytics + one fraud rule engine;\\n- pgbouncer is in transaction pooling mode;\\n- background workers do chunked upserts and retry on serialization failures;\\n- there are a few cross-table transactions where we create invoice rows and ledger rows together.\\n\\nI do not want a purely theoretical answer. Please give me a migration strategy with tradeoff analysis. If you need more specifics, ask"
+        }
+      ],
+      "timestamp": "2026-04-01T03:28:15.257Z",
+      "input_tokens": 764,
+      "output_tokens": 0,
+      "cumulative_tokens": 7472
+    }
+  ],
+  "replay": {
+    "prefix_group_id": "grp_codex_019d4706",
+    "prefix_overlap_ratio": 0.7,
+    "reuse_distance_turns": 2,
+    "reuse_distance_seconds": 330,
+    "estimated_kv_bytes_peak": 1195520,
+    "branch_count": 0,
+    "idle_windows_ms": [
+      0,
+      0,
+      0,
+      103547,
+      330584,
+      171,
+      20548,
+      263253,
+      135,
+      19316,
+      249229,
+      137
+    ],
+    "arrival_pattern": "reactivation_heavy"
+  },
+  "kv_pressure": {
+    "cold_start": true,
+    "warm_cache_hit_rate": 0.5599999999999999,
+    "estimated_offload_bytes": 0,
+    "estimated_reload_bytes": 298880,
+    "tier": "HBM",
+    "cache_expectation": "reactivated",
+    "eviction_risk_score": 0.03736
+  },
+  "provenance": {
+    "generator_model": "codex-real",
+    "generator_prompt_version": "real-transcript-v1",
+    "pipeline_version": "0.1.0"
+  }
+}

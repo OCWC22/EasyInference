@@ -1,0 +1,1641 @@
+{
+  "trace_id": "real_claude_c6ab4c29-3a5",
+  "dataset_version": "0.1.0",
+  "source_type": "real",
+  "workload_family": "coding",
+  "language": "en",
+  "tokenizer": {
+    "name": "cl100k_base",
+    "version": "1.0"
+  },
+  "session": {
+    "session_id": "c6ab4c29-3a58-44a8-95d1-8e83e24d8480",
+    "goal": "you were working on openclaw semantic cache in building projects in desktop, start teaching me what i need to know to present it",
+    "contains_tools": true,
+    "contains_rag": false,
+    "contains_branching": false,
+    "contains_multimodal": false
+  },
+  "turns": [
+    {
+      "turn_id": 1,
+      "parent_turn_id": null,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "you were working on openclaw semantic cache in building projects in desktop, start teaching me what i need to know to present it"
+        }
+      ],
+      "timestamp": "2026-03-25T23:54:41.945Z",
+      "input_tokens": 46,
+      "output_tokens": 0,
+      "cumulative_tokens": 46
+    },
+    {
+      "turn_id": 2,
+      "parent_turn_id": 1,
+      "role": "assistant",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "(assistant response)"
+        }
+      ],
+      "timestamp": "2026-03-25T23:54:45.696Z",
+      "input_tokens": 21163,
+      "output_tokens": 30,
+      "cumulative_tokens": 21239
+    },
+    {
+      "turn_id": 3,
+      "parent_turn_id": 2,
+      "role": "assistant",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "Let me look for the OpenClaw semantic cache project on your machine."
+        }
+      ],
+      "timestamp": "2026-03-25T23:54:46.048Z",
+      "input_tokens": 21163,
+      "output_tokens": 30,
+      "cumulative_tokens": 42432
+    },
+    {
+      "turn_id": 4,
+      "parent_turn_id": 3,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "[Agent] {\"description\": \"Find OpenClaw semantic cache project\", \"subagent_type\": \"Explore\", \"prompt\": \"Search thoroughly for an \\\"OpenClaw\\\" or \\\"openclaw\\\" semantic cache project on this machine. Check:\\n1. ~/Desktop/ and subdirectories\\n2. ~/Documents/\\n3. ~/Projects/ or ~/projects/\\n4. Any directory under the home directory that might contain this project\\n5. Search for files containing \\\"openclaw\\\" or \\\"semantic_cache\\\" or \\\"semantic-cache\\\"\\n\\nReport back the project location, its structure, key files, and what the project does.\"}",
+          "metadata": {
+            "tool_name": "Agent"
+          }
+        }
+      ],
+      "timestamp": "2026-03-25T23:54:49.247Z",
+      "input_tokens": 21163,
+      "output_tokens": 267,
+      "cumulative_tokens": 63862
+    },
+    {
+      "turn_id": 5,
+      "parent_turn_id": 4,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": ""
+        }
+      ],
+      "timestamp": "2026-03-25T23:58:38.120Z",
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cumulative_tokens": 63862
+    },
+    {
+      "turn_id": 6,
+      "parent_turn_id": 5,
+      "role": "assistant",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "(assistant response)"
+        }
+      ],
+      "timestamp": "2026-03-25T23:58:40.594Z",
+      "input_tokens": 22674,
+      "output_tokens": 29,
+      "cumulative_tokens": 86565
+    },
+    {
+      "turn_id": 7,
+      "parent_turn_id": 6,
+      "role": "assistant",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "Found it. Here's what you need to know to present the OpenClaw Semantic Cache project:\n\n---\n\n## What OpenClaw Semantic Cache Is (The Elevator Pitch)\n\nIt's a **semantic caching layer for AI agents** \u2014 it gives AI assistants like Claude persistent, searchable memory across sessions by indexing your data (notes, emails, Slack, Notion, etc.) into a knowledge graph via **Hyperspell**, then automatically retrieving relevant context before each AI response.\n\n**Problem it solves:** AI assistants forget everything between sessions. They can't connect dots across your emails, docs, and conversations.\n\n**How it solves it:** A plugin architecture that:\n1. **Syncs** your local markdown memories to a cloud semantic index\n2. **Auto-injects** relevant context before each AI turn (RAG pattern)\n3. **Extracts** structured entities (people, projects, companies) into a knowledge graph\n\n---\n\n## Key Concepts You Should Be Ready to Explain\n\n### 1. Semantic Cache vs Traditional Cache\n- Traditional cache: exact key match (URL, query string)\n- **Semantic cache**: matches on *meaning* \u2014 \"What did Sarah say about the API?\" retrieves relevant memories even if those exact words weren't used. Uses embeddings/vector similarity under the hood.\n\n### 2. The RAG Pattern (Retrieval-Augmented Generation)\n- Before the AI responds, the system **searches** your indexed data for context relevant to the current conversation\n- That context gets **injected** into the prompt so the AI has the right information\n- This is the `autoContext: true` setting in your config\n\n### 3. Knowledge Graph Extraction\n- Memories aren't just stored as flat text \u2014 the system **extracts entities** (people, projects, orgs, topics) and their relationships\n- This creates a structured graph: \"Romir \u2192 works on \u2192 Taptic\", \"Sarah \u2192 mentioned \u2192 API redesign\"\n- Located in the `graph/` module (scan, complete, sync operations)\n\n### 4. Multi-Source Integration\nYour config connects to: **vault** (local files), **Google Mail**, **Slack**, **Notion**, **Google Calendar** \u2014 all searchable through one semantic interface.\n\n### 5. Architecture (for technical audiences)\n\n```\nUser prompt\n    \u2193\nHook: auto-context injection (hooks/)\n    \u2193 searches Hyperspell\nRelevant memories injected into context\n    \u2193\nAI generates response\n    \u2193\nHook: sync new memories back (sync/)\n    \u2193\nKnowledge graph updated (graph/)\n```\n\nKey source files:\n- `index.ts` \u2014 plugin lifecycle\n- `client.ts` \u2014 Hyperspell API client (search/remember)\n- `hooks/` \u2014 auto-context injection + file sync\n- `graph/` \u2014 knowledge graph extraction\n- `tools/` \u2014 `hyperspell_search` and `hyperspell_remember` AI tools\n\n---\n\n## Likely Questions & How to Answer Them\n\n**\"How is this different from just using RAG?\"**\n\u2192 It's RAG + a persistent knowledge graph + automatic memory sync. Standard RAG is query-time retrieval. This also *writes back* \u2014 extracting entities and relationships over time, so the graph compounds.\n\n**\"Why not just use a vector database directly?\"**\n\u2192 Hyperspell handles embedding, indexing, multi-source connectors, and knowledge graph extraction. The plugin is the glue between the local agent workspace and that cloud service.\n\n**\"What's the latency impact?\"**\n\u2192 The semantic search happens as a pre-hook before each turn. It adds a network round-trip but the cache means frequently-accessed context is fast to retrieve.\n\n**\"Is data private?\"**\n\u2192 Point to the config: data goes through Hyperspell's API with token-based auth. The `userId` is sandboxed to your account.\n\n---\n\nWant me to dive deeper into any of these areas, or help you build slides/a demo script?"
+        }
+      ],
+      "timestamp": "2026-03-25T23:59:01.884Z",
+      "input_tokens": 22674,
+      "output_tokens": 955,
+      "cumulative_tokens": 110194
+    },
+    {
+      "turn_id": 8,
+      "parent_turn_id": 7,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "<task-notification>\n<task-id>box8vr2aw</task-id>\n<tool-use-id>toolu_01V6Vkm2mVQyZo3PL62ievUK</tool-use-id>\n<output-file>/private/tmp/claude-501/-Users-romirjain/c6ab4c29-3a58-44a8-95d1-8e83e24d8480/tasks/box8vr2aw.output</output-file>\n<status>killed</status>\n<summary>Background command \"Search for files with openclaw or semantic-cache in name\" was stopped</summary>\n</task-notification>\nRead the output file to retrieve the result: /private/tmp/claude-501/-Users-romirjain/c6ab4c29-3a58-44a8-95d1-8e83e24d8480/tasks/box8vr2aw.output"
+        }
+      ],
+      "timestamp": "2026-03-25T23:59:03.287Z",
+      "input_tokens": 56,
+      "output_tokens": 0,
+      "cumulative_tokens": 110250
+    },
+    {
+      "turn_id": 9,
+      "parent_turn_id": 8,
+      "role": "assistant",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "That was just a background task that got cleaned up \u2014 nothing to worry about. The main research already completed successfully.\n\nDid the overview make sense? Would you like me to:\n\n1. **Go deeper on any specific area** (e.g., how the knowledge graph extraction works, the RAG flow, the plugin architecture)\n2. **Help you build a demo script** to walk through live\n3. **Prep you for specific audience questions** (technical vs. non-technical)\n\nWhat's the format of your presentation?"
+        }
+      ],
+      "timestamp": "2026-03-25T23:59:07.596Z",
+      "input_tokens": 23864,
+      "output_tokens": 115,
+      "cumulative_tokens": 134229
+    },
+    {
+      "turn_id": 10,
+      "parent_turn_id": 9,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "no thats sas different project what is the other openclaw project called"
+        }
+      ],
+      "timestamp": "2026-03-26T00:11:41.863Z",
+      "input_tokens": 24,
+      "output_tokens": 0,
+      "cumulative_tokens": 134253
+    },
+    {
+      "turn_id": 11,
+      "parent_turn_id": 10,
+      "role": "assistant",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "(assistant response)"
+        }
+      ],
+      "timestamp": "2026-03-26T00:11:45.934Z",
+      "input_tokens": 23997,
+      "output_tokens": 25,
+      "cumulative_tokens": 158275
+    },
+    {
+      "turn_id": 12,
+      "parent_turn_id": 11,
+      "role": "assistant",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "Let me search more broadly for projects you were building."
+        }
+      ],
+      "timestamp": "2026-03-26T00:11:46.676Z",
+      "input_tokens": 23997,
+      "output_tokens": 25,
+      "cumulative_tokens": 182297
+    },
+    {
+      "turn_id": 13,
+      "parent_turn_id": 12,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "[Glob] {\"pattern\": \"**/semantic*cache*/**\", \"path\": \"/Users/romirjain\"}",
+          "metadata": {
+            "tool_name": "Glob"
+          }
+        }
+      ],
+      "timestamp": "2026-03-26T00:11:47.161Z",
+      "input_tokens": 23997,
+      "output_tokens": 25,
+      "cumulative_tokens": 206319
+    },
+    {
+      "turn_id": 14,
+      "parent_turn_id": 13,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "[Grep] {\"pattern\": \"semantic.?cache\", \"path\": \"/Users/romirjain/Desktop\", \"output_mode\": \"files_with_matches\"}",
+          "metadata": {
+            "tool_name": "Grep"
+          }
+        }
+      ],
+      "timestamp": "2026-03-26T00:11:48.530Z",
+      "input_tokens": 23997,
+      "output_tokens": 25,
+      "cumulative_tokens": 230341
+    },
+    {
+      "turn_id": 15,
+      "parent_turn_id": 14,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "[Bash] {\"command\": \"ls -la /Users/romirjain/Desktop/\", \"description\": \"List Desktop contents\"}",
+          "metadata": {
+            "tool_name": "Bash"
+          }
+        }
+      ],
+      "timestamp": "2026-03-26T00:11:48.866Z",
+      "input_tokens": 23997,
+      "output_tokens": 307,
+      "cumulative_tokens": 254645
+    },
+    {
+      "turn_id": 16,
+      "parent_turn_id": 15,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": ""
+        }
+      ],
+      "timestamp": "2026-03-26T00:12:03.802Z",
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cumulative_tokens": 254645
+    },
+    {
+      "turn_id": 17,
+      "parent_turn_id": 16,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": ""
+        }
+      ],
+      "timestamp": "2026-03-26T00:12:07.173Z",
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cumulative_tokens": 254645
+    },
+    {
+      "turn_id": 18,
+      "parent_turn_id": 17,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": ""
+        }
+      ],
+      "timestamp": "2026-03-26T00:12:08.557Z",
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cumulative_tokens": 254645
+    },
+    {
+      "turn_id": 19,
+      "parent_turn_id": 18,
+      "role": "assistant",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "I see a `building projects` folder on your Desktop. Let me check there for the semantic cache project."
+        }
+      ],
+      "timestamp": "2026-03-26T00:12:12.291Z",
+      "input_tokens": 37671,
+      "output_tokens": 2,
+      "cumulative_tokens": 292318
+    },
+    {
+      "turn_id": 20,
+      "parent_turn_id": 19,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "[Bash] {\"command\": \"ls \\\"/Users/romirjain/Desktop/building projects/\\\" | grep -i -E \\\"semantic|cache|openclaw|claw\\\"\", \"description\": \"Search for semantic cache project in building projects\"}",
+          "metadata": {
+            "tool_name": "Bash"
+          }
+        }
+      ],
+      "timestamp": "2026-03-26T00:12:13.276Z",
+      "input_tokens": 37671,
+      "output_tokens": 129,
+      "cumulative_tokens": 330118
+    },
+    {
+      "turn_id": 21,
+      "parent_turn_id": 20,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": ""
+        }
+      ],
+      "timestamp": "2026-03-26T00:12:19.777Z",
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cumulative_tokens": 330118
+    },
+    {
+      "turn_id": 22,
+      "parent_turn_id": 21,
+      "role": "assistant",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "Found it. Let me read the project files."
+        }
+      ],
+      "timestamp": "2026-03-26T00:12:22.395Z",
+      "input_tokens": 38064,
+      "output_tokens": 1,
+      "cumulative_tokens": 368183
+    },
+    {
+      "turn_id": 23,
+      "parent_turn_id": 22,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "[Bash] {\"command\": \"ls -la \\\"/Users/romirjain/Desktop/building projects/openclaw-semantic-cache/\\\"\", \"description\": \"List project contents\"}",
+          "metadata": {
+            "tool_name": "Bash"
+          }
+        }
+      ],
+      "timestamp": "2026-03-26T00:12:23.288Z",
+      "input_tokens": 38064,
+      "output_tokens": 1,
+      "cumulative_tokens": 406248
+    },
+    {
+      "turn_id": 24,
+      "parent_turn_id": 23,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "code",
+          "text": "[Read] {\"file_path\": \"/Users/romirjain/Desktop/building projects/openclaw-semantic-cache/README.md\"}",
+          "metadata": {
+            "tool_name": "Read"
+          }
+        }
+      ],
+      "timestamp": "2026-03-26T00:12:23.916Z",
+      "input_tokens": 38064,
+      "output_tokens": 1,
+      "cumulative_tokens": 444313
+    },
+    {
+      "turn_id": 25,
+      "parent_turn_id": 24,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": ""
+        }
+      ],
+      "timestamp": "2026-03-26T00:12:24.092Z",
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cumulative_tokens": 444313
+    },
+    {
+      "turn_id": 26,
+      "parent_turn_id": 25,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "code",
+          "text": "[Read] {\"file_path\": \"/Users/romirjain/Desktop/building projects/openclaw-semantic-cache/package.json\"}",
+          "metadata": {
+            "tool_name": "Read"
+          }
+        }
+      ],
+      "timestamp": "2026-03-26T00:12:24.307Z",
+      "input_tokens": 38064,
+      "output_tokens": 1,
+      "cumulative_tokens": 482378
+    },
+    {
+      "turn_id": 27,
+      "parent_turn_id": 26,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": ""
+        }
+      ],
+      "timestamp": "2026-03-26T00:12:24.366Z",
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cumulative_tokens": 482378
+    },
+    {
+      "turn_id": 28,
+      "parent_turn_id": 27,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "code",
+          "text": "[Read] {\"file_path\": \"/Users/romirjain/Desktop/building projects/openclaw-semantic-cache/SKILL.md\"}",
+          "metadata": {
+            "tool_name": "Read"
+          }
+        }
+      ],
+      "timestamp": "2026-03-26T00:12:24.890Z",
+      "input_tokens": 38064,
+      "output_tokens": 279,
+      "cumulative_tokens": 520721
+    },
+    {
+      "turn_id": 29,
+      "parent_turn_id": 28,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": ""
+        }
+      ],
+      "timestamp": "2026-03-26T00:12:24.995Z",
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cumulative_tokens": 520721
+    },
+    {
+      "turn_id": 30,
+      "parent_turn_id": 29,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": ""
+        }
+      ],
+      "timestamp": "2026-03-26T00:12:27.043Z",
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cumulative_tokens": 520721
+    },
+    {
+      "turn_id": 31,
+      "parent_turn_id": 30,
+      "role": "assistant",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "Now let me read the actual source code."
+        }
+      ],
+      "timestamp": "2026-03-26T00:12:30.179Z",
+      "input_tokens": 42741,
+      "output_tokens": 1,
+      "cumulative_tokens": 563463
+    },
+    {
+      "turn_id": 32,
+      "parent_turn_id": 31,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "[Bash] {\"command\": \"ls \\\"/Users/romirjain/Desktop/building projects/openclaw-semantic-cache/scripts/\\\"\", \"description\": \"List scripts directory\"}",
+          "metadata": {
+            "tool_name": "Bash"
+          }
+        }
+      ],
+      "timestamp": "2026-03-26T00:12:31.087Z",
+      "input_tokens": 42741,
+      "output_tokens": 103,
+      "cumulative_tokens": 606307
+    },
+    {
+      "turn_id": 33,
+      "parent_turn_id": 32,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": ""
+        }
+      ],
+      "timestamp": "2026-03-26T00:12:34.072Z",
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cumulative_tokens": 606307
+    },
+    {
+      "turn_id": 34,
+      "parent_turn_id": 33,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "code",
+          "text": "[Read] {\"file_path\": \"/Users/romirjain/Desktop/building projects/openclaw-semantic-cache/scripts/cache.js\"}",
+          "metadata": {
+            "tool_name": "Read"
+          }
+        }
+      ],
+      "timestamp": "2026-03-26T00:12:37.554Z",
+      "input_tokens": 43005,
+      "output_tokens": 77,
+      "cumulative_tokens": 649389
+    },
+    {
+      "turn_id": 35,
+      "parent_turn_id": 34,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": ""
+        }
+      ],
+      "timestamp": "2026-03-26T00:12:37.579Z",
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cumulative_tokens": 649389
+    },
+    {
+      "turn_id": 36,
+      "parent_turn_id": 35,
+      "role": "assistant",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "Got it. Now I have the full picture. Here's what you need to know to present **openclaw-semantic-cache** (`rylinjames/openclaw-semantic-cache` on GitHub):\n\n---\n\n## What It Is\n\nA **skill/plugin for the OpenClaw agent framework** that caches LLM API responses by *meaning*, not exact text match. It uses Redis vector search + OpenAI embeddings so that semantically similar questions get instant cached answers instead of expensive repeat API calls.\n\n**One-liner:** \"77x faster responses, 60-80% cost reduction, one command to install.\"\n\n---\n\n## The Core Problem & Insight\n\n- AI agents make tons of LLM calls. Many are semantically identical but worded differently.\n- **Exact-match caching is useless** because nobody asks the same question the same way twice.\n- \"How do I reset my password?\" and \"I forgot my password, how can I change it?\" should return the same cached answer.\n\n---\n\n## How It Works (Know This Cold)\n\n1. **Embed** \u2014 incoming query \u2192 OpenAI `text-embedding-3-small` \u2192 1536-dimension vector\n2. **Search** \u2014 Redis HNSW vector search finds the nearest cached query by cosine similarity\n3. **Threshold check** \u2014 if similarity > 0.80 (configurable), return the cached response (~100ms)\n4. **Miss path** \u2014 if below threshold, call the LLM normally, then cache the result for next time\n\nThe whole thing is **~300 lines of JavaScript** in a single file (`scripts/cache.js`). Very clean.\n\n---\n\n## Key Technical Details to Know\n\n| Concept | What to Say |\n|---------|------------|\n| **Embedding model** | `text-embedding-3-small` \u2014 cheap ($0.00002/query), 1536 dimensions |\n| **Vector search** | Redis HNSW (Hierarchical Navigable Small World) algorithm \u2014 sublinear search time |\n| **Distance metric** | Cosine similarity \u2014 measures angle between vectors, not magnitude |\n| **KNN query** | `*=>[KNN 1 @embedding $BLOB AS score]` \u2014 finds the single nearest neighbor |\n| **Similarity score** | Redis returns *distance* (0 = identical), code converts to similarity via `1 - score` |\n| **Storage format** | Redis Hashes with fields: `query_text`, `response_text`, `embedding` (Float32 buffer), `created_at`, `hit_count`, `model` |\n| **TTL** | Default 24 hours, configurable |\n| **Hit tracking** | Each cache hit increments `hit_count` via `hIncrBy` |\n\n---\n\n## Threshold Tuning (Good Talking Point)\n\n- **0.70** \u2014 aggressive, more hits, risk of false positives (FAQ bots)\n- **0.80** \u2014 balanced default (general purpose)\n- **0.90** \u2014 conservative, precise (code gen, technical queries)\n- **0.95** \u2014 near-exact only (safety-critical)\n\nThis is the main knob users tune. It's the tradeoff between **cost savings** and **answer accuracy**.\n\n---\n\n## Performance Numbers\n\n- Cache hit: **~100-120ms** vs LLM call: **2-10 seconds** = **77x speedup**\n- 5 concurrent lookups: **491ms total** (98ms avg)\n- Storage: ~6KB per entry\n- Embedding cost: ~$0.00002 per query (negligible)\n\n---\n\n## Anticipated Questions\n\n**\"Why Redis and not Pinecone/Weaviate/Chroma?\"**\n\u2192 Redis is already widely deployed, the free tier on Redis Cloud supports vector search, and it doubles as your cache store \u2014 no extra infrastructure.\n\n**\"What if the cached answer is wrong/stale?\"**\n\u2192 TTL handles staleness (default 24h). The threshold handles wrong matches \u2014 set it higher for precision.\n\n**\"How does HNSW work?\"**\n\u2192 It builds a layered graph of vectors. Top layers have few nodes for fast coarse search, lower layers have more nodes for precise refinement. Search is O(log n) not O(n).\n\n**\"Why not just use cosine similarity in your app code?\"**\n\u2192 That's O(n) \u2014 compare against every cached entry. HNSW gives you approximate nearest neighbor in O(log n). Scales to millions of entries.\n\n**\"What about the OpenClaw SKILL.md file?\"**\n\u2192 That's the manifest that lets OpenClaw auto-discover the skill. It declares dependencies (Redis, OpenAI), env vars, and describes when the skill should activate.\n\n---\n\nWant me to do a deeper walkthrough of any section, or help you prep a live demo?"
+        }
+      ],
+      "timestamp": "2026-03-26T00:13:08.170Z",
+      "input_tokens": 46929,
+      "output_tokens": 1118,
+      "cumulative_tokens": 697436
+    },
+    {
+      "turn_id": 37,
+      "parent_turn_id": 36,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "are you sure that this is public open claw skill anybody can use"
+        }
+      ],
+      "timestamp": "2026-03-26T00:18:51.826Z",
+      "input_tokens": 26,
+      "output_tokens": 0,
+      "cumulative_tokens": 697462
+    },
+    {
+      "turn_id": 38,
+      "parent_turn_id": 37,
+      "role": "assistant",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "\n\nGood question \u2014 let me check the actual GitHub repo."
+        }
+      ],
+      "timestamp": "2026-03-26T00:18:55.234Z",
+      "input_tokens": 48064,
+      "output_tokens": 2,
+      "cumulative_tokens": 745528
+    },
+    {
+      "turn_id": 39,
+      "parent_turn_id": 38,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "[ToolSearch] {\"query\": \"select:WebFetch\", \"max_results\": 1}",
+          "metadata": {
+            "tool_name": "ToolSearch"
+          }
+        }
+      ],
+      "timestamp": "2026-03-26T00:18:55.537Z",
+      "input_tokens": 48064,
+      "output_tokens": 89,
+      "cumulative_tokens": 793681
+    },
+    {
+      "turn_id": 40,
+      "parent_turn_id": 39,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": ""
+        }
+      ],
+      "timestamp": "2026-03-26T00:18:55.542Z",
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cumulative_tokens": 793681
+    },
+    {
+      "turn_id": 41,
+      "parent_turn_id": 40,
+      "role": "assistant",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "(assistant response)"
+        }
+      ],
+      "timestamp": "2026-03-26T00:18:58.697Z",
+      "input_tokens": 48784,
+      "output_tokens": 44,
+      "cumulative_tokens": 842509
+    },
+    {
+      "turn_id": 42,
+      "parent_turn_id": 41,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "[Bash] {\"command\": \"cd \\\"/Users/romirjain/Desktop/building projects/openclaw-semantic-cache\\\" && git log --oneline --all\", \"description\": \"Check git history\"}",
+          "metadata": {
+            "tool_name": "Bash"
+          }
+        }
+      ],
+      "timestamp": "2026-03-26T00:19:00.155Z",
+      "input_tokens": 48784,
+      "output_tokens": 44,
+      "cumulative_tokens": 891337
+    },
+    {
+      "turn_id": 43,
+      "parent_turn_id": 42,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "[Bash] {\"command\": \"cd \\\"/Users/romirjain/Desktop/building projects/openclaw-semantic-cache\\\" && git remote -v\", \"description\": \"Check git remote\"}",
+          "metadata": {
+            "tool_name": "Bash"
+          }
+        }
+      ],
+      "timestamp": "2026-03-26T00:19:00.894Z",
+      "input_tokens": 48784,
+      "output_tokens": 222,
+      "cumulative_tokens": 940343
+    },
+    {
+      "turn_id": 44,
+      "parent_turn_id": 43,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": ""
+        }
+      ],
+      "timestamp": "2026-03-26T00:19:10.402Z",
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cumulative_tokens": 940343
+    },
+    {
+      "turn_id": 45,
+      "parent_turn_id": 44,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": ""
+        }
+      ],
+      "timestamp": "2026-03-26T00:19:15.413Z",
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cumulative_tokens": 940343
+    },
+    {
+      "turn_id": 46,
+      "parent_turn_id": 45,
+      "role": "assistant",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "So no \u2014 this is **your project** that you built and pushed to your own GitHub (`rylinjames/openclaw-semantic-cache`). It's not an official OpenClaw skill that's on ClawHub for anyone to install.\n\nThe README says `clawhub install semantic-cache` and references ClawHub publishing, but that's aspirational \u2014 it's not actually published there. It's a standalone repo under your account with 0 stars, 0 forks.\n\n**For your presentation, be honest about this:**\n- You **built** a semantic cache skill *for* the OpenClaw framework\n- It follows the OpenClaw skill spec (has a `SKILL.md` manifest)\n- It's open source on GitHub and *could* be published to ClawHub\n- But it's not yet a listed/official community skill \u2014 it's your project\n\nDon't say \"anyone can install it with `clawhub install`\" unless that actually works. Instead say something like: \"I built this as an OpenClaw-compatible skill that could be published to ClawHub\" or \"it's designed to plug into any OpenClaw agent.\"\n\nWant me to help you reframe the presentation accordingly?"
+        }
+      ],
+      "timestamp": "2026-03-26T00:19:24.992Z",
+      "input_tokens": 49502,
+      "output_tokens": 268,
+      "cumulative_tokens": 990113
+    },
+    {
+      "turn_id": 47,
+      "parent_turn_id": 46,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "why dont you push this to clawhub"
+        }
+      ],
+      "timestamp": "2026-03-26T00:21:07.770Z",
+      "input_tokens": 14,
+      "output_tokens": 0,
+      "cumulative_tokens": 990127
+    },
+    {
+      "turn_id": 48,
+      "parent_turn_id": 47,
+      "role": "assistant",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "(assistant response)"
+        }
+      ],
+      "timestamp": "2026-03-26T00:21:10.874Z",
+      "input_tokens": 49782,
+      "output_tokens": 8,
+      "cumulative_tokens": 1039917
+    },
+    {
+      "turn_id": 49,
+      "parent_turn_id": 48,
+      "role": "assistant",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "I don't actually know how ClawHub publishing works \u2014 or if it's even open for submissions yet. Let me check."
+        }
+      ],
+      "timestamp": "2026-03-26T00:21:11.763Z",
+      "input_tokens": 49782,
+      "output_tokens": 8,
+      "cumulative_tokens": 1089707
+    },
+    {
+      "turn_id": 50,
+      "parent_turn_id": 49,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "[ToolSearch] {\"query\": \"select:WebSearch\", \"max_results\": 1}",
+          "metadata": {
+            "tool_name": "ToolSearch"
+          }
+        }
+      ],
+      "timestamp": "2026-03-26T00:21:12.347Z",
+      "input_tokens": 49782,
+      "output_tokens": 166,
+      "cumulative_tokens": 1139655
+    },
+    {
+      "turn_id": 51,
+      "parent_turn_id": 50,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": ""
+        }
+      ],
+      "timestamp": "2026-03-26T00:21:12.353Z",
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cumulative_tokens": 1139655
+    },
+    {
+      "turn_id": 52,
+      "parent_turn_id": 51,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "[WebSearch] {\"query\": \"ClawHub OpenClaw publish skill 2026\"}",
+          "metadata": {
+            "tool_name": "WebSearch"
+          }
+        }
+      ],
+      "timestamp": "2026-03-26T00:21:16.444Z",
+      "input_tokens": 50477,
+      "output_tokens": 39,
+      "cumulative_tokens": 1190171
+    },
+    {
+      "turn_id": 53,
+      "parent_turn_id": 52,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "[WebSearch] {\"query\": \"clawhub install openclaw skill registry\"}",
+          "metadata": {
+            "tool_name": "WebSearch"
+          }
+        }
+      ],
+      "timestamp": "2026-03-26T00:21:16.706Z",
+      "input_tokens": 50477,
+      "output_tokens": 105,
+      "cumulative_tokens": 1240753
+    },
+    {
+      "turn_id": 54,
+      "parent_turn_id": 53,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": ""
+        }
+      ],
+      "timestamp": "2026-03-26T00:21:23.526Z",
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cumulative_tokens": 1240753
+    },
+    {
+      "turn_id": 55,
+      "parent_turn_id": 54,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": ""
+        }
+      ],
+      "timestamp": "2026-03-26T00:21:23.617Z",
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cumulative_tokens": 1240753
+    },
+    {
+      "turn_id": 56,
+      "parent_turn_id": 55,
+      "role": "assistant",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "ClawHub is real and open for publishing. Let me check if you have the CLI installed and try to publish."
+        }
+      ],
+      "timestamp": "2026-03-26T00:21:26.621Z",
+      "input_tokens": 52083,
+      "output_tokens": 1,
+      "cumulative_tokens": 1292837
+    },
+    {
+      "turn_id": 57,
+      "parent_turn_id": 56,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "[Bash] {\"command\": \"which clawhub 2>/dev/null || npm list -g clawhub 2>/dev/null || echo \\\"clawhub not installed\\\"\", \"description\": \"Check if clawhub CLI is installed\"}",
+          "metadata": {
+            "tool_name": "Bash"
+          }
+        }
+      ],
+      "timestamp": "2026-03-26T00:21:27.262Z",
+      "input_tokens": 52083,
+      "output_tokens": 133,
+      "cumulative_tokens": 1345053
+    },
+    {
+      "turn_id": 58,
+      "parent_turn_id": 57,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": ""
+        }
+      ],
+      "timestamp": "2026-03-26T00:21:32.820Z",
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cumulative_tokens": 1345053
+    },
+    {
+      "turn_id": 59,
+      "parent_turn_id": 58,
+      "role": "assistant",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "You have `clawhub` installed. But before I publish anything under your account, I want to confirm \u2014 **do you want me to go ahead and run `clawhub publish` on this project?**\n\nA few things to consider:\n- It will be publicly listed on ClawHub (13,000+ skills already there)\n- Your GitHub account (`rylinjames`) needs to be at least 1 week old\n- The `SKILL.md` and `scripts/` are already in the right format\n- The git remote currently has your **GitHub personal access token** exposed in the URL \u2014 you may want to rotate that token since it's in the repo config\n\nWant me to proceed with the publish?\n\nSources:\n- [ClawHub - OpenClaw Docs](https://docs.openclaw.ai/tools/clawhub)\n- [GitHub - openclaw/clawhub](https://github.com/openclaw/clawhub)\n- [OpenClaw ClawHub Setup Guide | Fast.io](https://fast.io/resources/openclaw-clawhub-setup/)\n- [What are OpenClaw Skills? | DigitalOcean](https://www.digitalocean.com/resources/articles/what-are-openclaw-skills)"
+        }
+      ],
+      "timestamp": "2026-03-26T00:21:40.689Z",
+      "input_tokens": 52380,
+      "output_tokens": 287,
+      "cumulative_tokens": 1397720
+    },
+    {
+      "turn_id": 60,
+      "parent_turn_id": 59,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "yes but can u check if i alr pubished it"
+        }
+      ],
+      "timestamp": "2026-03-26T00:21:53.860Z",
+      "input_tokens": 20,
+      "output_tokens": 0,
+      "cumulative_tokens": 1397740
+    },
+    {
+      "turn_id": 61,
+      "parent_turn_id": 60,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "[Bash] {\"command\": \"clawhub search semantic-cache 2>&1 | head -30\", \"description\": \"Search ClawHub for semantic-cache\"}",
+          "metadata": {
+            "tool_name": "Bash"
+          }
+        }
+      ],
+      "timestamp": "2026-03-26T00:21:57.031Z",
+      "input_tokens": 52793,
+      "output_tokens": 92,
+      "cumulative_tokens": 1450625
+    },
+    {
+      "turn_id": 62,
+      "parent_turn_id": 61,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": ""
+        }
+      ],
+      "timestamp": "2026-03-26T00:22:06.463Z",
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cumulative_tokens": 1450625
+    },
+    {
+      "turn_id": 63,
+      "parent_turn_id": 62,
+      "role": "assistant",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "It's already there \u2014 `semantic-cache` is the top result on ClawHub. So you **did** publish it already.\n\nThat means `clawhub install semantic-cache` actually works and anyone can use it. You can confidently say that in your presentation \u2014 it's a real, publicly listed OpenClaw skill."
+        }
+      ],
+      "timestamp": "2026-03-26T00:22:10.422Z",
+      "input_tokens": 53225,
+      "output_tokens": 73,
+      "cumulative_tokens": 1503923
+    },
+    {
+      "turn_id": 64,
+      "parent_turn_id": 63,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "now break down how it works rechnically if im asked any questions on it"
+        }
+      ],
+      "timestamp": "2026-03-26T00:23:19.449Z",
+      "input_tokens": 28,
+      "output_tokens": 0,
+      "cumulative_tokens": 1503951
+    },
+    {
+      "turn_id": 65,
+      "parent_turn_id": 64,
+      "role": "assistant",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "(assistant response)"
+        }
+      ],
+      "timestamp": "2026-03-26T00:23:22.833Z",
+      "input_tokens": 53317,
+      "output_tokens": 21,
+      "cumulative_tokens": 1557289
+    },
+    {
+      "turn_id": 66,
+      "parent_turn_id": 65,
+      "role": "assistant",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "Here's the full technical breakdown of your code, piece by piece.\n\n---\n\n## 1. Embedding \u2014 Turning Text Into Vectors\n\n```js\nasync function embed(text) {\n  const response = await openai.embeddings.create({\n    model: \"text-embedding-3-small\",\n    input: text,\n  });\n  return response.data[0].embedding;\n}\n```\n\n**What's happening:** You send a string to OpenAI's embedding API and get back an array of 1536 floating point numbers \u2014 a vector that represents the *meaning* of that text in high-dimensional space.\n\n**If asked \"why text-embedding-3-small?\"**\n\u2192 It's the cheapest OpenAI embedding model (~$0.00002/query). The \"3-small\" outputs 1536 dimensions which is enough for semantic similarity. The larger model (3-large, 3072 dims) is more accurate but costs more and uses more storage \u2014 overkill for caching.\n\n**If asked \"what do the 1536 numbers represent?\"**\n\u2192 Each dimension captures some learned aspect of meaning. You can't interpret individual dimensions, but texts with similar meaning produce vectors that point in similar directions. The model learned these representations from training on massive text corpora.\n\n---\n\n## 2. Vector Storage \u2014 Float32 Buffer\n\n```js\nfunction float32Buffer(arr) {\n  return Buffer.from(new Float32Array(arr).buffer);\n}\n```\n\n**What's happening:** Redis expects vectors as raw binary blobs, not JSON arrays. This converts the 1536-element JavaScript array into a packed Float32 binary buffer (1536 \u00d7 4 bytes = **6,144 bytes** per vector).\n\n**If asked \"why Float32 not Float64?\"**\n\u2192 Float32 gives you 7 digits of precision, which is more than enough for similarity search. Float64 would double your storage for negligible accuracy gain.\n\n---\n\n## 3. Redis Index Creation \u2014 HNSW\n\n```js\nawait redis.ft.create(INDEX_NAME, {\n  query_text: { type: \"TEXT\" },\n  response_text: { type: \"TEXT\" },\n  embedding: {\n    type: \"VECTOR\",\n    ALGORITHM: \"HNSW\",\n    TYPE: \"FLOAT32\",\n    DIM: 1536,\n    DISTANCE_METRIC: \"COSINE\",\n  },\n  created_at: { type: \"NUMERIC\" },\n  hit_count: { type: \"NUMERIC\" },\n  model: { type: \"TAG\" },\n}, { ON: \"HASH\", PREFIX: \"cache:\" });\n```\n\n**What's happening:** This creates a RediSearch index over all hashes with the `cache:` prefix. The key part is the VECTOR field with HNSW algorithm.\n\n**If asked \"what is HNSW?\"**\n\u2192 Hierarchical Navigable Small World. It's a graph-based algorithm for approximate nearest neighbor search:\n- Builds a multi-layer graph of vectors\n- Top layers are sparse \u2014 skip-list style for fast coarse navigation\n- Bottom layers are dense \u2014 for precise local search\n- Search starts at the top, hops to the closest node, drops down a layer, repeats\n- **O(log n)** search time vs **O(n)** for brute force\n- It's \"approximate\" \u2014 may miss the true nearest neighbor occasionally, but in practice >99% accurate\n\n**If asked \"why COSINE distance?\"**\n\u2192 Cosine similarity measures the angle between two vectors, ignoring magnitude. This matters because embedding models can produce vectors of slightly different lengths \u2014 cosine normalizes that away. Two sentences with the same meaning should point in the same direction regardless of how \"confident\" the embedding is.\n\n**If asked \"why not FLAT (brute force) index?\"**\n\u2192 FLAT does exact nearest neighbor by comparing against every vector. Fine for <1000 entries, but doesn't scale. HNSW gives you sub-millisecond lookups even with millions of entries.\n\n---\n\n## 4. Storing a Cache Entry\n\n```js\nasync function store(query, response, model = \"unknown\") {\n  const vector = await embed(query);\n  const key = `cache:${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;\n\n  await redis.hSet(key, {\n    query_text: query,\n    response_text: response,\n    embedding: float32Buffer(vector),\n    created_at: Date.now(),\n    hit_count: 0,\n    model,\n  });\n\n  if (CACHE_TTL > 0) {\n    await redis.expire(key, CACHE_TTL);\n  }\n}\n```\n\n**What's happening:**\n1. Embed the query into a vector\n2. Generate a unique Redis key (timestamp + random suffix to avoid collisions)\n3. Store as a Redis Hash with all the metadata\n4. Set a TTL (default 24 hours) so stale entries auto-expire\n\n**If asked \"why a Hash and not a JSON document?\"**\n\u2192 RediSearch vector indexing works over Hash fields. It's also more memory-efficient \u2014 each field is stored independently, so you can retrieve just `response_text` without loading the 6KB vector.\n\n---\n\n## 5. Lookup \u2014 The Core Logic\n\n```js\nasync function lookup(query) {\n  const vector = await embed(query);\n  const results = await redis.ft.search(\n    INDEX_NAME,\n    `*=>[KNN 1 @embedding $BLOB AS score]`,\n    {\n      PARAMS: { BLOB: float32Buffer(vector) },\n      SORTBY: \"score\",\n      LIMIT: { from: 0, size: 1 },\n      RETURN: [\"query_text\", \"response_text\", \"score\", \"hit_count\", \"model\", \"created_at\"],\n      DIALECT: 2,\n    }\n  );\n\n  const doc = results.documents[0];\n  const similarity = 1 - parseFloat(doc.value.score);\n\n  if (similarity < SIMILARITY_THRESHOLD) {\n    return { hit: false, closestSimilarity: similarity };\n  }\n\n  await redis.hIncrBy(doc.id, "
+        }
+      ],
+      "timestamp": "2026-03-26T00:24:17.072Z",
+      "input_tokens": 53317,
+      "output_tokens": 2589,
+      "cumulative_tokens": 1613195
+    },
+    {
+      "turn_id": 67,
+      "parent_turn_id": 66,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "when i have to demo it live give me a script with commands to run to show it"
+        }
+      ],
+      "timestamp": "2026-03-26T00:44:39.542Z",
+      "input_tokens": 36,
+      "output_tokens": 0,
+      "cumulative_tokens": 1613231
+    },
+    {
+      "turn_id": 68,
+      "parent_turn_id": 67,
+      "role": "assistant",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "\n\nHere's your live demo script. Run these in order:\n\n---\n\n## Pre-Demo Setup (do this before presenting)\n\nMake sure your env vars are set:\n```bash\nexport REDIS_URL=\"your-redis-url\"\nexport OPENAI_API_KEY=REDACTED\"your-key\"\n```\n\nClear any old cache data:\n```bash\ncd ~/Desktop/building\\ projects/openclaw-semantic-cache\nnode scripts/cache.js clear\n```\n\n---\n\n## Live Demo Script\n\n### Step 1 \u2014 Show it's empty\n```bash\nnode scripts/cache.js stats\n```\n> \"Zero entries, clean slate.\"\n\n### Step 2 \u2014 First query (cache miss)\n```bash\nnode scripts/cache.js query \"What are the benefits of drinking water?\"\n```\n> \"This is a cache MISS \u2014 it hit the LLM, took a few seconds, cost tokens. But now it's cached.\"\n\n### Step 3 \u2014 Same meaning, different words (cache hit)\n```bash\nnode scripts/cache.js query \"What are the health benefits of staying hydrated?\"\n```\n> \"Cache HIT. Same answer, ~100ms, zero tokens. Notice the similarity score \u2014 it understood these are the same question even though the wording is completely different.\"\n\n### Step 4 \u2014 Another paraphrase (cache hit again)\n```bash\nnode scripts/cache.js query \"Why should I drink more water?\"\n```\n> \"Another hit. Third different phrasing, same cached answer, instant response.\"\n\n### Step 5 \u2014 Totally different question (cache miss)\n```bash\nnode scripts/cache.js query \"How do I make scrambled eggs?\"\n```\n> \"Cache MISS. It correctly recognized this is a completely different question \u2014 low similarity score, so it called the LLM. Now this one is cached too.\"\n\n### Step 6 \u2014 Show the stats\n```bash\nnode scripts/cache.js stats\n```\n> \"Two cached entries, multiple hits. In production, this compounds \u2014 the more queries you get, the more you save.\"\n\n### Step 7 \u2014 Show the lookup without LLM call (optional, if time)\n```bash\nnode scripts/cache.js lookup \"Is water good for you?\"\n```\n> \"This just checks the cache without falling through to the LLM \u2014 useful for debugging or peeking at what's cached.\"\n\n### Step 8 \u2014 Run the test suite (optional, if they want proof)\n```bash\nnode scripts/cache.js test\n```\n> \"15 out of 15 \u2014 exact matches, semantic paraphrases, different queries correctly rejected, edge cases, concurrent lookups.\"\n\n---\n\n## Key Numbers to Say Out Loud\n\n- Cache miss: **\"That took X seconds\"** (read it from the output)\n- Cache hit: **\"That took Xms\"** (read it from the output)\n- Do the math live: **\"That's [miss time / hit time]x faster\"**\n- **\"Every cache hit is zero tokens \u2014 zero cost\"**\n\n---\n\n## If Something Goes Wrong\n\n| Problem | Fix |\n|---------|-----|\n| Redis connection error | `echo $REDIS_URL` \u2014 check it's set |\n| OpenAI error | `echo $OPENAI_API_KEY` \u2014 check it's set |\n| No cache hits | `node scripts/cache.js clear` and start over \u2014 old index might be corrupted |\n| Similarity too low | The threshold is 0.80, your paraphrase might be too different \u2014 use a closer wording |\n\nWant me to do a dry run of these commands right now to make sure everything works?"
+        }
+      ],
+      "timestamp": "2026-03-26T00:45:00.584Z",
+      "input_tokens": 55926,
+      "output_tokens": 831,
+      "cumulative_tokens": 1669988
+    },
+    {
+      "turn_id": 69,
+      "parent_turn_id": 68,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "i need a script that intros the product, and goes over it, its for 3 minutes, we need to go over the product, and the tools, etc"
+        }
+      ],
+      "timestamp": "2026-03-26T01:04:49.401Z",
+      "input_tokens": 54,
+      "output_tokens": 0,
+      "cumulative_tokens": 1670042
+    },
+    {
+      "turn_id": 70,
+      "parent_turn_id": 69,
+      "role": "assistant",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "(assistant response)"
+        }
+      ],
+      "timestamp": "2026-03-26T01:04:52.796Z",
+      "input_tokens": 56796,
+      "output_tokens": 30,
+      "cumulative_tokens": 1726868
+    },
+    {
+      "turn_id": 71,
+      "parent_turn_id": 70,
+      "role": "assistant",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "Here's your 3-minute script. Read the **bold** parts out loud, run the commands when indicated.\n\n---\n\n## 0:00\u20130:30 \u2014 The Problem\n\n**\"Every AI agent makes LLM API calls, and a lot of them are redundant. Someone asks 'How do I reset my password?' and five minutes later someone else asks 'I forgot my password, how do I change it?' \u2014 that's the same question, but your agent doesn't know that. It calls the API again, burns more tokens, and the user waits another 3 seconds for the same answer.\"**\n\n**\"Exact-match caching doesn't help because nobody asks the same question the same way twice.\"**\n\n---\n\n## 0:30\u20131:00 \u2014 The Solution\n\n**\"Semantic Cache solves this. It caches LLM responses by meaning, not by exact text. It's an OpenClaw skill \u2014 one command to install.\"**\n\n```bash\n# Show this on screen\nclawhub install semantic-cache\n```\n\n**\"It uses OpenAI embeddings to turn every query into a vector \u2014 a numerical fingerprint of its meaning \u2014 and stores it in Redis. When a new query comes in, it finds the most semantically similar cached query. If the match is strong enough, it returns the cached answer instantly.\"**\n\n**\"The stack is three things: OpenAI's text-embedding-3-small for vectorization, Redis with HNSW vector search for fast similarity lookup, and the OpenClaw skill framework to plug it into any agent.\"**\n\n---\n\n## 1:00\u20132:15 \u2014 Live Demo\n\n**\"Let me show you. Cache is empty right now.\"**\n\n```bash\nnode scripts/cache.js stats\n```\n\n**\"First query \u2014 no cache, has to call the LLM.\"**\n\n```bash\nnode scripts/cache.js query \"What are the benefits of drinking water?\"\n```\n\n*Wait for it to finish. Note the time.*\n\n**\"That took [X] seconds and [X] tokens. Now watch \u2014 same question, different words.\"**\n\n```bash\nnode scripts/cache.js query \"Why is staying hydrated good for your health?\"\n```\n\n**\"Cache hit. [X] milliseconds. [Read the similarity score] similarity. Zero tokens. That's [do the math]x faster, and it cost nothing.\"**\n\n**\"And it's smart enough to know when something is actually different.\"**\n\n```bash\nnode scripts/cache.js query \"How do I make scrambled eggs?\"\n```\n\n**\"Cache miss \u2014 low similarity, correctly called the LLM. It doesn't just match everything.\"**\n\n```bash\nnode scripts/cache.js stats\n```\n\n**\"Two entries cached, [X] total hits. In production this compounds \u2014 the more traffic you get, the more you save.\"**\n\n---\n\n## 2:15\u20132:45 \u2014 Performance & Configuration\n\n**\"On benchmarks: cache hits return in about 100 milliseconds versus 2 to 10 seconds for an LLM call. That's a 77x speedup. Cost reduction is 60 to 80 percent depending on your hit rate.\"**\n\n**\"The similarity threshold is configurable. Default is 0.80 \u2014 that's the sweet spot between catching paraphrases and avoiding false matches. You can set it lower for FAQ bots where questions are predictable, or higher for code generation where precision matters.\"**\n\n**\"Storage is about 6 kilobytes per entry. Redis free tier handles it. The embedding costs two hundredths of a cent per query.\"**\n\n---\n\n## 2:45\u20133:00 \u2014 Close\n\n**\"Semantic Cache is live on ClawHub right now. One command to install, two environment variables to configure \u2014 your Redis URL and your OpenAI key. It drops into any OpenClaw agent and starts saving you money and latency immediately.\"**\n\n**\"It's open source, MIT licensed, and you can find it on GitHub under rylinjames/openclaw-semantic-cache.\"**\n\n---\n\nPractice it a couple times \u2014 the demo section timing depends on API response speed, so have your env vars ready and maybe do a warm-up query beforehand so Redis connection is already open. Want me to adjust the length or tone?"
+        }
+      ],
+      "timestamp": "2026-03-26T01:05:15.481Z",
+      "input_tokens": 56796,
+      "output_tokens": 1019,
+      "cumulative_tokens": 1784683
+    },
+    {
+      "turn_id": 72,
+      "parent_turn_id": 71,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "how do i uninstall it so i can install it for the demo"
+        }
+      ],
+      "timestamp": "2026-03-26T01:08:45.079Z",
+      "input_tokens": 26,
+      "output_tokens": 0,
+      "cumulative_tokens": 1784709
+    },
+    {
+      "turn_id": 73,
+      "parent_turn_id": 72,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "[Bash] {\"command\": \"clawhub --help 2>&1 | head -30\", \"description\": \"Check clawhub CLI help\"}",
+          "metadata": {
+            "tool_name": "Bash"
+          }
+        }
+      ],
+      "timestamp": "2026-03-26T01:08:48.070Z",
+      "input_tokens": 57832,
+      "output_tokens": 88,
+      "cumulative_tokens": 1842629
+    },
+    {
+      "turn_id": 74,
+      "parent_turn_id": 73,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": ""
+        }
+      ],
+      "timestamp": "2026-03-26T01:08:54.568Z",
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cumulative_tokens": 1842629
+    },
+    {
+      "turn_id": 75,
+      "parent_turn_id": 74,
+      "role": "assistant",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "Simple:\n\n```bash\nclawhub uninstall semantic-cache\n```\n\nThen during the demo, run:\n\n```bash\nclawhub install semantic-cache\n```\n\nWant to test it now?"
+        }
+      ],
+      "timestamp": "2026-03-26T01:08:57.665Z",
+      "input_tokens": 58471,
+      "output_tokens": 48,
+      "cumulative_tokens": 1901148
+    },
+    {
+      "turn_id": 76,
+      "parent_turn_id": 75,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "cd into clearscript and tell me all the features of it built out"
+        }
+      ],
+      "timestamp": "2026-03-26T07:12:47.654Z",
+      "input_tokens": 26,
+      "output_tokens": 0,
+      "cumulative_tokens": 1901174
+    },
+    {
+      "turn_id": 77,
+      "parent_turn_id": 76,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "[Bash] {\"command\": \"find /Users/romirjain -maxdepth 4 -type d -iname \\\"*clearscript*\\\" 2>/dev/null\", \"description\": \"Find clearscript directory\"}",
+          "metadata": {
+            "tool_name": "Bash"
+          }
+        }
+      ],
+      "timestamp": "2026-03-26T07:12:51.806Z",
+      "input_tokens": 38478,
+      "output_tokens": 107,
+      "cumulative_tokens": 1939759
+    },
+    {
+      "turn_id": 78,
+      "parent_turn_id": 77,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": ""
+        }
+      ],
+      "timestamp": "2026-03-26T07:13:05.927Z",
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cumulative_tokens": 1939759
+    },
+    {
+      "turn_id": 79,
+      "parent_turn_id": 78,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "[Bash] {\"command\": \"ls -la \\\"/Users/romirjain/Desktop/building projects/pbm/clearscript/\\\"\", \"description\": \"List clearscript contents\"}",
+          "metadata": {
+            "tool_name": "Bash"
+          }
+        }
+      ],
+      "timestamp": "2026-03-26T07:13:09.025Z",
+      "input_tokens": 38768,
+      "output_tokens": 95,
+      "cumulative_tokens": 1978622
+    },
+    {
+      "turn_id": 80,
+      "parent_turn_id": 79,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": ""
+        }
+      ],
+      "timestamp": "2026-03-26T07:13:17.970Z",
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cumulative_tokens": 1978622
+    },
+    {
+      "turn_id": 81,
+      "parent_turn_id": 80,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "code",
+          "text": "[Read] {\"file_path\": \"/Users/romirjain/Desktop/building projects/pbm/clearscript/README.md\"}",
+          "metadata": {
+            "tool_name": "Read"
+          }
+        }
+      ],
+      "timestamp": "2026-03-26T07:13:20.977Z",
+      "input_tokens": 39344,
+      "output_tokens": 61,
+      "cumulative_tokens": 2018027
+    },
+    {
+      "turn_id": 82,
+      "parent_turn_id": 81,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": ""
+        }
+      ],
+      "timestamp": "2026-03-26T07:13:21.005Z",
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cumulative_tokens": 2018027
+    },
+    {
+      "turn_id": 83,
+      "parent_turn_id": 82,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "[Bash] {\"command\": \"ls -la \\\"/Users/romirjain/Desktop/building projects/pbm/clearscript/backend/\\\" && echo \\\"---\\\" && ls -la \\\"/Users/romirjain/Desktop/building projects/pbm/clearscript/frontend/\\\"\", \"description\": \"List backend and frontend contents\"}",
+          "metadata": {
+            "tool_name": "Bash"
+          }
+        }
+      ],
+      "timestamp": "2026-03-26T07:13:21.776Z",
+      "input_tokens": 39344,
+      "output_tokens": 186,
+      "cumulative_tokens": 2057557
+    },
+    {
+      "turn_id": 84,
+      "parent_turn_id": 83,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": ""
+        }
+      ],
+      "timestamp": "2026-03-26T07:13:27.808Z",
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cumulative_tokens": 2057557
+    },
+    {
+      "turn_id": 85,
+      "parent_turn_id": 84,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "[Bash] {\"command\": \"ls \\\"/Users/romirjain/Desktop/building projects/pbm/clearscript/backend/routers/\\\"\", \"description\": \"List backend routers\"}",
+          "metadata": {
+            "tool_name": "Bash"
+          }
+        }
+      ],
+      "timestamp": "2026-03-26T07:13:33.119Z",
+      "input_tokens": 41908,
+      "output_tokens": 44,
+      "cumulative_tokens": 2099509
+    },
+    {
+      "turn_id": 86,
+      "parent_turn_id": 85,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "[Bash] {\"command\": \"ls \\\"/Users/romirjain/Desktop/building projects/pbm/clearscript/backend/services/\\\"\", \"description\": \"List backend services\"}",
+          "metadata": {
+            "tool_name": "Bash"
+          }
+        }
+      ],
+      "timestamp": "2026-03-26T07:13:34.195Z",
+      "input_tokens": 41908,
+      "output_tokens": 44,
+      "cumulative_tokens": 2141461
+    },
+    {
+      "turn_id": 87,
+      "parent_turn_id": 86,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "[Bash] {\"command\": \"ls -R \\\"/Users/romirjain/Desktop/building projects/pbm/clearscript/frontend/src/\\\"\", \"description\": \"List frontend src structure\"}",
+          "metadata": {
+            "tool_name": "Bash"
+          }
+        }
+      ],
+      "timestamp": "2026-03-26T07:13:34.240Z",
+      "input_tokens": 41908,
+      "output_tokens": 256,
+      "cumulative_tokens": 2183625
+    },
+    {
+      "turn_id": 88,
+      "parent_turn_id": 87,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": ""
+        }
+      ],
+      "timestamp": "2026-03-26T07:13:53.406Z",
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cumulative_tokens": 2183625
+    },
+    {
+      "turn_id": 89,
+      "parent_turn_id": 88,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": ""
+        }
+      ],
+      "timestamp": "2026-03-26T07:13:59.162Z",
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cumulative_tokens": 2183625
+    },
+    {
+      "turn_id": 90,
+      "parent_turn_id": 89,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": ""
+        }
+      ],
+      "timestamp": "2026-03-26T07:13:59.318Z",
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cumulative_tokens": 2183625
+    },
+    {
+      "turn_id": 91,
+      "parent_turn_id": 90,
+      "role": "assistant",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "Here's everything built out in ClearScript:\n\n---\n\n## What It Is\nA **PBM Disclosure Audit Engine** for self-insured employers. It helps them audit their Pharmacy Benefit Managers (Express Scripts, CVS Caremark, Optum Rx) under the new DOL transparency rule and HR 7148 (signed into law Feb 3, 2026).\n\n---\n\n## Features Built Out (10 total + data management)\n\n### Compliance Tier (4 features)\n1. **Contract Intake & Parsing** (`/contracts`) \u2014 Upload a PBM contract PDF/TXT, AI extracts key terms (rebate passthrough, spread pricing caps, formulary clauses, audit rights, MAC pricing, termination provisions) and flags non-compliant clauses\n2. **Disclosure Analyzer** (`/disclosure`) \u2014 Scores PBM disclosure completeness against DOL-required items, generates a gap report of what's missing\n3. **Audit Request Generator** (`/audit`) \u2014 Generates pre-formatted audit request letters citing specific regulatory provisions, with 10-business-day response deadline tracking\n4. **Compliance Deadline Tracker** (`/compliance`) \u2014 Tracks DOL rule, HR 7148, and 40+ state-level PBM reform bills with 90/60/30 day alerts\n\n### Audit Tier (3 features)\n5. **Semiannual Report Auditor** (`/reports`) \u2014 Cross-references PBM reports against pharmacy claims data and NADAC pricing, detects rebate and spread pricing discrepancies\n6. **Rebate Passthrough Tracker** (`/rebates`) \u2014 Tracks every rebate dollar from manufacturer \u2192 PBM \u2192 plan, calculates rebate leakage percentage\n7. **Spread Pricing Detection** (`/spread`) \u2014 Compares plan-paid vs pharmacy-reimbursed amounts per prescription (retail, mail-order, specialty)\n\n### Full Platform (3 features)\n8. **Pharmacy Network Adequacy** (`/network`) \u2014 Checks pharmacy network coverage against employee zip codes, identifies phantom networks\n9. **Formulary Manipulation Detector** (`/formulary`) \u2014 Tracks mid-year formulary changes correlated with rebate incentives, flags suspicious generic-to-brand swaps\n10. **Benchmarking Dashboard** (`/benchmarks`) \u2014 Anonymized peer comparison on cost per script, rebate passthrough %, specialty spend, generic dispensing rate\n\n### Data Management\n11. **Claims Upload** (`/claims`) \u2014 Upload employer pharmacy claims CSV so all analysis runs on real data\n\n---\n\n## Tech Stack\n- **Frontend:** Next.js 16 + TypeScript + Tailwind + Recharts\n- **Backend:** Python FastAPI (11 routers, 4 services)\n- **AI:** OpenAI GPT-5 mini for contract parsing, disclosure analysis, audit letter generation\n- **Data Sources:** NADAC pricing (live CMS API), CMS NPPES pharmacy registry, FDA Orange Book, AHRQ MEPS benchmarks\n\n## UI Components\n- `Sidebar` \u2014 navigation across all 11 pages\n- `FileUpload` \u2014 drag-and-drop for contracts/claims\n- `MetricCard` \u2014 stat display cards\n- `ScoreCircle` \u2014 visual compliance/completeness scores\n- `StatusBadge` \u2014 status indicators\n\n---\n\nWant me to dig into the code of any specific feature?"
+        }
+      ],
+      "timestamp": "2026-03-26T07:14:24.536Z",
+      "input_tokens": 43230,
+      "output_tokens": 787,
+      "cumulative_tokens": 2227642
+    },
+    {
+      "turn_id": 92,
+      "parent_turn_id": 91,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "i need you to go deeper because im going on a meeting with someone in the indurstry and he's going to ask me what exactly is built out"
+        }
+      ],
+      "timestamp": "2026-03-26T07:19:33.685Z",
+      "input_tokens": 56,
+      "output_tokens": 0,
+      "cumulative_tokens": 2227698
+    },
+    {
+      "turn_id": 93,
+      "parent_turn_id": 92,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "[Agent] {\"description\": \"Read all backend files deeply\", \"subagent_type\": \"Explore\", \"prompt\": \"Read EVERY file in /Users/romirjain/Desktop/building projects/pbm/clearscript/backend/ thoroughly. I need the complete details of:\\n\\n1. main.py - all routes, middleware, CORS config\\n2. Every router file in routers/ - every endpoint, request/response shapes, what each does\\n3. Every service file in services/ - all business logic, AI prompts, external API calls\\n4. data/ directory - any sample data or schemas\\n5. requirements.txt - all dependencies\\n\\nBe extremely thorough. Read every single file completely, don't skip any. Report back the full details of what's implemented vs what's stubbed out.\"}",
+          "metadata": {
+            "tool_name": "Agent"
+          }
+        }
+      ],
+      "timestamp": "2026-03-26T07:19:43.256Z",
+      "input_tokens": 64155,
+      "output_tokens": 34,
+      "cumulative_tokens": 2291887
+    },
+    {
+      "turn_id": 94,
+      "parent_turn_id": 93,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "[Agent] {\"description\": \"Read all frontend files deeply\", \"subagent_type\": \"Explore\", \"prompt\": \"Read EVERY file in /Users/romirjain/Desktop/building projects/pbm/clearscript/frontend/src/ thoroughly. I need the complete details of:\\n\\n1. layout.tsx and page.tsx - main layout and landing page\\n2. Every page in app/ subdirectories (audit, benchmarks, claims, compliance, contracts, disclosure, formulary, network, rebates, reports, spread) - what each page renders, forms, API calls, charts, tables\\n3. Every component in components/ - FileUpload, MetricCard, ScoreCircle, Sidebar, StatusBadge\\n4. Any API calls, state management, data flow\\n\\nBe extremely thorough. Read every single file completely. Report back what's fully built vs placeholder/stub.\"}",
+          "metadata": {
+            "tool_name": "Agent"
+          }
+        }
+      ],
+      "timestamp": "2026-03-26T07:19:47.031Z",
+      "input_tokens": 64155,
+      "output_tokens": 34,
+      "cumulative_tokens": 2356076
+    },
+    {
+      "turn_id": 95,
+      "parent_turn_id": 94,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "code",
+          "text": "[Read] {\"file_path\": \"/Users/romirjain/Desktop/building projects/pbm/clearscript/contract-analysis.pipe\"}",
+          "metadata": {
+            "tool_name": "Read"
+          }
+        }
+      ],
+      "timestamp": "2026-03-26T07:19:47.823Z",
+      "input_tokens": 64155,
+      "output_tokens": 545,
+      "cumulative_tokens": 2420776
+    },
+    {
+      "turn_id": 96,
+      "parent_turn_id": 95,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": ""
+        }
+      ],
+      "timestamp": "2026-03-26T07:19:48.064Z",
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cumulative_tokens": 2420776
+    },
+    {
+      "turn_id": 97,
+      "parent_turn_id": 96,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": ""
+        }
+      ],
+      "timestamp": "2026-03-26T07:21:24.511Z",
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cumulative_tokens": 2420776
+    },
+    {
+      "turn_id": 98,
+      "parent_turn_id": 97,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": ""
+        }
+      ],
+      "timestamp": "2026-03-26T07:35:51.254Z",
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cumulative_tokens": 2420776
+    },
+    {
+      "turn_id": 99,
+      "parent_turn_id": 98,
+      "role": "assistant",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "Here's the full deep dive on what's actually built. Know this for your meeting:\n\n---\n\n## ClearScript \u2014 Complete Feature Breakdown\n\n### The 30-Second Context\n\nClearScript is a **PBM audit platform for self-insured employers**. HR 7148 was signed Feb 3, 2026 requiring 100% rebate passthrough. DOL proposed transparency rules Jan 30, 2026 giving employers unrestricted audit rights. Employers are about to get a flood of PBM data they've never seen and have no idea how to interpret. ClearScript is the translation layer.\n\n**Stack:** Next.js 16 frontend + Python FastAPI backend + Google Gemini 2.5 Flash for AI + real CMS NADAC pricing API + optional RocketRide pipeline orchestration.\n\n---\n\n### Feature 1: Contract Intake & Parsing (`/contracts`)\n\n**What it does:** Upload a PBM contract PDF/TXT \u2192 AI extracts 7 categories of terms \u2192 flags non-compliant clauses.\n\n**What's extracted:**\n- Rebate passthrough (found?, percentage, details)\n- Spread pricing (found?, caps, details)\n- Formulary clauses (found?, change notification days, details)\n- Audit rights (found?, frequency, scope, details)\n- MAC pricing (found?, update frequency, appeal rights, details)\n- Termination provisions (found?, notice days, penalties, details)\n- Gag clauses (found?, details)\n\n**AI pipeline:** There's a 2-stage RocketRide pipeline (`contract-analysis.pipe`):\n1. **Clause Extractor** \u2014 Gemini extracts raw contract terms\n2. **Compliance Scorer** \u2014 Gemini evaluates those terms against HR 7148, DOL rules, CAA 2021, ERISA\n\nReturns an `overall_risk_score` (0-100) and `compliance_flags` with severity levels.\n\n**Fallback:** If RocketRide isn't running, falls back to direct Gemini API call. If Gemini fails, returns realistic mock analysis (78% risk score, multiple high-severity flags).\n\n**Frontend:** Shows extracted terms in a table with Compliant/Review/Non-Compliant status badges and count cards for good/warning/critical findings.\n\n---\n\n### Feature 2: Disclosure Analyzer (`/disclosure`)\n\n**What it does:** Upload a PBM disclosure document \u2192 AI checks it against **20 DOL-required items** \u2192 generates a completeness score and gap report.\n\n**Items checked:**\n- Rebates per drug, total rebates, passthrough amounts\n- Spread pricing data\n- Plan-paid vs pharmacy-reimbursed\n- AWP guarantees, claw-backs, DIR fees, admin fees\n- Formulary changes, GDR, specialty utilization\n- Mail-order utilization, network adequacy, cost-sharing\n- Top 25 drugs by spend/count\n- Copay assistance, biosimilars, conflict of interest disclosures\n\n**Output:** Completeness score (0-100%), checklist with found/not-found status, gap report categorized as critical/moderate/minor gaps.\n\n**Frontend:** ScoreCircle visualization, checklist table, gap report with impact levels and recommendations.\n\n---\n\n### Feature 3: Audit Request Generator (`/audit`)\n\n**What it does:** Fill in employer name, PBM name, contract date, concerns \u2192 AI generates a **formal audit request letter** with legal citations.\n\n**Letter includes:**\n- ERISA Section 404(a)(1) and 406 citations\n- CAA 2021 Sections 201 and 204\n- 29 CFR 2520.101-2\n- Specific data demands: claims data, rebate data, pricing data, network data, formulary data\n- **10-business-day response deadline** (per DOL rule)\n- Warning of breach/termination for non-compliance\n\n**Frontend:** Two-column layout \u2014 form on left, letter preview on right. Copy to clipboard and download as .txt.\n\n---\n\n### Feature 4: Compliance Deadline Tracker (`/compliance`)\n\n**What it does:** Tracks 7 regulatory deadlines with urgency levels and action items.\n\n**Deadlines tracked:**\n| Regulation | Date | Authority |\n|-----------|------|-----------|\n| DOL Annual Rx Cost Reporting | 12/27/2025 | 29 CFR 2520.101-2 |\n| CAA Gag Clause Attestation | 6/1/2026 | CAA Section 201 |\n| HR 7148 PBM Rebate Delinking | 1/1/2028 | HR 7148 (proposed) |\n| Illinois SB 1239 | 3/31/2026 | IL transparency |\n| New York A7614 | 7/1/2026 | NY rebate transparency |\n| Texas SB 622 | 9/1/2026 | TX enhanced audit rights |\n| California AB 1286 | 4/1/2026 | CA Rx pricing |\n\n**Frontend:** Categorized as Urgent (<30 days), Soon (30-90), Upcoming (>90). Expandable cards with animated bell icon for urgent items.\n\n---\n\n### Feature 5: Semiannual Report Auditor (`/reports`)\n\n**What it does:** Cross-references PBM reports against pharmacy claims data and **live NADAC pricing from CMS**.\n\n**NADAC integration:** Hits the real CMS Medicaid API (`data.medicaid.gov/resource/4grx-u2cs.json`) to get National Average Drug Acquisition Cost. Compares what the PBM charged vs what pharmacies actually paid for the drugs. 1-hour cache on NADAC lookups.\n\n**Detects 5 categories of discrepancies:**\n1. **Rebate underreporting** \u2014 expects 42% rebate on brand claims vs what PBM reported\n2. **Excessive spread** \u2014 flags if spread > 8% of plan spend (industry norm 3-5%)\n3. **AWP pricing concern** \u2014 flags if plan-paid \u2265 95% of AWP (should be discounted below)\n4. **Phantom pharmacy claims** \u2014 counts claims through unverifiable pharmacies\n5. **Low gener"
+        }
+      ],
+      "timestamp": "2026-03-26T07:37:07.626Z",
+      "input_tokens": 77197,
+      "output_tokens": 3057,
+      "cumulative_tokens": 2501030
+    }
+  ],
+  "replay": {
+    "prefix_group_id": "grp_claude_c6ab4c29",
+    "prefix_overlap_ratio": 0.978,
+    "reuse_distance_turns": 2,
+    "reuse_distance_seconds": 21829,
+    "estimated_kv_bytes_peak": 400164800,
+    "branch_count": 0,
+    "idle_windows_ms": [
+      0,
+      3751,
+      352,
+      3199,
+      228873,
+      2474,
+      21290,
+      1403,
+      4309,
+      754267,
+      4070,
+      742,
+      485,
+      1369,
+      336,
+      14936,
+      3371,
+      1384,
+      3734,
+      985
+    ],
+    "arrival_pattern": "reactivation_heavy"
+  },
+  "kv_pressure": {
+    "cold_start": true,
+    "warm_cache_hit_rate": 0.7823027993136842,
+    "estimated_offload_bytes": 200082400,
+    "estimated_reload_bytes": 100041200,
+    "tier": "CPU",
+    "cache_expectation": "reactivated",
+    "eviction_risk_score": 0.95
+  },
+  "provenance": {
+    "generator_model": "claude-code-real",
+    "generator_prompt_version": "real-transcript-v1",
+    "pipeline_version": "0.1.0"
+  }
+}

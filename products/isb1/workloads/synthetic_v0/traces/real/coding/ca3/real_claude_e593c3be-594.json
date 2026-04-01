@@ -1,0 +1,333 @@
+{
+  "trace_id": "real_claude_e593c3be-594",
+  "dataset_version": "0.1.0",
+  "source_type": "real",
+  "workload_family": "coding",
+  "language": "en",
+  "tokenizer": {
+    "name": "cl100k_base",
+    "version": "1.0"
+  },
+  "session": {
+    "session_id": "e593c3be-5948-4b61-8345-c5b1a1ae3b88",
+    "goal": "Generate a SessionTraceV0 JSON object for inference benchmarking. Workload family: long_chat. Target: 96k-128k cumulative tokens, 25 turns. Goal: Extended debugging session across a large codebase wit",
+    "contains_tools": true,
+    "contains_rag": false,
+    "contains_branching": false,
+    "contains_multimodal": false
+  },
+  "turns": [
+    {
+      "turn_id": 1,
+      "parent_turn_id": null,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "Generate a SessionTraceV0 JSON object for inference benchmarking. Workload family: long_chat. Target: 96k-128k cumulative tokens, 25 turns. Goal: Extended debugging session across a large codebase with stack traces, log analysis, and iterative hypothesis testing. Include code blocks, log blocks, and prior-turn references. Include replay fields (prefix_group_id, prefix_overlap_ratio: 0.91, idle_windows_ms: [0,10000,30000,60000,15000], arrival_pattern: \"steady_interactive\") and kv_pressure fields (cold_start: true, tier: \"HBM\", cache_expectation: \"warm\", eviction_risk_score: 0.55). turn_id must be integers. Return one JSON object only, no markdown fencing.\n"
+        }
+      ],
+      "timestamp": "2026-04-01T03:42:32.962Z",
+      "input_tokens": 150,
+      "output_tokens": 0,
+      "cumulative_tokens": 150
+    },
+    {
+      "turn_id": 2,
+      "parent_turn_id": 1,
+      "role": "assistant",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "(assistant response)"
+        }
+      ],
+      "timestamp": "2026-04-01T03:42:35.734Z",
+      "input_tokens": 23885,
+      "output_tokens": 36,
+      "cumulative_tokens": 24071
+    },
+    {
+      "turn_id": 3,
+      "parent_turn_id": 2,
+      "role": "assistant",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "Let me check the existing session trace schema and examples first."
+        }
+      ],
+      "timestamp": "2026-04-01T03:42:36.235Z",
+      "input_tokens": 23885,
+      "output_tokens": 36,
+      "cumulative_tokens": 47992
+    },
+    {
+      "turn_id": 4,
+      "parent_turn_id": 3,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "[Glob] {\"pattern\": \"**/session_trace*\"}",
+          "metadata": {
+            "tool_name": "Glob"
+          }
+        }
+      ],
+      "timestamp": "2026-04-01T03:42:36.686Z",
+      "input_tokens": 23885,
+      "output_tokens": 36,
+      "cumulative_tokens": 71913
+    },
+    {
+      "turn_id": 5,
+      "parent_turn_id": 4,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": ""
+        }
+      ],
+      "timestamp": "2026-04-01T03:42:36.779Z",
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cumulative_tokens": 71913
+    },
+    {
+      "turn_id": 6,
+      "parent_turn_id": 5,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "[Grep] {\"pattern\": \"SessionTraceV0\", \"output_mode\": \"files_with_matches\"}",
+          "metadata": {
+            "tool_name": "Grep"
+          }
+        }
+      ],
+      "timestamp": "2026-04-01T03:42:37.193Z",
+      "input_tokens": 23885,
+      "output_tokens": 36,
+      "cumulative_tokens": 95834
+    },
+    {
+      "turn_id": 7,
+      "parent_turn_id": 6,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": ""
+        }
+      ],
+      "timestamp": "2026-04-01T03:42:37.219Z",
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cumulative_tokens": 95834
+    },
+    {
+      "turn_id": 8,
+      "parent_turn_id": 7,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "code",
+          "text": "[Read] {\"file_path\": \"/Users/romirjain/.superset/worktrees/EasyInference/important-emu/products/isb1/workloads/session_trace.py\"}",
+          "metadata": {
+            "tool_name": "Read"
+          }
+        }
+      ],
+      "timestamp": "2026-04-01T03:42:40.730Z",
+      "input_tokens": 24222,
+      "output_tokens": 92,
+      "cumulative_tokens": 120148
+    },
+    {
+      "turn_id": 9,
+      "parent_turn_id": 8,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": ""
+        }
+      ],
+      "timestamp": "2026-04-01T03:42:40.734Z",
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cumulative_tokens": 120148
+    },
+    {
+      "turn_id": 10,
+      "parent_turn_id": 9,
+      "role": "assistant",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "(assistant response)"
+        }
+      ],
+      "timestamp": "2026-04-01T03:42:54.141Z",
+      "input_tokens": 25707,
+      "output_tokens": 10,
+      "cumulative_tokens": 145865
+    },
+    {
+      "turn_id": 11,
+      "parent_turn_id": 10,
+      "role": "assistant",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "Now let me check if there are any existing examples for reference."
+        }
+      ],
+      "timestamp": "2026-04-01T03:42:54.793Z",
+      "input_tokens": 25707,
+      "output_tokens": 10,
+      "cumulative_tokens": 171582
+    },
+    {
+      "turn_id": 12,
+      "parent_turn_id": 11,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "code",
+          "text": "[Read] {\"file_path\": \"/Users/romirjain/.superset/worktrees/EasyInference/important-emu/products/isb1/workloads/synthetic_generator.py\", \"limit\": 60}",
+          "metadata": {
+            "tool_name": "Read"
+          }
+        }
+      ],
+      "timestamp": "2026-04-01T03:42:56.535Z",
+      "input_tokens": 25707,
+      "output_tokens": 543,
+      "cumulative_tokens": 197832
+    },
+    {
+      "turn_id": 13,
+      "parent_turn_id": 12,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": ""
+        }
+      ],
+      "timestamp": "2026-04-01T03:42:56.537Z",
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cumulative_tokens": 197832
+    },
+    {
+      "turn_id": 14,
+      "parent_turn_id": 13,
+      "role": "assistant",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "Good, I have the full schema. Let me generate the trace."
+        }
+      ],
+      "timestamp": "2026-04-01T03:42:59.933Z",
+      "input_tokens": 26996,
+      "output_tokens": 1,
+      "cumulative_tokens": 224829
+    },
+    {
+      "turn_id": 15,
+      "parent_turn_id": 14,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "code",
+          "text": "[Read] {\"file_path\": \"/Users/romirjain/.superset/worktrees/EasyInference/important-emu/products/isb1/workloads/synthetic_generator.py\", \"offset\": 60, \"limit\": 60}",
+          "metadata": {
+            "tool_name": "Read"
+          }
+        }
+      ],
+      "timestamp": "2026-04-01T03:43:00.427Z",
+      "input_tokens": 26996,
+      "output_tokens": 141,
+      "cumulative_tokens": 251966
+    },
+    {
+      "turn_id": 16,
+      "parent_turn_id": 15,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": ""
+        }
+      ],
+      "timestamp": "2026-04-01T03:43:00.461Z",
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cumulative_tokens": 251966
+    },
+    {
+      "turn_id": 17,
+      "parent_turn_id": 16,
+      "role": "assistant",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "Now I have everything I need. Here's the SessionTraceV0 JSON:\n\n{\"trace_id\":\"st-long-chat-debug-96k-001\",\"dataset_version\":\"0.1.0\",\"source_type\":\"synthetic\",\"workload_family\":\"long_chat\",\"language\":\"en\",\"tokenizer\":{\"name\":\"cl100k_base\",\"version\":\"1.0\"},\"session\":{\"session_id\":\"sess-debug-codebase-7f3a1e\",\"goal\":\"Extended debugging session across a large codebase with stack traces, log analysis, and iterative hypothesis testing\",\"contains_tools\":false,\"contains_rag\":false,\"contains_branching\":false,\"contains_multimodal\":false},\"turns\":[{\"turn_id\":0,\"parent_turn_id\":null,\"role\":\"system\",\"content_blocks\":[{\"type\":\"text\",\"text\":\"You are a senior backend engineer helping debug a distributed payment processing system built with Python, Go microservices, PostgreSQL, and Redis. The codebase spans ~200k LOC across 14 services. Be precise, reference specific files and line numbers, and form testable hypotheses before suggesting fixes.\",\"metadata\":{}}],\"timestamp\":\"2026-03-31T09:00:00Z\",\"input_tokens\":1800,\"output_tokens\":0,\"cumulative_tokens\":1800},{\"turn_id\":1,\"parent_turn_id\":0,\"role\":\"user\",\"content_blocks\":[{\"type\":\"text\",\"text\":\"We're seeing intermittent 500s on the /api/v2/payments/confirm endpoint. It started after last Thursday's deploy (commit 8a3f2c1). Roughly 2-3% of requests fail. Here's a stack trace from one of the failures:\",\"metadata\":{}},{\"type\":\"log\",\"text\":\"Traceback (most recent call last):\\n  File \\\"/app/payments/views.py\\\", line 247, in confirm_payment\\n    result = await self._execute_confirmation(payment_id, idempotency_key)\\n  File \\\"/app/payments/views.py\\\", line 312, in _execute_confirmation\\n    lock = await self.lock_manager.acquire(f\\\"payment:{payment_id}\\\", timeout=5.0)\\n  File \\\"/app/payments/locks.py\\\", line 89, in acquire\\n    return await self._redis_lock(key, timeout)\\n  File \\\"/app/payments/locks.py\\\", line 134, in _redis_lock\\n    result = await self.redis.set(lock_key, token, nx=True, ex=ttl)\\n  File \\\"/usr/local/lib/python3.12/site-packages/redis/asyncio/client.py\\\", line 523, in execute_command\\n    return await self._execute(conn, command, *args, **kwargs)\\nredis.exceptions.ConnectionError: Error while reading from socket: Connection reset by peer\",\"metadata\":{\"source\":\"sentry\",\"event_id\":\"evt-9912fc3a\"}}],\"timestamp\":\"2026-03-31T09:00:12Z\",\"input_tokens\":2100,\"output_tokens\":0,\"cumulative_tokens\":3900},{\"turn_id\":2,\"parent_turn_id\":1,\"role\":\"assistant\",\"content_blocks\":[{\"type\":\"text\",\"text\":\"This is a Redis connection reset during distributed lock acquisition. The 2-3% failure rate and post-deploy timing suggest a few hypotheses:\\n\\n**Hypothesis 1: Redis connection pool exhaustion**\\nThe deploy may have changed concurrency settings (worker count, async pool size) causing the pool to hit max connections, leading to stale connections being reused.\\n\\n**Hypothesis 2: Redis server-side timeout mismatch**\\nIf commit 8a3f2c1 changed the lock TTL or the `timeout` parameter in `locks.py:89`, it may now exceed Redis's `timeout` config, causing the server to close idle connections.\\n\\n**Hypothesis 3: Network-level issue (less likely)**\\nA load balancer or proxy between the app and Redis is killing long-lived connections.\\n\\nLet's narrow it down. Can you share:\\n1. The diff for `payments/locks.py` from commit 8a3f2c1\\n2. Your Redis connection pool config (usually in `settings.py` or `connections.py`)\\n3. The Redis server's `timeout` and `maxclients` settings \u2014 run `redis-cli CONFIG GET timeout` and `redis-cli CONFIG GET maxclients`\",\"metadata\":{}}],\"timestamp\":\"2026-03-31T09:00:45Z\",\"input_tokens\":0,\"output_tokens\":3200,\"cumulative_tokens\":7100},{\"turn_id\":3,\"parent_turn_id\":2,\"role\":\"user\",\"content_blocks\":[{\"type\":\"text\",\"text\":\"Here's the diff for locks.py from that commit:\",\"metadata\":{}},{\"type\":\"code\",\"text\":\"diff --git a/payments/locks.py b/payments/locks.py\\nindex 4a2f1c3..8b7e9d2 100644\\n--- a/payments/locks.py\\n+++ b/payments/locks.py\\n@@ -82,7 +82,7 @@ class DistributedLockManager:\\n     async def acquire(self, key: str, timeout: float = 5.0) -> Optional[Lock]:\\n-        return await self._redis_lock(key, timeout)\\n+        return await self._redis_lock(key, timeout, retry_count=3)\\n \\n     async def _redis_lock(\\n-        self, key: str, timeout: float\\n+        self, key: str, timeout: float, retry_count: int = 1\\n     ) -> Optional[Lock]:\\n         lock_key = f\\\"lock:{key}\\\"\\n         token = uuid4().hex\\n-        ttl = int(timeout)\\n+        ttl = int(timeout * 2)  # Double TTL to prevent premature expiry\\n         for attempt in range(retry_count):\\n             try:\\n                 result = await self.redis.set(lock_key, token, nx=True, ex=ttl)\\n@@ -101,6 +101,8 @@ class DistributedLockManager:\\n                     return Lock(key=lock_key, token=token, ttl=ttl)\\n                 else:\\n                     await asyncio.sleep(0.1 * (attempt + 1))\\n+            except redis.exceptions.ConnectionError:\\n+                await asyncio.sleep(0.5)\\n                 con"
+        }
+      ],
+      "timestamp": "2026-04-01T03:48:12.852Z",
+      "input_tokens": 28062,
+      "output_tokens": 1,
+      "cumulative_tokens": 280029
+    }
+  ],
+  "replay": {
+    "prefix_group_id": "grp_claude_e593c3be",
+    "prefix_overlap_ratio": 0.875,
+    "reuse_distance_turns": 2,
+    "reuse_distance_seconds": 312,
+    "estimated_kv_bytes_peak": 44804640,
+    "branch_count": 0,
+    "idle_windows_ms": [
+      0,
+      2772,
+      501,
+      451,
+      93,
+      414,
+      26,
+      3511,
+      4,
+      13407,
+      652,
+      1742,
+      2,
+      3396,
+      494,
+      34,
+      312391
+    ],
+    "arrival_pattern": "reactivation_heavy"
+  },
+  "kv_pressure": {
+    "cold_start": true,
+    "warm_cache_hit_rate": 0.699617389565147,
+    "estimated_offload_bytes": 22402320,
+    "estimated_reload_bytes": 11201160,
+    "tier": "CPU",
+    "cache_expectation": "reactivated",
+    "eviction_risk_score": 0.95
+  },
+  "provenance": {
+    "generator_model": "claude-code-real",
+    "generator_prompt_version": "real-transcript-v1",
+    "pipeline_version": "0.1.0"
+  }
+}

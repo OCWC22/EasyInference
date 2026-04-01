@@ -1,0 +1,250 @@
+{
+  "trace_id": "real_claude_a2c0ab76-84a",
+  "dataset_version": "0.1.0",
+  "source_type": "real",
+  "workload_family": "coding",
+  "language": "en",
+  "tokenizer": {
+    "name": "cl100k_base",
+    "version": "1.0"
+  },
+  "session": {
+    "session_id": "a2c0ab76-84ae-4e22-818a-f180a5e233ab",
+    "goal": "Generate a SessionTraceV0 JSON object for inference benchmarking. Workload family: coding. Target: 16k-32k cumulative tokens, 10 turns. Goal: Review and fix security vulnerabilities flagged by Bandit ",
+    "contains_tools": true,
+    "contains_rag": false,
+    "contains_branching": false,
+    "contains_multimodal": false
+  },
+  "turns": [
+    {
+      "turn_id": 1,
+      "parent_turn_id": null,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "Generate a SessionTraceV0 JSON object for inference benchmarking. Workload family: coding. Target: 16k-32k cumulative tokens, 10 turns. Goal: Review and fix security vulnerabilities flagged by Bandit in a Python web app. Include tool turns with grep results and code patches. Include retrieval turns with type \"document\" for security advisory content. session.contains_tools: true, session.contains_rag: true. Include replay fields (prefix_group_id, prefix_overlap_ratio: 0.72, idle_windows_ms: [0,2000,6000,4000], arrival_pattern: \"steady_interactive\") and kv_pressure fields (cold_start: true, tier: \"HBM\", cache_expectation: \"warm\", eviction_risk_score: 0.18). turn_id must be integers. Return one JSON object only, no markdown fencing.\n"
+        }
+      ],
+      "timestamp": "2026-04-01T03:42:48.123Z",
+      "input_tokens": 174,
+      "output_tokens": 0,
+      "cumulative_tokens": 174
+    },
+    {
+      "turn_id": 2,
+      "parent_turn_id": 1,
+      "role": "assistant",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "(assistant response)"
+        }
+      ],
+      "timestamp": "2026-04-01T03:42:50.594Z",
+      "input_tokens": 23904,
+      "output_tokens": 36,
+      "cumulative_tokens": 24114
+    },
+    {
+      "turn_id": 3,
+      "parent_turn_id": 2,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "[Glob] {\"pattern\": \"**/session_trace*\"}",
+          "metadata": {
+            "tool_name": "Glob"
+          }
+        }
+      ],
+      "timestamp": "2026-04-01T03:42:50.956Z",
+      "input_tokens": 23904,
+      "output_tokens": 36,
+      "cumulative_tokens": 48054
+    },
+    {
+      "turn_id": 4,
+      "parent_turn_id": 3,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "[Glob] {\"pattern\": \"**/synthetic_v0/**\"}",
+          "metadata": {
+            "tool_name": "Glob"
+          }
+        }
+      ],
+      "timestamp": "2026-04-01T03:42:51.003Z",
+      "input_tokens": 23904,
+      "output_tokens": 149,
+      "cumulative_tokens": 72107
+    },
+    {
+      "turn_id": 5,
+      "parent_turn_id": 4,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": ""
+        }
+      ],
+      "timestamp": "2026-04-01T03:42:51.048Z",
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cumulative_tokens": 72107
+    },
+    {
+      "turn_id": 6,
+      "parent_turn_id": 5,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": ""
+        }
+      ],
+      "timestamp": "2026-04-01T03:42:51.117Z",
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cumulative_tokens": 72107
+    },
+    {
+      "turn_id": 7,
+      "parent_turn_id": 6,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "code",
+          "text": "[Read] {\"file_path\": \"/Users/romirjain/.superset/worktrees/EasyInference/important-emu/products/isb1/workloads/session_trace.py\"}",
+          "metadata": {
+            "tool_name": "Read"
+          }
+        }
+      ],
+      "timestamp": "2026-04-01T03:42:53.823Z",
+      "input_tokens": 24243,
+      "output_tokens": 35,
+      "cumulative_tokens": 96385
+    },
+    {
+      "turn_id": 8,
+      "parent_turn_id": 7,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": ""
+        }
+      ],
+      "timestamp": "2026-04-01T03:42:53.827Z",
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cumulative_tokens": 96385
+    },
+    {
+      "turn_id": 9,
+      "parent_turn_id": 8,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "code",
+          "text": "[Read] {\"file_path\": \"/Users/romirjain/.superset/worktrees/EasyInference/important-emu/products/isb1/workloads/synthetic_v0/traces/lc1_085c3589.json\"}",
+          "metadata": {
+            "tool_name": "Read"
+          }
+        }
+      ],
+      "timestamp": "2026-04-01T03:42:54.561Z",
+      "input_tokens": 24243,
+      "output_tokens": 179,
+      "cumulative_tokens": 120807
+    },
+    {
+      "turn_id": 10,
+      "parent_turn_id": 9,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": ""
+        }
+      ],
+      "timestamp": "2026-04-01T03:42:54.793Z",
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cumulative_tokens": 120807
+    },
+    {
+      "turn_id": 11,
+      "parent_turn_id": 10,
+      "role": "assistant",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "(assistant response)"
+        }
+      ],
+      "timestamp": "2026-04-01T03:43:10.089Z",
+      "input_tokens": 35251,
+      "output_tokens": 8,
+      "cumulative_tokens": 156066
+    },
+    {
+      "turn_id": 12,
+      "parent_turn_id": 11,
+      "role": "assistant",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "{\"trace_id\":\"cod_bandit_sec_a7e2f103\",\"dataset_version\":\"0.1.0\",\"source_type\":\"synthetic\",\"workload_family\":\"coding\",\"language\":\"en\",\"tokenizer\":{\"name\":\"cl100k_base\",\"version\":\"1.0\"},\"session\":{\"session_id\":\"sess-b4c81d09-3a7e-42f1-9c83-07d5ea1f28a3\",\"goal\":\"Review and fix security vulnerabilities flagged by Bandit in a Python web app\",\"contains_tools\":true,\"contains_rag\":true,\"contains_branching\":false,\"contains_multimodal\":false},\"turns\":[{\"turn_id\":1,\"parent_turn_id\":null,\"role\":\"user\",\"content_blocks\":[{\"type\":\"text\",\"text\":\"I just ran Bandit on our Flask web app and got a wall of findings. Here's the summary output:\\n\\n```\\nRun started:2026-03-31 08:14:22.481673\\n\\nTest results:\\n>> Issue: [B501:request_with_no_cert_verification] Requests call with verify=False disabling SSL certificate checks.\\n   Severity: High   Confidence: High\\n   CWE: CWE-295 (Improper Certificate Validation)\\n   Location: app/integrations/payment_gateway.py:47:15\\n   More Info: https://bandit.readthedocs.io/en/1.8.0/plugins/b501_request_with_no_cert_verification.html\\n\\n>> Issue: [B608:hardcoded_sql_expressions] Possible SQL injection vector through string-based query construction.\\n   Severity: Medium   Confidence: Medium\\n   CWE: CWE-89 (SQL Injection)\\n   Location: app/models/user_repository.py:83:8\\n   More Info: https://bandit.readthedocs.io/en/1.8.0/plugins/b608_hardcoded_sql_expressions.html\\n\\n>> Issue: [B608:hardcoded_sql_expressions] Possible SQL injection vector through string-based query construction.\\n   Severity: Medium   Confidence: Medium\\n   CWE: CWE-89 (SQL Injection)\\n   Location: app/models/user_repository.py:124:8\\n\\n>> Issue: [B301:pickle] Pickle and modules that wrap it can be made to execute arbitrary commands when untrusted data is unpickled.\\n   Severity: Medium   Confidence: High\\n   CWE: CWE-502 (Deserialization of Untrusted Data)\\n   Location: app/cache/session_store.py:31:19\\n\\n>> Issue: [B301:pickle] Pickle and modules that wrap it can be made to execute arbitrary commands when untrusted data is unpickled.\\n   Severity: Medium   Confidence: High\\n   CWE: CWE-502 (Deserialization of Untrusted Data)\\n   Location: app/cache/session_store.py:56:19\\n\\n>> Issue: [B324:hashlib] Use of insecure MD5 hash function.\\n   Severity: Medium   Confidence: High\\n   CWE: CWE-328 (Use of Weak Hash)\\n   Location: app/auth/token_manager.py:22:18\\n\\n>> Issue: [B105:hardcoded_password_string] Possible hardcoded password: 'sk_live_REDACTED'\\n   Severity: Low   Confidence: Medium\\n   CWE: CWE-259 (Use of Hard-coded Password)\\n   Location: app/integrations/payment_gateway.py:12:0\\n\\n>> Issue: [B110:try_except_pass] Try, Except, Pass detected.\\n   Severity: Low   Confidence: High\\n   CWE: CWE-390 (Detection of Error Condition Without Action)\\n   Location: app/auth/token_manager.py:65:4\\n\\n>> Issue: [B703:django_mark_safe] Potential XSS on mark_safe function.\\n   Severity: Medium   Confidence: High\\n   CWE: CWE-79 (Cross-site Scripting)\\n   Location: app/views/admin_dashboard.py:94:11\\n\\nCode scanned:\\n   Total lines of code: 4,218\\n   Total lines skipped (#nosec): 0\\n\\nRun metrics:\\n   Total issues (by severity):\\n      Undefined: 0\\n      Low: 2\\n      Medium: 6\\n      High: 1\\n   Total issues (by confidence):\\n      Undefined: 0\\n      Low: 0\\n      Medium: 2\\n      High: 7\\n   Files skipped (0):\\n```\\n\\n9 findings total. Can you help me triage and fix these? I want to start with the most critical ones. The app handles payment processing so the payment gateway and SQL injection issues scare me the most.\",\"uri\":null,\"mime_type\":null,\"metadata\":{}}],\"timestamp\":\"2026-03-31T08:15:01.000Z\",\"input_tokens\":1842,\"output_tokens\":0,\"cumulative_tokens\":1842},{\"turn_id\":2,\"parent_turn_id\":1,\"role\":\"assistant\",\"content_blocks\":[{\"type\":\"text\",\"text\":\"Good instinct on prioritization. Let me triage these by actual risk, not just Bandit severity:\\n\\n**Critical (fix immediately):**\\n1. **B105 \u2014 Hardcoded Stripe secret key** (`payment_gateway.py:12`). This is your biggest problem. A live Stripe secret key in source code means anyone with repo access can charge cards, issue refunds, or exfiltrate customer payment data. If this repo is public or has been shared, you need to rotate this key immediately via the Stripe dashboard.\\n2. **B501 \u2014 SSL verification disabled** (`payment_gateway.py:47`). Combined with the hardcoded key, this means your payment gateway calls are both authenticated with a real key AND not verifying the server certificate. This is a textbook MITM vector \u2014 an attacker on the network path can intercept payment API calls.\\n3. **B608 \u2014 SQL injection** (`user_repository.py:83, 124`). Two instances of string-based query construction in a user repository. If any of the interpolated values come from user input (which they likely do in a user repo), this is exploitable.\\n\\n**High (fix this sprint):**\\n4. **B301 \u2014 Pickle deserialization** (`session_store.py:31, 56`). If session data comes from client-controlled coo"
+        }
+      ],
+      "timestamp": "2026-04-01T03:46:39.507Z",
+      "input_tokens": 35251,
+      "output_tokens": 14871,
+      "cumulative_tokens": 206188
+    }
+  ],
+  "replay": {
+    "prefix_group_id": "grp_claude_a2c0ab76",
+    "prefix_overlap_ratio": 0.793,
+    "reuse_distance_turns": 2,
+    "reuse_distance_seconds": 209,
+    "estimated_kv_bytes_peak": 32990080,
+    "branch_count": 0,
+    "idle_windows_ms": [
+      0,
+      2471,
+      362,
+      47,
+      45,
+      69,
+      2706,
+      4,
+      734,
+      232,
+      15296,
+      209418
+    ],
+    "arrival_pattern": "reactivation_heavy"
+  },
+  "kv_pressure": {
+    "cold_start": true,
+    "warm_cache_hit_rate": 0.6343371688005113,
+    "estimated_offload_bytes": 16495040,
+    "estimated_reload_bytes": 8247520,
+    "tier": "CPU",
+    "cache_expectation": "reactivated",
+    "eviction_risk_score": 0.95
+  },
+  "provenance": {
+    "generator_model": "claude-code-real",
+    "generator_prompt_version": "real-transcript-v1",
+    "pipeline_version": "0.1.0"
+  }
+}

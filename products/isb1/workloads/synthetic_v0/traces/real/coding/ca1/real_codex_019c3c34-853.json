@@ -1,0 +1,918 @@
+{
+  "trace_id": "real_codex_019c3c34-853",
+  "dataset_version": "0.1.0",
+  "source_type": "real",
+  "workload_family": "coding",
+  "language": "en",
+  "tokenizer": {
+    "name": "o200k_base",
+    "version": "1.0"
+  },
+  "session": {
+    "session_id": "019c3c34-8539-7b60-93e4-50e74656d705",
+    "goal": "# AGENTS.md instructions for /Users/romirjain/Desktop/hikaflow/hikaflow.debugger\n\n<INSTRUCTIONS>\n## Skills\nA skill is a set of local instructions to follow that is stored in a `SKILL.md` file. Below i",
+    "contains_tools": true,
+    "contains_rag": false,
+    "contains_branching": false,
+    "contains_multimodal": false
+  },
+  "turns": [
+    {
+      "turn_id": 1,
+      "parent_turn_id": null,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "# AGENTS.md instructions for /Users/romirjain/Desktop/hikaflow/hikaflow.debugger\n\n<INSTRUCTIONS>\n## Skills\nA skill is a set of local instructions to follow that is stored in a `SKILL.md` file. Below is the list of skills that can be used. Each entry includes a name, description, and file path so you can open the source for full instructions when using a specific skill.\n### Available skills\n- skill-creator: Guide for creating effective skills. This skill should be used when users want to create a new skill (or update an existing skill) that extends Codex's capabilities with specialized knowledge, workflows, or tool integrations. (file: /Users/romirjain/.codex/skills/.system/skill-creator/SKILL.md)\n- skill-installer: Install Codex skills into $CODEX_HOME/skills from a curated list or a GitHub repo path. Use when a user asks to list installable skills, install a curated skill, or install a skill from another repo (including private repos). (file: /Users/romirjain/.codex/skills/.system/skill-installer/SKILL.md)\n### How to use skills\n- Discovery: The list above is the skills available in this session (name + description + file path). Skill bodies live on disk at the listed paths.\n- Trigger rules: If the user names a skill (with `$SkillName` or plain text) OR the task clearly matches a skill's description shown above, you must use that skill for that turn. Multiple mentions mean use them all. Do not carry skills across turns unless re-mentioned.\n- Missing/blocked: If a named skill isn't in the list or the path can't be read, say so briefly and continue with the best fallback.\n- How to use a skill (progressive disclosure):\n  1) After deciding to use a skill, open its `SKILL.md`. Read only enough to follow the workflow.\n  2) When `SKILL.md` references relative paths (e.g., `scripts/foo.py`), resolve them relative to the skill directory listed above first, and only consider other paths if needed.\n  3) If `SKILL.md` points to extra folders such as `references/`, load only the specific files needed for the request; don't bulk-load everything.\n  4) If `scripts/` exist, prefer running or patching them instead of retyping large code blocks.\n  5) If `assets/` or templates exist, reuse them instead of recreating from scratch.\n- Coordination and sequencing:\n  - If multiple skills apply, choose the minimal set that covers the request and state the order you'll use them.\n  - Announce which skill(s) you're using and why (one short line). If you skip an obvious skill, say why.\n- Context hygiene:\n  - Keep context small: summarize long sections instead of pasting them; only load extra files when needed.\n  - Avoid deep reference-chasing: prefer opening only files directly linked from `SKILL.md` unless you're blocked.\n  - When variants exist (frameworks, providers, domains), pick only the relevant reference file(s) and note that choice.\n- Safety and fallback: If a skill can't be applied cleanly (missing files, unclear instructions), state the issue, pick the next-best approach, and continue.\n</INSTRUCTIONS>"
+        }
+      ],
+      "timestamp": "2026-02-08T07:43:20.903Z",
+      "input_tokens": 926,
+      "output_tokens": 0,
+      "cumulative_tokens": 926
+    },
+    {
+      "turn_id": 2,
+      "parent_turn_id": 1,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "<environment_context>\n  <cwd>/Users/romirjain/Desktop/hikaflow/hikaflow.debugger</cwd>\n  <shell>bash</shell>\n</environment_context>"
+        }
+      ],
+      "timestamp": "2026-02-08T07:43:20.903Z",
+      "input_tokens": 8,
+      "output_tokens": 0,
+      "cumulative_tokens": 934
+    },
+    {
+      "turn_id": 3,
+      "parent_turn_id": 2,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "Run audit agent M3 (Property-Based Testing Coverage) per audit/subagents.md. Scan test_prop_*.py for the 5 checks. Write findings to `audit/findings/testing/M3/2026-02-08.md`. Do not change code."
+        }
+      ],
+      "timestamp": "2026-02-08T07:43:20.904Z",
+      "input_tokens": 46,
+      "output_tokens": 0,
+      "cumulative_tokens": 980
+    },
+    {
+      "turn_id": 4,
+      "parent_turn_id": 3,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "[exec_command] {\"cmd\":\"ls\"}",
+          "metadata": {
+            "tool_name": "exec_command"
+          }
+        }
+      ],
+      "timestamp": "2026-02-08T07:43:22.707Z",
+      "input_tokens": 0,
+      "output_tokens": 2,
+      "cumulative_tokens": 982
+    },
+    {
+      "turn_id": 5,
+      "parent_turn_id": 4,
+      "role": "execution",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "Chunk ID: 0745e3\nWall time: 0.3095 seconds\nProcess exited with code 0\nOriginal token count: 299\nOutput:\n=10.0\nCODEBASE_IMPROVEMENT_PROMPTS.md\nCOMPETITIVE_IMPROVEMENTS.md\nDIVERGENCE_CODES.md\nDockerfile\nDockerfile.worker\nMakefile\nREADME.md\nSECURITY_AUDIT_REPORT.md\nSUPPORTED.md\nUNSUPPORTED.md\n__pycache__\napi\narxiv.md\naudit\nautodebug\nautodebug.egg-info\nautodebug_probe\nautodebug_replay\ncompetitors.md\nconftest.py\ncoverage.xml\ncurrentfeatures.md\ndashboards\ndocker-compose.airgapped.yml\ndocker-compose.selfhosted.yml\ndocker-compose.yml\nexamples\nfeatures.md\nfly.toml\ngo-probe\ngoogle39452e37a294f104.html\ngoogle75a8c89fbe6ad923.html\nhelm\nhikaflow\nhikaflow-debugger.2026-01-29.private-key.pem\nhtmlcov\nide\nissues.md\nissues10.md\nissues11.md\nissues12.md\nissues2.md\nissues3.md\nissues4.md\nissues5.md\nissues5_verified.md\nissues6.md\nissues6_verified.md\nissues7.md\nissues7_verified.md\nissues8_verified.md\nissues9.md\njava-probe\njunit.xml\nmcp_server\nmigrations\nmvp.md\nnode-probe\nplanning\nplans\nplaywright.config.ts\npostmvp_plan.md\nprogress.md\nprompts\npyproject.toml\nrailway.json\nrailway.worker.json\nrepro_zoo\nrequirements-dev.txt\nrequirements.txt\nroadmap.md\nrust-probe\nscreenshots\nscripts\nsdk\nsearch.md\nsecrets.md\nself_hosted.md\nsupabase\nsupabase_schema.sql\ntest_capture.py\ntesting.md\ntests\nweb\nworker\nworker-deploy\n"
+        }
+      ],
+      "timestamp": "2026-02-08T07:43:23.171Z",
+      "input_tokens": 208,
+      "output_tokens": 0,
+      "cumulative_tokens": 1190
+    },
+    {
+      "turn_id": 6,
+      "parent_turn_id": 5,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "[exec_command] {\"cmd\":\"sed -n '1,200p' audit/subagents.md\"}",
+          "metadata": {
+            "tool_name": "exec_command"
+          }
+        }
+      ],
+      "timestamp": "2026-02-08T07:43:24.963Z",
+      "input_tokens": 0,
+      "output_tokens": 8,
+      "cumulative_tokens": 1198
+    },
+    {
+      "turn_id": 7,
+      "parent_turn_id": 6,
+      "role": "execution",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "Chunk ID: 4ce0d5\nWall time: 0.2853 seconds\nProcess exited with code 0\nOriginal token count: 2083\nOutput:\n# Hikaflow Debugger - Comprehensive Subagent Scan Registry\n\n> **Results go to**: `audit/findings/<section>/<agent>/YYYY-MM-DD.md` | **Issue tracker**: `audit/issues/` | **Scan history**: `audit/scan-log.md` | **System docs**: `audit/README.md`\n\n> **Usage**: Each entry below is a self-contained subagent prompt. Spawn them with `subagent_type=general-purpose` in parallel batches of 6-8. Research-enhanced prompts (Section P, C2, C3, C6, C7, E4, E6) do web research before code audit. All other prompts are code-only.\n\n> **Output contract**: Every agent MUST write its own findings file. The output block below is appended to every prompt at spawn time. Do NOT rely on the agent returning results \u2014 it writes directly.\n\n### Standard Output Block (append to every prompt)\n```\nIMPORTANT \u2014 OUTPUT INSTRUCTIONS:\nAfter completing your analysis, you MUST write your findings to a file.\n\nWrite to: audit/findings/{SECTION}/{AGENT_ID}/2026-02-07.md\n\nUse this exact format:\n\n# {AGENT_ID} \u2014 {Agent Title}\n> Scanned: 2026-02-07 | Agent: {AGENT_ID} | Section: {SECTION}\n\n## Summary\n- Total findings: N\n- By severity: X critical, Y high, Z medium, W low\n- By classification: A bugs, B behind-SOTA, C missing-techniques (research-enhanced only)\n\n## Research Context (research-enhanced prompts only)\n### Sources Consulted\n- [Paper/Repo title](URL) \u2014 key takeaway\n- ...\n\n## Findings\n\n### [{SEVERITY}] Finding title\n- **File**: path/to/file.py:LINE\n- **Classification**: (A) Bug | (B) Behind SOTA | (C) Missing technique\n- **Description**: What's wrong and why it matters\n- **Evidence**: Code snippet or comparison to SOTA\n- **Recommendation**: Specific fix with code or approach\n- **Source** (if B/C): Paper/repo that demonstrates better approach\n\n(repeat for each finding)\n\n## Files Analyzed\n- path/to/file1.py (lines X-Y)\n- path/to/file2.py (lines X-Y)\n- ...\n\nAfter writing the findings file, also write a one-line summary to stdout\nso the caller knows the scan completed.\n```\n\n---\n\n## SECTION A: Backend API (14 agents)\n\n### A1 \u2014 API Route Ordering & Conflicts\n```\nScan api/main.py and all api/routers/*.py files for FastAPI route ordering issues.\nCheck that static paths always come before dynamic {param} paths in every router.\nCheck for duplicate route definitions. Check that router prefixes in main.py don't\ncreate ambiguous matches. Report any route that could shadow another.\n```\n\n### A2 \u2014 API Auth Consistency\n```\nScan every endpoint in api/routers/*.py and api/main.py. For each endpoint, report:\n1. Does it use Depends(auth.verify_token) or manual Authorization header?\n2. Does it call require_permission() and if so, which permission?\n3. Are there any endpoints that SHOULD be authenticated but aren't?\n4. Are there any endpoints using inconsistent auth patterns?\nCross-reference with api/auth.py to verify the auth chain is correct.\n```\n\n### A3 \u2014 API Response Models & Serialization\n```\nScan ever"
+        }
+      ],
+      "timestamp": "2026-02-08T07:43:25.403Z",
+      "input_tokens": 884,
+      "output_tokens": 0,
+      "cumulative_tokens": 2082
+    },
+    {
+      "turn_id": 8,
+      "parent_turn_id": 7,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "[exec_command] {\"cmd\":\"rg -n \\\"M3\\\" audit/subagents.md\"}",
+          "metadata": {
+            "tool_name": "exec_command"
+          }
+        }
+      ],
+      "timestamp": "2026-02-08T07:43:28.422Z",
+      "input_tokens": 0,
+      "output_tokens": 8,
+      "cumulative_tokens": 2090
+    },
+    {
+      "turn_id": 9,
+      "parent_turn_id": 8,
+      "role": "execution",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "Chunk ID: 6f2c98\nWall time: 0.2717 seconds\nProcess exited with code 0\nOriginal token count: 12\nOutput:\n1181:### M3 \u2014 Property-Based Testing Coverage\n"
+        }
+      ],
+      "timestamp": "2026-02-08T07:43:28.848Z",
+      "input_tokens": 46,
+      "output_tokens": 0,
+      "cumulative_tokens": 2136
+    },
+    {
+      "turn_id": 10,
+      "parent_turn_id": 9,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "[exec_command] {\"cmd\":\"sed -n '1160,1225p' audit/subagents.md\"}",
+          "metadata": {
+            "tool_name": "exec_command"
+          }
+        }
+      ],
+      "timestamp": "2026-02-08T07:43:30.513Z",
+      "input_tokens": 0,
+      "output_tokens": 8,
+      "cumulative_tokens": 2144
+    },
+    {
+      "turn_id": 11,
+      "parent_turn_id": 10,
+      "role": "execution",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "Chunk ID: a68f44\nWall time: 0.2949 seconds\nProcess exited with code 0\nOriginal token count: 519\nOutput:\n```\nScan tests/ and cross-reference with source files:\n1. Which source files have NO corresponding test file?\n2. Which source functions have NO test coverage?\n3. Which API endpoints have NO test?\n4. Which worker tasks have NO test?\n5. Which detection modules have NO test?\nList the top 20 untested files by importance.\n```\n\n### M2 \u2014 Test Quality & Maintainability\n```\nScan all test files in tests/:\n1. Are fixtures used consistently (conftest.py)?\n2. Are tests properly isolated (no shared state)?\n3. Are mock patches targeting the right module paths?\n4. Are assertion messages clear?\n5. Are there any tests that are always skipped or flaky?\n6. Are test names descriptive?\n```\n\n### M3 \u2014 Property-Based Testing Coverage\n```\nScan all test_prop_*.py files:\n1. Are property-based tests covering the right invariants?\n2. Are Hypothesis settings appropriate (max_examples, deadline)?\n3. Are there additional properties that should be tested?\n4. Are edge case generators (empty strings, large numbers) used?\n5. Is the Hypothesis database persisted correctly?\n```\n\n### M4 \u2014 Integration Test Coverage\n```\nScan tests/integration/:\n1. Are all system boundaries tested (DB, storage, queue)?\n2. Are integration tests isolated from each other?\n3. Are external services properly mocked or stubbed?\n4. Is the test database cleaned up correctly?\n5. Are timeout issues documented and handled?\n```\n\n### M5 \u2014 E2E Test Coverage\n```\nScan tests/e2e/:\n1. Are all critical user flows tested?\n2. Is authentication handled correctly in E2E tests?\n3. Are visual regression baselines up to date?\n4. Are E2E tests stable (not flaky)?\n5. Is the Playwright configuration correct?\n```\n\n### M6 \u2014 Test Fixture & Conftest Quality\n```\nScan conftest.py (root and subdirectories):\n1. Are all fixtures properly scoped (function, class, session)?\n2. Are mock patches correct (right module paths)?\n3. Are there any fixture conflicts or overrides?\n4. Are client fixtures configured correctly?\n5. Is auth mocking complete and secure?\n```\n\n---\n\n## SECTION N: Security (6 agents)\n\n### N1 \u2014 Secrets Exposure\n"
+        }
+      ],
+      "timestamp": "2026-02-08T07:43:30.962Z",
+      "input_tokens": 690,
+      "output_tokens": 0,
+      "cumulative_tokens": 2834
+    },
+    {
+      "turn_id": 12,
+      "parent_turn_id": 11,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "[exec_command] {\"cmd\":\"rg --files -g 'test_prop_*.py'\"}",
+          "metadata": {
+            "tool_name": "exec_command"
+          }
+        }
+      ],
+      "timestamp": "2026-02-08T07:43:33.325Z",
+      "input_tokens": 0,
+      "output_tokens": 8,
+      "cumulative_tokens": 2842
+    },
+    {
+      "turn_id": 13,
+      "parent_turn_id": 12,
+      "role": "execution",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "Chunk ID: cac993\nWall time: 0.3396 seconds\nProcess exited with code 0\nOriginal token count: 36\nOutput:\ntests/test_prop_canonicalize.py\ntests/test_prop_sbfl.py\ntests/test_prop_privacy.py\ntests/test_prop_encryption.py\ntests/test_prop_fingerprint.py\n"
+        }
+      ],
+      "timestamp": "2026-02-08T07:43:33.826Z",
+      "input_tokens": 44,
+      "output_tokens": 0,
+      "cumulative_tokens": 2886
+    },
+    {
+      "turn_id": 14,
+      "parent_turn_id": 13,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "[exec_command] {\"cmd\":\"sed -n '1,240p' tests/test_prop_canonicalize.py\"}",
+          "metadata": {
+            "tool_name": "exec_command"
+          }
+        }
+      ],
+      "timestamp": "2026-02-08T07:43:37.427Z",
+      "input_tokens": 0,
+      "output_tokens": 8,
+      "cumulative_tokens": 2894
+    },
+    {
+      "turn_id": 15,
+      "parent_turn_id": 14,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "[exec_command] {\"cmd\":\"sed -n '1,240p' tests/test_prop_sbfl.py\"}",
+          "metadata": {
+            "tool_name": "exec_command"
+          }
+        }
+      ],
+      "timestamp": "2026-02-08T07:43:37.430Z",
+      "input_tokens": 0,
+      "output_tokens": 8,
+      "cumulative_tokens": 2902
+    },
+    {
+      "turn_id": 16,
+      "parent_turn_id": 15,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "[exec_command] {\"cmd\":\"sed -n '1,240p' tests/test_prop_privacy.py\"}",
+          "metadata": {
+            "tool_name": "exec_command"
+          }
+        }
+      ],
+      "timestamp": "2026-02-08T07:43:37.430Z",
+      "input_tokens": 0,
+      "output_tokens": 8,
+      "cumulative_tokens": 2910
+    },
+    {
+      "turn_id": 17,
+      "parent_turn_id": 16,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "[exec_command] {\"cmd\":\"sed -n '1,240p' tests/test_prop_encryption.py\"}",
+          "metadata": {
+            "tool_name": "exec_command"
+          }
+        }
+      ],
+      "timestamp": "2026-02-08T07:43:37.430Z",
+      "input_tokens": 0,
+      "output_tokens": 8,
+      "cumulative_tokens": 2918
+    },
+    {
+      "turn_id": 18,
+      "parent_turn_id": 17,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "[exec_command] {\"cmd\":\"sed -n '1,240p' tests/test_prop_fingerprint.py\"}",
+          "metadata": {
+            "tool_name": "exec_command"
+          }
+        }
+      ],
+      "timestamp": "2026-02-08T07:43:37.431Z",
+      "input_tokens": 0,
+      "output_tokens": 8,
+      "cumulative_tokens": 2926
+    },
+    {
+      "turn_id": 19,
+      "parent_turn_id": 18,
+      "role": "execution",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "Chunk ID: 977e2c\nWall time: 0.4023 seconds\nProcess exited with code 0\nOriginal token count: 1894\nOutput:\n\"\"\"Property-based tests for URL/header/body canonicalization.\n\nTests idempotency, determinism, and invariant properties of\ncanonicalization functions used in probe recording and replay matching.\n\"\"\"\n\nfrom __future__ import annotations\n\nimport gzip\nimport hashlib\nimport json\n\nimport hypothesis.strategies as st\nfrom hypothesis import assume, given, settings\n\nfrom autodebug_probe.canonicalize import (\n    IGNORED_HEADERS_DEFAULT,\n    body_hash,\n    canonical_url,\n    decode_gzip,\n    normalize_headers,\n)\n\n# --- URL Canonicalization ---\n\n\nclass TestCanonicalUrlProperties:\n    \"\"\"Property tests for canonical_url().\"\"\"\n\n    @given(st.sampled_from([\n        \"http://example.com/path\",\n        \"HTTP://EXAMPLE.COM/PATH\",\n        \"https://api.example.com/v1/users?b=2&a=1\",\n        \"http://localhost:8000/api/test\",\n        \"http://127.0.0.1:5432/db\",\n        \"http://0.0.0.0:3000/health\",\n        \"http://[::1]:9090/metrics\",\n        \"https://example.com/path?z=1&a=2&m=3\",\n        \"http://example.com/path?\",\n        \"http://example.com\",\n    ]))\n    @settings(max_examples=50)\n    def test_idempotent(self, url):\n        \"\"\"canonical_url(canonical_url(x)) == canonical_url(x).\"\"\"\n        once = canonical_url(url)\n        twice = canonical_url(once)\n        assert once == twice, f\"Not idempotent: {url!r} -> {once!r} -> {twice!r}\"\n\n    @given(st.sampled_from([\n        \"http://example.com/path\",\n        \"HTTP://EXAMPLE.COM/PATH\",\n        \"Http://Example.Com/Path\",\n    ]))\n    @settings(max_examples=30)\n    def test_scheme_case_insensitive(self, url):\n        \"\"\"Scheme and host should be lowercased.\"\"\"\n        result = canonical_url(url)\n        assert \"HTTP://\" not in result\n        assert \"EXAMPLE.COM\" not in result.split(\"//\", 1)[-1].split(\"/\")[0]\n\n    @given(\n        st.sampled_from([\"http://example.com/path\"]),\n        st.permutations([\"a=1\", \"b=2\", \"c=3\"]),\n    )\n    @settings(max_examples=30)\n    def test_query_order_invariant(self, base, params):\n        \"\"\"Same query params in different order should produce same canonical URL.\"\"\"\n        url = f\"{base}?{'&'.join(params)}\"\n        result = canonical_url(url)\n        expected = canonical_url(f\"{base}?a=1&b=2&c=3\")\n        assert result == expected, f\"Query order matters: {url!r}\"\n\n    @given(st.sampled_from([\n        \"http://localhost:8000/test\",\n        \"http://127.0.0.1:8000/test\",\n        \"http://0.0.0.0:8000/test\",\n    ]))\n    @settings(max_examples=30)\n    def test_localhost_variants_normalize(self, url):\n        \"\"\"localhost, 127.0.0.1, 0.0.0.0 should normalize to same host.\"\"\"\n        result = canonical_url(url, normalize_localhost_port=True)\n        assert \"127.0.0.1\" not in result\n        assert \"0.0.0.0\" not in result\n\n    @given(st.sampled_from([\n        \"http://example.com:8080/path\",\n        \"https://api.prod.example.com:443/v1\",\n    ]))\n    @settings(max_examples=20)\n    def test_non_localhost"
+        }
+      ],
+      "timestamp": "2026-02-08T07:43:37.988Z",
+      "input_tokens": 444,
+      "output_tokens": 0,
+      "cumulative_tokens": 3370
+    },
+    {
+      "turn_id": 20,
+      "parent_turn_id": 19,
+      "role": "execution",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "Chunk ID: 931069\nWall time: 0.4038 seconds\nProcess exited with code 0\nOriginal token count: 2150\nOutput:\n\"\"\"Property-based tests for SBFL fault localization algorithms.\n\nTests mathematical invariants of Ochiai, Tarantula, DStar, Jaccard, and OP2\nscoring formulas, plus I/O-SBFL normalization functions.\n\"\"\"\n\nfrom __future__ import annotations\n\nimport hypothesis.strategies as st\nimport pytest\nfrom hypothesis import assume, given, settings\n\nfrom autodebug.detection.io_sbfl import (\n    _normalize_sql,\n    _normalize_url,\n)\nfrom autodebug.detection.sbfl import (\n    CoverageData,\n    LineStats,\n    SBFLAnalyzer,\n    SBFLFormula,\n)\n\n# --- Strategy helpers ---\n\n@st.composite\ndef line_stats(draw, min_total=1):\n    \"\"\"Generate valid LineStats with positive totals.\"\"\"\n    ef = draw(st.integers(min_value=0, max_value=50))\n    ep = draw(st.integers(min_value=0, max_value=50))\n    nf = draw(st.integers(min_value=0, max_value=50))\n    np_ = draw(st.integers(min_value=0, max_value=50))\n    total_failed = ef + nf\n    total_passed = ep + np_\n    assume(total_failed + total_passed >= min_total)\n    return LineStats(\n        ef=ef, ep=ep, nf=nf, np=np_,\n        total_failed=total_failed, total_passed=total_passed,\n    )\n\n\n# --- Ochiai formula tests ---\n\n\nclass TestOchiaiProperties:\n    \"\"\"Property tests for the Ochiai formula.\"\"\"\n\n    @given(line_stats())\n    @settings(max_examples=100)\n    def test_score_bounded_zero_to_one(self, stats):\n        \"\"\"Ochiai score must always be in [0, 1].\"\"\"\n        analyzer = SBFLAnalyzer(SBFLFormula.OCHIAI)\n        score = analyzer._calculate_score(stats)\n        assert 0.0 <= score <= 1.0, f\"Ochiai out of bounds: {score} for {stats}\"\n\n    @given(st.integers(min_value=0, max_value=50), st.integers(min_value=1, max_value=50))\n    @settings(max_examples=50)\n    def test_zero_when_never_executed_in_failures(self, ep, nf):\n        \"\"\"If ef=0 (never executed in failing tests), score must be 0.\"\"\"\n        stats = LineStats(ef=0, ep=ep, nf=nf, np=0,\n                         total_failed=nf, total_passed=ep)\n        analyzer = SBFLAnalyzer(SBFLFormula.OCHIAI)\n        score = analyzer._calculate_score(stats)\n        assert score == 0.0, f\"Ochiai non-zero with ef=0: {score}\"\n\n    @given(st.integers(min_value=1, max_value=50))\n    @settings(max_examples=30)\n    def test_maximum_when_only_in_failures(self, ef):\n        \"\"\"If ef == total_failed and ep == 0, score should be 1.0.\"\"\"\n        stats = LineStats(ef=ef, ep=0, nf=0, np=10,\n                         total_failed=ef, total_passed=10)\n        analyzer = SBFLAnalyzer(SBFLFormula.OCHIAI)\n        score = analyzer._calculate_score(stats)\n        assert abs(score - 1.0) < 1e-9, f\"Expected 1.0, got {score}\"\n\n\n# --- Tarantula formula tests ---\n\n\nclass TestTarantulaProperties:\n    \"\"\"Property tests for the Tarantula formula.\"\"\"\n\n    @given(line_stats(min_total=2))\n    @settings(max_examples=100)\n    def test_score_bounded_zero_to_one(self, stats):\n        \"\"\"Tarantula score must always be in [0, "
+        }
+      ],
+      "timestamp": "2026-02-08T07:43:37.990Z",
+      "input_tokens": 570,
+      "output_tokens": 0,
+      "cumulative_tokens": 3940
+    },
+    {
+      "turn_id": 21,
+      "parent_turn_id": 20,
+      "role": "execution",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "Chunk ID: e6121d\nWall time: 0.4060 seconds\nProcess exited with code 0\nOriginal token count: 2110\nOutput:\n\"\"\"Property-based tests for privacy mechanisms.\n\nTests differential privacy noise, k-anonymity enforcement, and hashing.\n\"\"\"\n\nfrom __future__ import annotations\n\nimport hypothesis.strategies as st\nfrom hypothesis import assume, given, settings\n\nfrom autodebug.learning.privacy import (\n    DifferentialPrivacy,\n    KAnonymityChecker,\n    PrivacyAuditor,\n    PrivacyConfig,\n    hash_code_pattern,\n    hash_identifier,\n)\n\n# --- Differential Privacy ---\n\n\nclass TestDifferentialPrivacyProperties:\n    \"\"\"Property tests for DP noise mechanisms.\"\"\"\n\n    @given(st.integers(min_value=0, max_value=10000))\n    @settings(max_examples=50)\n    def test_noisy_count_preserves_magnitude(self, true_count):\n        \"\"\"Noisy count should be within reasonable bounds of true count.\"\"\"\n        config = PrivacyConfig(epsilon=1.0, sensitivity=1.0)\n        dp = DifferentialPrivacy(config)\n        noisy = dp.add_noise_to_count(true_count)\n\n        # With epsilon=1.0, noise scale = sensitivity/epsilon = 1.0\n        # 99.9% of Laplace samples are within 7*scale = 7\n        # Use generous bound to avoid flaky test\n        bound = max(50, true_count * 0.5)\n        assert abs(noisy - true_count) < bound, (\n            f\"Noisy count {noisy} too far from true count {true_count}\"\n        )\n\n    @given(st.floats(min_value=0.0, max_value=1.0))\n    @settings(max_examples=50)\n    def test_noisy_rate_bounded_zero_one(self, true_rate):\n        \"\"\"Noisy rate should always be clamped to [0, 1].\"\"\"\n        config = PrivacyConfig(epsilon=1.0)\n        dp = DifferentialPrivacy(config)\n        noisy = dp.add_noise_to_rate(true_rate, sample_size=100)\n        assert 0.0 <= noisy <= 1.0, f\"Rate out of bounds: {noisy}\"\n\n    def test_budget_tracking(self):\n        \"\"\"Privacy budget should be trackable.\"\"\"\n        config = PrivacyConfig(epsilon=1.0, total_budget=10.0)\n        dp = DifferentialPrivacy(config)\n        initial = dp.get_remaining_budget()\n        # Budget starts at total_budget or infinity depending on impl\n        assert initial > 0\n\n    def test_budget_check(self):\n        \"\"\"check_budget() should return True when budget remains.\"\"\"\n        config = PrivacyConfig(epsilon=1.0, total_budget=10.0)\n        dp = DifferentialPrivacy(config)\n        assert dp.check_budget() is True\n\n\n# --- K-Anonymity ---\n\n\nclass TestKAnonymityProperties:\n    \"\"\"Property tests for k-anonymity enforcement.\"\"\"\n\n    def test_suppresses_small_groups(self):\n        \"\"\"Groups with fewer than k records should not be k-anonymous.\"\"\"\n        checker = KAnonymityChecker(k=3)\n        records = [\n            {\"type\": \"ValueError\", \"org\": \"org_1\"},\n            {\"type\": \"ValueError\", \"org\": \"org_2\"},\n            # Only 2 records for this type, k=3 requires at least 3\n        ]\n        result = checker.is_k_anonymous(records, [\"type\"])\n        # Dataset has only 2 records in one equivalence class, k=3 -> not anonymous\n     "
+        }
+      ],
+      "timestamp": "2026-02-08T07:43:37.992Z",
+      "input_tokens": 600,
+      "output_tokens": 0,
+      "cumulative_tokens": 4540
+    },
+    {
+      "turn_id": 22,
+      "parent_turn_id": 21,
+      "role": "execution",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "Chunk ID: 88f6f7\nWall time: 0.4062 seconds\nProcess exited with code 0\nOriginal token count: 1050\nOutput:\n\"\"\"Property-based tests for transcript encryption.\n\nTests encrypt/decrypt roundtrip, key management, and passthrough behavior.\n\"\"\"\n\nfrom __future__ import annotations\n\nimport hypothesis.strategies as st\nimport pytest\nfrom hypothesis import given, settings\n\ntry:\n    from cryptography.fernet import Fernet\n    HAS_CRYPTO = True\nexcept ImportError:\n    HAS_CRYPTO = False\n\nfrom autodebug_probe.encryption import (\n    TranscriptEncryption,\n    generate_key,\n)\n\n\ndef _make_encryption():\n    \"\"\"Create encryption instance with a known test key.\"\"\"\n    if not HAS_CRYPTO:\n        pytest.skip(\"cryptography package not installed\")\n    key = Fernet.generate_key().decode()\n    return TranscriptEncryption(key=key)\n\n\ndef _make_no_encryption():\n    \"\"\"Create encryption instance with no key (passthrough mode).\"\"\"\n    return TranscriptEncryption(key=None)\n\n\n@pytest.mark.skipif(not HAS_CRYPTO, reason=\"cryptography not installed\")\nclass TestEncryptDecryptRoundtrip:\n    \"\"\"encrypt(x) -> decrypt(x) should return original data.\"\"\"\n\n    @given(st.binary(min_size=0, max_size=5000))\n    @settings(max_examples=50)\n    def test_roundtrip(self, data):\n        \"\"\"decrypt(encrypt(data)) == data for all byte strings.\"\"\"\n        enc = _make_encryption()\n        encrypted = enc.encrypt(data)\n        decrypted = enc.decrypt(encrypted)\n        assert decrypted == data, \"Roundtrip failed\"\n\n    @given(st.binary(min_size=1, max_size=1000))\n    @settings(max_examples=30)\n    def test_encrypted_differs_from_plaintext(self, data):\n        \"\"\"Encrypted output should differ from plaintext.\"\"\"\n        enc = _make_encryption()\n        encrypted = enc.encrypt(data)\n        assert encrypted != data, \"Encryption produced same output as input\"\n\n    @given(st.binary(min_size=1, max_size=1000))\n    @settings(max_examples=30)\n    def test_both_encryptions_decrypt_to_same(self, data):\n        \"\"\"Two encryptions of same data should both decrypt to original.\"\"\"\n        enc = _make_encryption()\n        e1 = enc.encrypt(data)\n        e2 = enc.encrypt(data)\n        d1 = enc.decrypt(e1)\n        d2 = enc.decrypt(e2)\n        assert d1 == d2 == data\n\n\nclass TestPassthroughMode:\n    \"\"\"When encryption is disabled, data passes through unchanged.\"\"\"\n\n    @given(st.binary(min_size=0, max_size=1000))\n    @settings(max_examples=30)\n    def test_encrypt_passthrough(self, data):\n        \"\"\"Without key, encrypt returns data unchanged.\"\"\"\n        enc = _make_no_encryption()\n        result = enc.encrypt(data)\n        assert result == data\n\n    @given(st.binary(min_size=0, max_size=1000))\n    @settings(max_examples=30)\n    def test_decrypt_passthrough(self, data):\n        \"\"\"Without key, decrypt returns data unchanged.\"\"\"\n        enc = _make_no_encryption()\n        result = enc.decrypt(data)\n        assert result == data\n\n    def test_enabled_is_false(self):\n        \"\"\"Without key, enabled should be False.\"\"\"\n        en"
+        }
+      ],
+      "timestamp": "2026-02-08T07:43:37.992Z",
+      "input_tokens": 540,
+      "output_tokens": 0,
+      "cumulative_tokens": 5080
+    },
+    {
+      "turn_id": 23,
+      "parent_turn_id": 22,
+      "role": "execution",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "Chunk ID: 3be9f7\nWall time: 0.4002 seconds\nProcess exited with code 0\nOriginal token count: 1683\nOutput:\n\"\"\"Property-based tests for exception fingerprinting.\n\nTests determinism, idempotency, and correctness of fingerprint generation\nand message normalization.\n\"\"\"\n\nfrom __future__ import annotations\n\nimport uuid\n\nimport hypothesis.strategies as st\nimport pytest\nfrom hypothesis import given, settings\n\nfrom autodebug.detection.exception_fingerprinter import ExceptionFingerprinter\n\n\n@pytest.fixture\ndef fp():\n    return ExceptionFingerprinter()\n\n\nclass TestFingerprintDeterminism:\n    \"\"\"Fingerprinting the same exception must always produce the same result.\"\"\"\n\n    @given(\n        st.sampled_from([\"KeyError\", \"ValueError\", \"TypeError\", \"AttributeError\"]),\n        st.text(min_size=1, max_size=100),\n    )\n    @settings(max_examples=50)\n    def test_deterministic(self, exc_type, message):\n        \"\"\"Same input always produces same fingerprint.\"\"\"\n        fp = ExceptionFingerprinter()\n        stack = [\"Traceback (most recent call last):\", '  File \"test.py\", line 10, in test_func']\n        f1 = fp.fingerprint(exc_type, message, stack)\n        f2 = fp.fingerprint(exc_type, message, stack)\n        assert f1 == f2\n\n    @given(\n        st.sampled_from([\"KeyError\", \"ValueError\", \"TypeError\"]),\n        st.text(min_size=1, max_size=100),\n    )\n    @settings(max_examples=50)\n    def test_fingerprint_is_16_hex_chars(self, exc_type, message):\n        \"\"\"Fingerprint should always be a 16-character hex string.\"\"\"\n        fp = ExceptionFingerprinter()\n        stack = [\"Traceback (most recent call last):\", '  File \"app.py\", line 5, in run']\n        result = fp.fingerprint(exc_type, message, stack)\n        assert len(result) == 16, f\"Length {len(result)} != 16\"\n        assert all(c in \"0123456789abcdef\" for c in result), f\"Non-hex chars in {result}\"\n\n\nclass TestMessageNormalization:\n    \"\"\"Tests for _normalize_message() idempotency and correctness.\"\"\"\n\n    @given(st.text(min_size=1, max_size=200))\n    @settings(max_examples=50)\n    def test_idempotent(self, message):\n        \"\"\"Normalizing a message twice should give the same result.\"\"\"\n        fp = ExceptionFingerprinter()\n        once = fp._normalize_message(message)\n        twice = fp._normalize_message(once)\n        assert once == twice, f\"Not idempotent: {message!r} -> {once!r} -> {twice!r}\"\n\n    @given(st.uuids())\n    @settings(max_examples=30)\n    def test_replaces_uuids(self, uuid_val):\n        \"\"\"UUIDs in messages should be replaced with <UUID>.\"\"\"\n        fp = ExceptionFingerprinter()\n        message = f\"Object {uuid_val} not found\"\n        result = fp._normalize_message(message)\n        assert str(uuid_val) not in result, f\"UUID not replaced in: {result}\"\n\n    @given(st.from_regex(r\"[a-z]+@[a-z]+\\.[a-z]{2,4}\", fullmatch=True))\n    @settings(max_examples=30)\n    def test_replaces_emails(self, email):\n        \"\"\"Email addresses should be replaced.\"\"\"\n        fp = ExceptionFingerprinter()\n        message = f\"User"
+        }
+      ],
+      "timestamp": "2026-02-08T07:43:37.992Z",
+      "input_tokens": 558,
+      "output_tokens": 0,
+      "cumulative_tokens": 5638
+    },
+    {
+      "turn_id": 24,
+      "parent_turn_id": 23,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "[exec_command] {\"cmd\":\"rg -n \\\"hypothesis|Hypothesis\\\" -S tests conftest.py\"}",
+          "metadata": {
+            "tool_name": "exec_command"
+          }
+        }
+      ],
+      "timestamp": "2026-02-08T07:43:40.910Z",
+      "input_tokens": 0,
+      "output_tokens": 12,
+      "cumulative_tokens": 5650
+    },
+    {
+      "turn_id": 25,
+      "parent_turn_id": 24,
+      "role": "execution",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "Chunk ID: 5addd7\nWall time: 0.3326 seconds\nProcess exited with code 0\nOriginal token count: 4807\nOutput:\ntests/test_prop_sbfl.py:9:import hypothesis.strategies as st\ntests/test_prop_sbfl.py:11:from hypothesis import assume, given, settings\ntests/test_prop_encryption.py:8:import hypothesis.strategies as st\ntests/test_prop_encryption.py:10:from hypothesis import given, settings\ntests/test_prop_canonicalize.py:13:import hypothesis.strategies as st\ntests/test_prop_canonicalize.py:14:from hypothesis import assume, given, settings\ntests/test_prop_privacy.py:8:import hypothesis.strategies as st\ntests/test_prop_privacy.py:9:from hypothesis import assume, given, settings\ntests/test_properties.py:1:\"\"\"Property-based tests using Hypothesis strategies.\"\"\"\ntests/test_properties.py:5:import hypothesis.strategies as st\ntests/test_properties.py:6:from hypothesis import assume, given, settings\ntests/test_properties.py:179:# Hypothesis profile configuration\ntests/test_test_classifier.py:33:        assert classifier.classify(\"test_hypothesis_sorting\") == TestType.PROPERTY_BASED\ntests/prompts/test_structured_prompts.py:12:    HypothesisResponse,\ntests/prompts/test_structured_prompts.py:13:    MultiHypothesisResponse,\ntests/prompts/test_structured_prompts.py:142:class TestHypothesisResponse:\ntests/prompts/test_structured_prompts.py:143:    \"\"\"Tests for complete HypothesisResponse model.\"\"\"\ntests/prompts/test_structured_prompts.py:147:        response = HypothesisResponse(\ntests/prompts/test_structured_prompts.py:167:    def test_to_hypothesis_dict(self):\ntests/prompts/test_structured_prompts.py:168:        \"\"\"Response converts to hypothesis dict format.\"\"\"\ntests/prompts/test_structured_prompts.py:169:        response = HypothesisResponse(\ntests/prompts/test_structured_prompts.py:187:        d = response.to_hypothesis_dict()\ntests/prompts/test_structured_prompts.py:194:class TestMultiHypothesisResponse:\ntests/prompts/test_structured_prompts.py:195:    \"\"\"Tests for MultiHypothesisResponse model.\"\"\"\ntests/prompts/test_structured_prompts.py:198:        \"\"\"Valid multi-hypothesis response passes.\"\"\"\ntests/prompts/test_structured_prompts.py:199:        response = MultiHypothesisResponse(\ntests/prompts/test_structured_prompts.py:201:                HypothesisResponse(\ntests/prompts/test_structured_prompts.py:223:        \"\"\"Multi-response requires at least one hypothesis.\"\"\"\ntests/prompts/test_structured_prompts.py:225:            MultiHypothesisResponse(hypotheses=[])\ntests/test_prop_fingerprint.py:11:import hypothesis.strategies as st\ntests/test_prop_fingerprint.py:13:from hypothesis import given, settings\ntests/llm_first/test_debate.py:9:    AgentHypothesis,\ntests/llm_first/test_debate.py:34:        if response_model == AgentHypothesis:\ntests/llm_first/test_debate.py:35:            return AgentHypothesis(\ntests/llm_first/test_debate.py:38:                summary=\"Test hypothesis\",\ntests/llm_first/test_debate.py:48:                reasoning=\"Best hypothesis\",\ntests/llm_firs"
+        }
+      ],
+      "timestamp": "2026-02-08T07:43:41.397Z",
+      "input_tokens": 334,
+      "output_tokens": 0,
+      "cumulative_tokens": 5984
+    },
+    {
+      "turn_id": 26,
+      "parent_turn_id": 25,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "[exec_command] {\"cmd\":\"sed -n '150,230p' tests/test_properties.py\"}",
+          "metadata": {
+            "tool_name": "exec_command"
+          }
+        }
+      ],
+      "timestamp": "2026-02-08T07:43:43.605Z",
+      "input_tokens": 0,
+      "output_tokens": 8,
+      "cumulative_tokens": 5992
+    },
+    {
+      "turn_id": 27,
+      "parent_turn_id": 26,
+      "role": "execution",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "Chunk ID: 04a7eb\nWall time: 0.3449 seconds\nProcess exited with code 0\nOriginal token count: 293\nOutput:\n\nclass TestCacheKeyGeneration:\n    \"\"\"Property tests for cache key generation.\"\"\"\n\n    @given(st.text(min_size=1, max_size=1000))\n    def test_hash_is_deterministic(self, text):\n        \"\"\"Same text should produce same hash.\"\"\"\n        hash1 = hash(text)\n        hash2 = hash(text)\n\n        assert hash1 == hash2\n\n    @given(\n        st.text(min_size=1, max_size=100),\n        st.text(min_size=1, max_size=100),\n    )\n    def test_different_texts_usually_different_hashes(self, text1, text2):\n        \"\"\"Different texts should usually have different hashes.\"\"\"\n        assume(text1 != text2)\n\n        hash1 = hash(text1)\n        hash2 = hash(text2)\n\n        # Collisions are possible but rare\n        # We don't assert inequality since collisions can happen\n        # This test documents the expectation\n        _ = hash1 != hash2  # Usually true\n\n\n# Hypothesis profile configuration\nsettings.register_profile(\"ci\", max_examples=200, deadline=None)\nsettings.register_profile(\"dev\", max_examples=20, deadline=500)\nsettings.register_profile(\"debug\", max_examples=5)\n\n# Load profile from environment\nimport os\n\nsettings.load_profile(os.getenv(\"HYPOTHESIS_PROFILE\", \"dev\"))\n"
+        }
+      ],
+      "timestamp": "2026-02-08T07:43:44.106Z",
+      "input_tokens": 244,
+      "output_tokens": 0,
+      "cumulative_tokens": 6236
+    },
+    {
+      "turn_id": 28,
+      "parent_turn_id": 27,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "[exec_command] {\"cmd\":\"rg -n \\\"Hypothesis.*database|hypothesis.*database|database=|HYPOTHESIS\\\" -S tests conftest.py pyproject.toml\"}",
+          "metadata": {
+            "tool_name": "exec_command"
+          }
+        }
+      ],
+      "timestamp": "2026-02-08T07:43:46.898Z",
+      "input_tokens": 0,
+      "output_tokens": 14,
+      "cumulative_tokens": 6250
+    },
+    {
+      "turn_id": 29,
+      "parent_turn_id": 28,
+      "role": "execution",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "Chunk ID: bd5e43\nWall time: 0.2827 seconds\nProcess exited with code 0\nOriginal token count: 23\nOutput:\ntests/test_properties.py:187:settings.load_profile(os.getenv(\"HYPOTHESIS_PROFILE\", \"dev\"))\n"
+        }
+      ],
+      "timestamp": "2026-02-08T07:43:47.334Z",
+      "input_tokens": 38,
+      "output_tokens": 0,
+      "cumulative_tokens": 6288
+    },
+    {
+      "turn_id": 30,
+      "parent_turn_id": 29,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "[exec_command] {\"cmd\":\"rg -n \\\"\\\\.hypothesis|HYPOTHESIS_DATABASE\\\" -S .\"}",
+          "metadata": {
+            "tool_name": "exec_command"
+          }
+        }
+      ],
+      "timestamp": "2026-02-08T07:44:02.006Z",
+      "input_tokens": 0,
+      "output_tokens": 10,
+      "cumulative_tokens": 6298
+    },
+    {
+      "turn_id": 31,
+      "parent_turn_id": 30,
+      "role": "execution",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "Chunk ID: 603541\nWall time: 0.3589 seconds\nProcess exited with code 0\nOriginal token count: 2199\nOutput:\n./autodebug/validation/fix_validator.py:20:    from autodebug.autonomous.hypothesis import Hypothesis, Patch\n./tests/llm_first/test_voting.py:186:        assert voted.hypothesis == sample_hypotheses[0]\n./tests/llm_first/test_voting.py:397:        assert result.hypothesis is not None\n./tests/llm_first/test_voting.py:408:        assert result.hypothesis.category is not None\n./tests/llm_first/test_voting.py:434:        assert result.hypothesis is not None\n./tests/llm_first/test_voting.py:444:        assert result.hypothesis is not None\n./tests/llm_first/test_voting.py:1090:        assert result.hypothesis is not None\n./tests/llm_first/test_voting.py:1171:        assert result.hypothesis is not None\n./tests/llm_first/test_voting.py:1172:        assert result.hypothesis.category is not None\n./tests/llm_first/test_voting.py:1173:        assert result.hypothesis.summary\n./tests/llm_first/test_feedback.py:528:        assert record.hypothesis_id == \"hyp-123\"\n./tests/llm_first/test_feedback.py:553:        assert record.hypothesis_id == \"hyp-123\"\n./tests/llm_first/test_feedback.py:980:                record.hypothesis_id,\n./autodebug/llm_first/voting.py:131:        >>> print(f\"Winning hypothesis: {voted.hypothesis.summary}\")\n./api/routers/github.py:714:                from autodebug.autonomous.hypothesis import generate_hypotheses_with_fallback\n./autodebug/autonomous/proof.py:73:            \"hypothesis_id\": self.hypothesis_id,\n./autodebug/autonomous/proof.py:143:        \"hypothesis_id\": certificate.hypothesis_id,\n./autodebug/autonomous/proof.py:304:        f\"Hypothesis:     {certificate.hypothesis_id}\",\n./autodebug/autonomous/ranking.py:12:from autodebug.autonomous.hypothesis import Hypothesis\n./autodebug/autonomous/ranking.py:37:            f\"#{self.rank} ({self.score:.2f}) {self.hypothesis.strategy}: \"\n./autodebug/autonomous/ranking.py:38:            f\"{self.hypothesis.root_cause[:60]}... [{status}]\"\n./autodebug/autonomous/ranking.py:114:            cert_lookup[cert.hypothesis_id] = cert\n./autodebug/autonomous/ranking.py:119:        hypothesis = validation.hypothesis\n./autodebug/autonomous/ranking.py:190:    if fix.hypothesis.confidence < confidence_threshold:\n./autodebug/autonomous/ranking.py:193:    if fix.hypothesis.patch.line_count > max_lines:\n./autodebug/autonomous/ranking.py:196:    if fix.hypothesis.patch.file_count > 1:\n./autodebug/autonomous/ranking.py:233:            confidence_pct = fix.hypothesis.confidence * 100\n./autodebug/autonomous/ranking.py:234:            lines.append(f\"#### #{fix.rank}: {fix.hypothesis.strategy} ({confidence_pct:.0f}% confidence)\")\n./autodebug/autonomous/ranking.py:237:            lines.append(f\"**Root Cause:** {fix.hypothesis.root_cause}\")\n./autodebug/autonomous/ranking.py:241:            diff = fix.hypothesis.patch.raw_diff\n./autodebug/autonomous/ranking.py:247:            lines.append(f\"**Explanation:** {fix.hyp"
+        }
+      ],
+      "timestamp": "2026-02-08T07:44:02.525Z",
+      "input_tokens": 324,
+      "output_tokens": 0,
+      "cumulative_tokens": 6622
+    },
+    {
+      "turn_id": 32,
+      "parent_turn_id": 31,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "[exec_command] {\"cmd\":\"git ls-tree -r HEAD --name-only -- .hypothesis | head -n 5\"}",
+          "metadata": {
+            "tool_name": "exec_command"
+          }
+        }
+      ],
+      "timestamp": "2026-02-08T07:44:11.360Z",
+      "input_tokens": 0,
+      "output_tokens": 22,
+      "cumulative_tokens": 6644
+    },
+    {
+      "turn_id": 33,
+      "parent_turn_id": 32,
+      "role": "execution",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "Chunk ID: 95c344\nWall time: 0.2985 seconds\nProcess exited with code 0\nOriginal token count: 49\nOutput:\n.hypothesis/constants/017405614e4d73e5\n.hypothesis/constants/01ad2add701d85b2\n.hypothesis/constants/01b69c6cdacd6547\n.hypothesis/constants/025f8aa27aa820c2\n.hypothesis/constants/0274f131a3d8ac09\n"
+        }
+      ],
+      "timestamp": "2026-02-08T07:44:11.814Z",
+      "input_tokens": 44,
+      "output_tokens": 0,
+      "cumulative_tokens": 6688
+    },
+    {
+      "turn_id": 34,
+      "parent_turn_id": 33,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "[exec_command] {\"cmd\":\"nl -ba tests/test_prop_canonicalize.py | sed -n '1,220p'\"}",
+          "metadata": {
+            "tool_name": "exec_command"
+          }
+        }
+      ],
+      "timestamp": "2026-02-08T07:44:36.629Z",
+      "input_tokens": 0,
+      "output_tokens": 14,
+      "cumulative_tokens": 6702
+    },
+    {
+      "turn_id": 35,
+      "parent_turn_id": 34,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "[exec_command] {\"cmd\":\"nl -ba tests/test_prop_sbfl.py | sed -n '1,240p'\"}",
+          "metadata": {
+            "tool_name": "exec_command"
+          }
+        }
+      ],
+      "timestamp": "2026-02-08T07:44:36.629Z",
+      "input_tokens": 0,
+      "output_tokens": 14,
+      "cumulative_tokens": 6716
+    },
+    {
+      "turn_id": 36,
+      "parent_turn_id": 35,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "[exec_command] {\"cmd\":\"nl -ba tests/test_prop_privacy.py | sed -n '1,240p'\"}",
+          "metadata": {
+            "tool_name": "exec_command"
+          }
+        }
+      ],
+      "timestamp": "2026-02-08T07:44:36.645Z",
+      "input_tokens": 0,
+      "output_tokens": 14,
+      "cumulative_tokens": 6730
+    },
+    {
+      "turn_id": 37,
+      "parent_turn_id": 36,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "[exec_command] {\"cmd\":\"nl -ba tests/test_prop_encryption.py | sed -n '1,220p'\"}",
+          "metadata": {
+            "tool_name": "exec_command"
+          }
+        }
+      ],
+      "timestamp": "2026-02-08T07:44:36.662Z",
+      "input_tokens": 0,
+      "output_tokens": 14,
+      "cumulative_tokens": 6744
+    },
+    {
+      "turn_id": 38,
+      "parent_turn_id": 37,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "[exec_command] {\"cmd\":\"nl -ba tests/test_prop_fingerprint.py | sed -n '1,260p'\"}",
+          "metadata": {
+            "tool_name": "exec_command"
+          }
+        }
+      ],
+      "timestamp": "2026-02-08T07:44:36.675Z",
+      "input_tokens": 0,
+      "output_tokens": 14,
+      "cumulative_tokens": 6758
+    },
+    {
+      "turn_id": 39,
+      "parent_turn_id": 38,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "[exec_command] {\"cmd\":\"nl -ba tests/test_properties.py | sed -n '170,220p'\"}",
+          "metadata": {
+            "tool_name": "exec_command"
+          }
+        }
+      ],
+      "timestamp": "2026-02-08T07:44:36.687Z",
+      "input_tokens": 0,
+      "output_tokens": 14,
+      "cumulative_tokens": 6772
+    },
+    {
+      "turn_id": 40,
+      "parent_turn_id": 39,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "[exec_command] {\"cmd\":\"git ls-tree -r HEAD --name-only -- .hypothesis | head -n 5\"}",
+          "metadata": {
+            "tool_name": "exec_command"
+          }
+        }
+      ],
+      "timestamp": "2026-02-08T07:44:36.690Z",
+      "input_tokens": 0,
+      "output_tokens": 22,
+      "cumulative_tokens": 6794
+    },
+    {
+      "turn_id": 41,
+      "parent_turn_id": 40,
+      "role": "execution",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "Chunk ID: 0462db\nWall time: 0.5430 seconds\nProcess exited with code 0\nOriginal token count: 2270\nOutput:\n     1\t\"\"\"Property-based tests for URL/header/body canonicalization.\n     2\t\n     3\tTests idempotency, determinism, and invariant properties of\n     4\tcanonicalization functions used in probe recording and replay matching.\n     5\t\"\"\"\n     6\t\n     7\tfrom __future__ import annotations\n     8\t\n     9\timport gzip\n    10\timport hashlib\n    11\timport json\n    12\t\n    13\timport hypothesis.strategies as st\n    14\tfrom hypothesis import assume, given, settings\n    15\t\n    16\tfrom autodebug_probe.canonicalize import (\n    17\t    IGNORED_HEADERS_DEFAULT,\n    18\t    body_hash,\n    19\t    canonical_url,\n    20\t    decode_gzip,\n    21\t    normalize_headers,\n    22\t)\n    23\t\n    24\t# --- URL Canonicalization ---\n    25\t\n    26\t\n    27\tclass TestCanonicalUrlProperties:\n    28\t    \"\"\"Property tests for canonical_url().\"\"\"\n    29\t\n    30\t    @given(st.sampled_from([\n    31\t        \"http://example.com/path\",\n    32\t        \"HTTP://EXAMPLE.COM/PATH\",\n    33\t        \"https://api.example.com/v1/users?b=2&a=1\",\n    34\t        \"http://localhost:8000/api/test\",\n    35\t        \"http://127.0.0.1:5432/db\",\n    36\t        \"http://0.0.0.0:3000/health\",\n    37\t        \"http://[::1]:9090/metrics\",\n    38\t        \"https://example.com/path?z=1&a=2&m=3\",\n    39\t        \"http://example.com/path?\",\n    40\t        \"http://example.com\",\n    41\t    ]))\n    42\t    @settings(max_examples=50)\n    43\t    def test_idempotent(self, url):\n    44\t        \"\"\"canonical_url(canonical_url(x)) == canonical_url(x).\"\"\"\n    45\t        once = canonical_url(url)\n    46\t        twice = canonical_url(once)\n    47\t        assert once == twice, f\"Not idempotent: {url!r} -> {once!r} -> {twice!r}\"\n    48\t\n    49\t    @given(st.sampled_from([\n    50\t        \"http://example.com/path\",\n    51\t        \"HTTP://EXAMPLE.COM/PATH\",\n    52\t        \"Http://Example.Com/Path\",\n    53\t    ]))\n    54\t    @settings(max_examples=30)\n    55\t    def test_scheme_case_insensitive(self, url):\n    56\t        \"\"\"Scheme and host should be lowercased.\"\"\"\n    57\t        result = canonical_url(url)\n    58\t        assert \"HTTP://\" not in result\n    59\t        assert \"EXAMPLE.COM\" not in result.split(\"//\", 1)[-1].split(\"/\")[0]\n    60\t\n    61\t    @given(\n    62\t        st.sampled_from([\"http://example.com/path\"]),\n    63\t        st.permutations([\"a=1\", \"b=2\", \"c=3\"]),\n    64\t    )\n    65\t    @settings(max_examples=30)\n    66\t    def test_query_order_invariant(self, base, params):\n    67\t        \"\"\"Same query params in different order should produce same canonical URL.\"\"\"\n    68\t        url = f\"{base}?{'&'.join(params)}\"\n    69\t        result = canonical_url(url)\n    70\t        expected = canonical_url(f\"{base}?a=1&b=2&c=3\")\n    71\t        assert result == expected, f\"Query order matters: {url!r}\"\n    72\t\n    73\t    @given(st.sampled_from([\n    74\t        \"http://localhost:8000/test\",\n    75\t        \"http://127.0.0.1:8000/test\",\n    76\t "
+        }
+      ],
+      "timestamp": "2026-02-08T07:44:37.330Z",
+      "input_tokens": 526,
+      "output_tokens": 0,
+      "cumulative_tokens": 7320
+    },
+    {
+      "turn_id": 42,
+      "parent_turn_id": 41,
+      "role": "execution",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "Chunk ID: 340182\nWall time: 0.5392 seconds\nProcess exited with code 0\nOriginal token count: 2570\nOutput:\n     1\t\"\"\"Property-based tests for SBFL fault localization algorithms.\n     2\t\n     3\tTests mathematical invariants of Ochiai, Tarantula, DStar, Jaccard, and OP2\n     4\tscoring formulas, plus I/O-SBFL normalization functions.\n     5\t\"\"\"\n     6\t\n     7\tfrom __future__ import annotations\n     8\t\n     9\timport hypothesis.strategies as st\n    10\timport pytest\n    11\tfrom hypothesis import assume, given, settings\n    12\t\n    13\tfrom autodebug.detection.io_sbfl import (\n    14\t    _normalize_sql,\n    15\t    _normalize_url,\n    16\t)\n    17\tfrom autodebug.detection.sbfl import (\n    18\t    CoverageData,\n    19\t    LineStats,\n    20\t    SBFLAnalyzer,\n    21\t    SBFLFormula,\n    22\t)\n    23\t\n    24\t# --- Strategy helpers ---\n    25\t\n    26\t@st.composite\n    27\tdef line_stats(draw, min_total=1):\n    28\t    \"\"\"Generate valid LineStats with positive totals.\"\"\"\n    29\t    ef = draw(st.integers(min_value=0, max_value=50))\n    30\t    ep = draw(st.integers(min_value=0, max_value=50))\n    31\t    nf = draw(st.integers(min_value=0, max_value=50))\n    32\t    np_ = draw(st.integers(min_value=0, max_value=50))\n    33\t    total_failed = ef + nf\n    34\t    total_passed = ep + np_\n    35\t    assume(total_failed + total_passed >= min_total)\n    36\t    return LineStats(\n    37\t        ef=ef, ep=ep, nf=nf, np=np_,\n    38\t        total_failed=total_failed, total_passed=total_passed,\n    39\t    )\n    40\t\n    41\t\n    42\t# --- Ochiai formula tests ---\n    43\t\n    44\t\n    45\tclass TestOchiaiProperties:\n    46\t    \"\"\"Property tests for the Ochiai formula.\"\"\"\n    47\t\n    48\t    @given(line_stats())\n    49\t    @settings(max_examples=100)\n    50\t    def test_score_bounded_zero_to_one(self, stats):\n    51\t        \"\"\"Ochiai score must always be in [0, 1].\"\"\"\n    52\t        analyzer = SBFLAnalyzer(SBFLFormula.OCHIAI)\n    53\t        score = analyzer._calculate_score(stats)\n    54\t        assert 0.0 <= score <= 1.0, f\"Ochiai out of bounds: {score} for {stats}\"\n    55\t\n    56\t    @given(st.integers(min_value=0, max_value=50), st.integers(min_value=1, max_value=50))\n    57\t    @settings(max_examples=50)\n    58\t    def test_zero_when_never_executed_in_failures(self, ep, nf):\n    59\t        \"\"\"If ef=0 (never executed in failing tests), score must be 0.\"\"\"\n    60\t        stats = LineStats(ef=0, ep=ep, nf=nf, np=0,\n    61\t                         total_failed=nf, total_passed=ep)\n    62\t        analyzer = SBFLAnalyzer(SBFLFormula.OCHIAI)\n    63\t        score = analyzer._calculate_score(stats)\n    64\t        assert score == 0.0, f\"Ochiai non-zero with ef=0: {score}\"\n    65\t\n    66\t    @given(st.integers(min_value=1, max_value=50))\n    67\t    @settings(max_examples=30)\n    68\t    def test_maximum_when_only_in_failures(self, ef):\n    69\t        \"\"\"If ef == total_failed and ep == 0, score should be 1.0.\"\"\"\n    70\t        stats = LineStats(ef=ef, ep=0, nf=0, np=10,\n    71\t                        "
+        }
+      ],
+      "timestamp": "2026-02-08T07:44:37.330Z",
+      "input_tokens": 624,
+      "output_tokens": 0,
+      "cumulative_tokens": 7944
+    },
+    {
+      "turn_id": 43,
+      "parent_turn_id": 42,
+      "role": "execution",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "Chunk ID: 8dac6c\nWall time: 0.5435 seconds\nProcess exited with code 0\nOriginal token count: 2509\nOutput:\n     1\t\"\"\"Property-based tests for privacy mechanisms.\n     2\t\n     3\tTests differential privacy noise, k-anonymity enforcement, and hashing.\n     4\t\"\"\"\n     5\t\n     6\tfrom __future__ import annotations\n     7\t\n     8\timport hypothesis.strategies as st\n     9\tfrom hypothesis import assume, given, settings\n    10\t\n    11\tfrom autodebug.learning.privacy import (\n    12\t    DifferentialPrivacy,\n    13\t    KAnonymityChecker,\n    14\t    PrivacyAuditor,\n    15\t    PrivacyConfig,\n    16\t    hash_code_pattern,\n    17\t    hash_identifier,\n    18\t)\n    19\t\n    20\t# --- Differential Privacy ---\n    21\t\n    22\t\n    23\tclass TestDifferentialPrivacyProperties:\n    24\t    \"\"\"Property tests for DP noise mechanisms.\"\"\"\n    25\t\n    26\t    @given(st.integers(min_value=0, max_value=10000))\n    27\t    @settings(max_examples=50)\n    28\t    def test_noisy_count_preserves_magnitude(self, true_count):\n    29\t        \"\"\"Noisy count should be within reasonable bounds of true count.\"\"\"\n    30\t        config = PrivacyConfig(epsilon=1.0, sensitivity=1.0)\n    31\t        dp = DifferentialPrivacy(config)\n    32\t        noisy = dp.add_noise_to_count(true_count)\n    33\t\n    34\t        # With epsilon=1.0, noise scale = sensitivity/epsilon = 1.0\n    35\t        # 99.9% of Laplace samples are within 7*scale = 7\n    36\t        # Use generous bound to avoid flaky test\n    37\t        bound = max(50, true_count * 0.5)\n    38\t        assert abs(noisy - true_count) < bound, (\n    39\t            f\"Noisy count {noisy} too far from true count {true_count}\"\n    40\t        )\n    41\t\n    42\t    @given(st.floats(min_value=0.0, max_value=1.0))\n    43\t    @settings(max_examples=50)\n    44\t    def test_noisy_rate_bounded_zero_one(self, true_rate):\n    45\t        \"\"\"Noisy rate should always be clamped to [0, 1].\"\"\"\n    46\t        config = PrivacyConfig(epsilon=1.0)\n    47\t        dp = DifferentialPrivacy(config)\n    48\t        noisy = dp.add_noise_to_rate(true_rate, sample_size=100)\n    49\t        assert 0.0 <= noisy <= 1.0, f\"Rate out of bounds: {noisy}\"\n    50\t\n    51\t    def test_budget_tracking(self):\n    52\t        \"\"\"Privacy budget should be trackable.\"\"\"\n    53\t        config = PrivacyConfig(epsilon=1.0, total_budget=10.0)\n    54\t        dp = DifferentialPrivacy(config)\n    55\t        initial = dp.get_remaining_budget()\n    56\t        # Budget starts at total_budget or infinity depending on impl\n    57\t        assert initial > 0\n    58\t\n    59\t    def test_budget_check(self):\n    60\t        \"\"\"check_budget() should return True when budget remains.\"\"\"\n    61\t        config = PrivacyConfig(epsilon=1.0, total_budget=10.0)\n    62\t        dp = DifferentialPrivacy(config)\n    63\t        assert dp.check_budget() is True\n    64\t\n    65\t\n    66\t# --- K-Anonymity ---\n    67\t\n    68\t\n    69\tclass TestKAnonymityProperties:\n    70\t    \"\"\"Property tests for k-anonymity enforcement.\"\"\"\n    71\t\n    72\t    d"
+        }
+      ],
+      "timestamp": "2026-02-08T07:44:37.343Z",
+      "input_tokens": 632,
+      "output_tokens": 0,
+      "cumulative_tokens": 8576
+    },
+    {
+      "turn_id": 44,
+      "parent_turn_id": 43,
+      "role": "execution",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "Chunk ID: b8c471\nWall time: 0.5349 seconds\nProcess exited with code 0\nOriginal token count: 1269\nOutput:\n     1\t\"\"\"Property-based tests for transcript encryption.\n     2\t\n     3\tTests encrypt/decrypt roundtrip, key management, and passthrough behavior.\n     4\t\"\"\"\n     5\t\n     6\tfrom __future__ import annotations\n     7\t\n     8\timport hypothesis.strategies as st\n     9\timport pytest\n    10\tfrom hypothesis import given, settings\n    11\t\n    12\ttry:\n    13\t    from cryptography.fernet import Fernet\n    14\t    HAS_CRYPTO = True\n    15\texcept ImportError:\n    16\t    HAS_CRYPTO = False\n    17\t\n    18\tfrom autodebug_probe.encryption import (\n    19\t    TranscriptEncryption,\n    20\t    generate_key,\n    21\t)\n    22\t\n    23\t\n    24\tdef _make_encryption():\n    25\t    \"\"\"Create encryption instance with a known test key.\"\"\"\n    26\t    if not HAS_CRYPTO:\n    27\t        pytest.skip(\"cryptography package not installed\")\n    28\t    key = Fernet.generate_key().decode()\n    29\t    return TranscriptEncryption(key=key)\n    30\t\n    31\t\n    32\tdef _make_no_encryption():\n    33\t    \"\"\"Create encryption instance with no key (passthrough mode).\"\"\"\n    34\t    return TranscriptEncryption(key=None)\n    35\t\n    36\t\n    37\t@pytest.mark.skipif(not HAS_CRYPTO, reason=\"cryptography not installed\")\n    38\tclass TestEncryptDecryptRoundtrip:\n    39\t    \"\"\"encrypt(x) -> decrypt(x) should return original data.\"\"\"\n    40\t\n    41\t    @given(st.binary(min_size=0, max_size=5000))\n    42\t    @settings(max_examples=50)\n    43\t    def test_roundtrip(self, data):\n    44\t        \"\"\"decrypt(encrypt(data)) == data for all byte strings.\"\"\"\n    45\t        enc = _make_encryption()\n    46\t        encrypted = enc.encrypt(data)\n    47\t        decrypted = enc.decrypt(encrypted)\n    48\t        assert decrypted == data, \"Roundtrip failed\"\n    49\t\n    50\t    @given(st.binary(min_size=1, max_size=1000))\n    51\t    @settings(max_examples=30)\n    52\t    def test_encrypted_differs_from_plaintext(self, data):\n    53\t        \"\"\"Encrypted output should differ from plaintext.\"\"\"\n    54\t        enc = _make_encryption()\n    55\t        encrypted = enc.encrypt(data)\n    56\t        assert encrypted != data, \"Encryption produced same output as input\"\n    57\t\n    58\t    @given(st.binary(min_size=1, max_size=1000))\n    59\t    @settings(max_examples=30)\n    60\t    def test_both_encryptions_decrypt_to_same(self, data):\n    61\t        \"\"\"Two encryptions of same data should both decrypt to original.\"\"\"\n    62\t        enc = _make_encryption()\n    63\t        e1 = enc.encrypt(data)\n    64\t        e2 = enc.encrypt(data)\n    65\t        d1 = enc.decrypt(e1)\n    66\t        d2 = enc.decrypt(e2)\n    67\t        assert d1 == d2 == data\n    68\t\n    69\t\n    70\tclass TestPassthroughMode:\n    71\t    \"\"\"When encryption is disabled, data passes through unchanged.\"\"\"\n    72\t\n    73\t    @given(st.binary(min_size=0, max_size=1000))\n    74\t    @settings(max_examples=30)\n    75\t    def test_encrypt_passthrough(self, data):\n    76\t        \"\"\"With"
+        }
+      ],
+      "timestamp": "2026-02-08T07:44:37.353Z",
+      "input_tokens": 600,
+      "output_tokens": 0,
+      "cumulative_tokens": 9176
+    },
+    {
+      "turn_id": 45,
+      "parent_turn_id": 44,
+      "role": "execution",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "Chunk ID: 7602cb\nWall time: 0.5216 seconds\nProcess exited with code 0\nOriginal token count: 1962\nOutput:\n     1\t\"\"\"Property-based tests for exception fingerprinting.\n     2\t\n     3\tTests determinism, idempotency, and correctness of fingerprint generation\n     4\tand message normalization.\n     5\t\"\"\"\n     6\t\n     7\tfrom __future__ import annotations\n     8\t\n     9\timport uuid\n    10\t\n    11\timport hypothesis.strategies as st\n    12\timport pytest\n    13\tfrom hypothesis import given, settings\n    14\t\n    15\tfrom autodebug.detection.exception_fingerprinter import ExceptionFingerprinter\n    16\t\n    17\t\n    18\t@pytest.fixture\n    19\tdef fp():\n    20\t    return ExceptionFingerprinter()\n    21\t\n    22\t\n    23\tclass TestFingerprintDeterminism:\n    24\t    \"\"\"Fingerprinting the same exception must always produce the same result.\"\"\"\n    25\t\n    26\t    @given(\n    27\t        st.sampled_from([\"KeyError\", \"ValueError\", \"TypeError\", \"AttributeError\"]),\n    28\t        st.text(min_size=1, max_size=100),\n    29\t    )\n    30\t    @settings(max_examples=50)\n    31\t    def test_deterministic(self, exc_type, message):\n    32\t        \"\"\"Same input always produces same fingerprint.\"\"\"\n    33\t        fp = ExceptionFingerprinter()\n    34\t        stack = [\"Traceback (most recent call last):\", '  File \"test.py\", line 10, in test_func']\n    35\t        f1 = fp.fingerprint(exc_type, message, stack)\n    36\t        f2 = fp.fingerprint(exc_type, message, stack)\n    37\t        assert f1 == f2\n    38\t\n    39\t    @given(\n    40\t        st.sampled_from([\"KeyError\", \"ValueError\", \"TypeError\"]),\n    41\t        st.text(min_size=1, max_size=100),\n    42\t    )\n    43\t    @settings(max_examples=50)\n    44\t    def test_fingerprint_is_16_hex_chars(self, exc_type, message):\n    45\t        \"\"\"Fingerprint should always be a 16-character hex string.\"\"\"\n    46\t        fp = ExceptionFingerprinter()\n    47\t        stack = [\"Traceback (most recent call last):\", '  File \"app.py\", line 5, in run']\n    48\t        result = fp.fingerprint(exc_type, message, stack)\n    49\t        assert len(result) == 16, f\"Length {len(result)} != 16\"\n    50\t        assert all(c in \"0123456789abcdef\" for c in result), f\"Non-hex chars in {result}\"\n    51\t\n    52\t\n    53\tclass TestMessageNormalization:\n    54\t    \"\"\"Tests for _normalize_message() idempotency and correctness.\"\"\"\n    55\t\n    56\t    @given(st.text(min_size=1, max_size=200))\n    57\t    @settings(max_examples=50)\n    58\t    def test_idempotent(self, message):\n    59\t        \"\"\"Normalizing a message twice should give the same result.\"\"\"\n    60\t        fp = ExceptionFingerprinter()\n    61\t        once = fp._normalize_message(message)\n    62\t        twice = fp._normalize_message(once)\n    63\t        assert once == twice, f\"Not idempotent: {message!r} -> {once!r} -> {twice!r}\"\n    64\t\n    65\t    @given(st.uuids())\n    66\t    @settings(max_examples=30)\n    67\t    def test_replaces_uuids(self, uuid_val):\n    68\t        \"\"\"UUIDs in messages should be replaced with <UUID>."
+        }
+      ],
+      "timestamp": "2026-02-08T07:44:37.353Z",
+      "input_tokens": 616,
+      "output_tokens": 0,
+      "cumulative_tokens": 9792
+    },
+    {
+      "turn_id": 46,
+      "parent_turn_id": 45,
+      "role": "execution",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "Chunk ID: 9ca073\nWall time: 0.5296 seconds\nProcess exited with code 0\nOriginal token count: 176\nOutput:\n   170\t        hash1 = hash(text1)\n   171\t        hash2 = hash(text2)\n   172\t\n   173\t        # Collisions are possible but rare\n   174\t        # We don't assert inequality since collisions can happen\n   175\t        # This test documents the expectation\n   176\t        _ = hash1 != hash2  # Usually true\n   177\t\n   178\t\n   179\t# Hypothesis profile configuration\n   180\tsettings.register_profile(\"ci\", max_examples=200, deadline=None)\n   181\tsettings.register_profile(\"dev\", max_examples=20, deadline=500)\n   182\tsettings.register_profile(\"debug\", max_examples=5)\n   183\t\n   184\t# Load profile from environment\n   185\timport os\n   186\t\n   187\tsettings.load_profile(os.getenv(\"HYPOTHESIS_PROFILE\", \"dev\"))\n"
+        }
+      ],
+      "timestamp": "2026-02-08T07:44:37.379Z",
+      "input_tokens": 182,
+      "output_tokens": 0,
+      "cumulative_tokens": 9974
+    },
+    {
+      "turn_id": 47,
+      "parent_turn_id": 46,
+      "role": "execution",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "Chunk ID: ee1e1f\nWall time: 0.5506 seconds\nProcess exited with code 0\nOriginal token count: 49\nOutput:\n.hypothesis/constants/017405614e4d73e5\n.hypothesis/constants/01ad2add701d85b2\n.hypothesis/constants/01b69c6cdacd6547\n.hypothesis/constants/025f8aa27aa820c2\n.hypothesis/constants/0274f131a3d8ac09\n"
+        }
+      ],
+      "timestamp": "2026-02-08T07:44:37.399Z",
+      "input_tokens": 44,
+      "output_tokens": 0,
+      "cumulative_tokens": 10018
+    },
+    {
+      "turn_id": 48,
+      "parent_turn_id": 47,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "[exec_command] {\"cmd\":\"mkdir -p audit/findings/testing/M3\"}",
+          "metadata": {
+            "tool_name": "exec_command"
+          }
+        }
+      ],
+      "timestamp": "2026-02-08T07:44:54.972Z",
+      "input_tokens": 0,
+      "output_tokens": 6,
+      "cumulative_tokens": 10024
+    },
+    {
+      "turn_id": 49,
+      "parent_turn_id": 48,
+      "role": "execution",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "Chunk ID: b29eee\nWall time: 0.2662 seconds\nProcess exited with code 0\nOriginal token count: 0\nOutput:\n"
+        }
+      ],
+      "timestamp": "2026-02-08T07:44:55.393Z",
+      "input_tokens": 34,
+      "output_tokens": 0,
+      "cumulative_tokens": 10058
+    },
+    {
+      "turn_id": 50,
+      "parent_turn_id": 49,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "[exec_command] {\"cmd\":\"cat <<'EOF' > audit/findings/testing/M3/2026-02-08.md\\n# M3 \u2014 Property-Based Testing Coverage\\n> Scanned: 2026-02-08 | Agent: M3 | Section: testing\\n\\n## Summary\\n- Total findings: 3\\n- By severity: 1 critical, 0 high, 2 medium, 0 low\\n- By classification: 3 bugs, 0 behind-SOTA, 0 missing-techniques\\n\\n## Findings\\n\\n### [CRITICAL] Hypothesis example database is persisted in git instead of being local-only\\n- **File**: .hypothesis/ (tracked files)\\n- **Classification**: (A) Bug\\n- **Description**: Hypothesis\u2019 example database is persisted in the repository. This cache is supposed to be machine-local; keeping it in git bloats the repo, creates noisy diffs, and can cause cross-developer coupling of shrunk examples. It also defeats the purpose of \u201clocal\u201d persistence (developers\u2019 DBs are shared and stale). This indicates the DB is not being persisted correctly (it is persisted, but in the wrong place).\\n- **Evidence**: `git ls-tree -r HEAD --name-only -- .hypothesis` lists tracked ",
+          "metadata": {
+            "tool_name": "exec_command"
+          }
+        }
+      ],
+      "timestamp": "2026-02-08T07:45:11.774Z",
+      "input_tokens": 0,
+      "output_tokens": 268,
+      "cumulative_tokens": 10326
+    },
+    {
+      "turn_id": 51,
+      "parent_turn_id": 50,
+      "role": "execution",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "Chunk ID: 1a0a69\nWall time: 0.2973 seconds\nProcess exited with code 0\nOriginal token count: 0\nOutput:\n"
+        }
+      ],
+      "timestamp": "2026-02-08T07:45:12.227Z",
+      "input_tokens": 34,
+      "output_tokens": 0,
+      "cumulative_tokens": 10360
+    },
+    {
+      "turn_id": 52,
+      "parent_turn_id": 51,
+      "role": "assistant",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "Wrote `audit/findings/testing/M3/2026-02-08.md` with 3 findings (1 critical, 2 medium) on Hypothesis DB persistence, profile loading order, and edge-case generator gaps.\n\nM3 complete: findings written to `audit/findings/testing/M3/2026-02-08.md`."
+        }
+      ],
+      "timestamp": "2026-02-08T07:45:15.762Z",
+      "input_tokens": 0,
+      "output_tokens": 52,
+      "cumulative_tokens": 10412
+    }
+  ],
+  "replay": {
+    "prefix_group_id": "grp_codex_019c3c34",
+    "prefix_overlap_ratio": 0.7,
+    "reuse_distance_turns": 2,
+    "reuse_distance_seconds": 3,
+    "estimated_kv_bytes_peak": 1665920,
+    "branch_count": 0,
+    "idle_windows_ms": [
+      0,
+      0,
+      1,
+      1803,
+      464,
+      1792,
+      440,
+      3019,
+      426,
+      1665,
+      449,
+      2363,
+      501,
+      3601,
+      3,
+      0,
+      0,
+      1,
+      557,
+      2
+    ],
+    "arrival_pattern": "steady_interactive"
+  },
+  "kv_pressure": {
+    "cold_start": true,
+    "warm_cache_hit_rate": 0.5599999999999999,
+    "estimated_offload_bytes": 0,
+    "estimated_reload_bytes": 0,
+    "tier": "HBM",
+    "cache_expectation": "warm",
+    "eviction_risk_score": 0.05206
+  },
+  "provenance": {
+    "generator_model": "codex-real",
+    "generator_prompt_version": "real-transcript-v1",
+    "pipeline_version": "0.1.0"
+  }
+}

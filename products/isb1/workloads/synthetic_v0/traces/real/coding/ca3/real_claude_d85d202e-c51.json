@@ -1,0 +1,231 @@
+{
+  "trace_id": "real_claude_d85d202e-c51",
+  "dataset_version": "0.1.0",
+  "source_type": "real",
+  "workload_family": "coding",
+  "language": "en",
+  "tokenizer": {
+    "name": "cl100k_base",
+    "version": "1.0"
+  },
+  "session": {
+    "session_id": "d85d202e-c517-4e20-8a8d-4953aec632a9",
+    "goal": "Generate a SessionTraceV0 JSON object for inference benchmarking. Workload family: long_chat. Target: 8k-16k cumulative tokens, 12 turns. Goal: Debug a subtle Python type error through multi-turn reas",
+    "contains_tools": true,
+    "contains_rag": false,
+    "contains_branching": false,
+    "contains_multimodal": false
+  },
+  "turns": [
+    {
+      "turn_id": 1,
+      "parent_turn_id": null,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "Generate a SessionTraceV0 JSON object for inference benchmarking. Workload family: long_chat. Target: 8k-16k cumulative tokens, 12 turns. Goal: Debug a subtle Python type error through multi-turn reasoning. Include replay fields (prefix_group_id, prefix_overlap_ratio: 0.85, idle_windows_ms: [0,2000,5000,3000], arrival_pattern: \"steady_interactive\") and kv_pressure fields (cold_start: true, tier: \"HBM\", cache_expectation: \"warm\", eviction_risk_score: 0.15). turn_id must be integers (1,2,3...). content_blocks array with type \"text\" or \"code\". Include provenance with generator_model: \"claude-opus\", pipeline_version: \"0.1.0\". source_type: \"synthetic\", dataset_version: \"0.1.0\", language: \"en\", tokenizer: {\"name\":\"cl100k_base\",\"version\":\"1.0\"}. Return one JSON object only, no markdown fencing.\n"
+        }
+      ],
+      "timestamp": "2026-04-01T03:42:36.997Z",
+      "input_tokens": 166,
+      "output_tokens": 0,
+      "cumulative_tokens": 166
+    },
+    {
+      "turn_id": 2,
+      "parent_turn_id": 1,
+      "role": "assistant",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "(assistant response)"
+        }
+      ],
+      "timestamp": "2026-04-01T03:42:39.844Z",
+      "input_tokens": 23945,
+      "output_tokens": 41,
+      "cumulative_tokens": 24152
+    },
+    {
+      "turn_id": 3,
+      "parent_turn_id": 2,
+      "role": "assistant",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "Let me check the existing schema first."
+        }
+      ],
+      "timestamp": "2026-04-01T03:42:40.349Z",
+      "input_tokens": 23945,
+      "output_tokens": 41,
+      "cumulative_tokens": 48138
+    },
+    {
+      "turn_id": 4,
+      "parent_turn_id": 3,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "[Glob] {\"pattern\": \"**/session_trace*\"}",
+          "metadata": {
+            "tool_name": "Glob"
+          }
+        }
+      ],
+      "timestamp": "2026-04-01T03:42:40.863Z",
+      "input_tokens": 23945,
+      "output_tokens": 41,
+      "cumulative_tokens": 72124
+    },
+    {
+      "turn_id": 5,
+      "parent_turn_id": 4,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": ""
+        }
+      ],
+      "timestamp": "2026-04-01T03:42:40.921Z",
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cumulative_tokens": 72124
+    },
+    {
+      "turn_id": 6,
+      "parent_turn_id": 5,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "[Grep] {\"pattern\": \"SessionTraceV0\", \"output_mode\": \"files_with_matches\"}",
+          "metadata": {
+            "tool_name": "Grep"
+          }
+        }
+      ],
+      "timestamp": "2026-04-01T03:42:41.246Z",
+      "input_tokens": 23945,
+      "output_tokens": 178,
+      "cumulative_tokens": 96247
+    },
+    {
+      "turn_id": 7,
+      "parent_turn_id": 6,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": ""
+        }
+      ],
+      "timestamp": "2026-04-01T03:42:41.263Z",
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cumulative_tokens": 96247
+    },
+    {
+      "turn_id": 8,
+      "parent_turn_id": 7,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "code",
+          "text": "[Read] {\"file_path\": \"/Users/romirjain/.superset/worktrees/EasyInference/important-emu/products/isb1/workloads/session_trace.py\"}",
+          "metadata": {
+            "tool_name": "Read"
+          }
+        }
+      ],
+      "timestamp": "2026-04-01T03:52:46.732Z",
+      "input_tokens": 24283,
+      "output_tokens": 92,
+      "cumulative_tokens": 120622
+    },
+    {
+      "turn_id": 9,
+      "parent_turn_id": 8,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": ""
+        }
+      ],
+      "timestamp": "2026-04-01T03:52:46.737Z",
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cumulative_tokens": 120622
+    },
+    {
+      "turn_id": 10,
+      "parent_turn_id": 9,
+      "role": "assistant",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "(assistant response)"
+        }
+      ],
+      "timestamp": "2026-04-01T03:52:50.494Z",
+      "input_tokens": 25768,
+      "output_tokens": 8,
+      "cumulative_tokens": 146398
+    },
+    {
+      "turn_id": 11,
+      "parent_turn_id": 10,
+      "role": "assistant",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "Here's the SessionTraceV0 JSON object:\n\n```json\n{\n  \"trace_id\": \"st-longchat-pytypeerr-001\",\n  \"dataset_version\": \"0.1.0\",\n  \"source_type\": \"synthetic\",\n  \"workload_family\": \"long_chat\",\n  \"language\": \"en\",\n  \"tokenizer\": {\"name\": \"cl100k_base\", \"version\": \"1.0\"},\n  \"session\": {\n    \"session_id\": \"sess-longchat-pytypeerr-001\",\n    \"goal\": \"Debug a subtle Python type error through multi-turn reasoning\",\n    \"contains_tools\": false,\n    \"contains_rag\": false,\n    \"contains_branching\": false,\n    \"contains_multimodal\": false\n  },\n  \"turns\": [\n    {\n      \"turn_id\": 1,\n      \"parent_turn_id\": null,\n      \"role\": \"user\",\n      \"content_blocks\": [\n        {\"type\": \"text\", \"text\": \"I have a bug in my Python data pipeline. A function that merges two dictionaries is silently producing wrong results. The types look correct but the output is missing keys. Can you help me debug this?\"},\n        {\"type\": \"code\", \"text\": \"from typing import Dict, Any, Optional\\n\\ndef merge_configs(base: Dict[str, Any], override: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:\\n    merged = base\\n    if override:\\n        for key, value in override.items():\\n            if isinstance(value, dict) and key in merged:\\n                merged[key] = merge_configs(merged[key], value)\\n            else:\\n                merged[key] = value\\n    return merged\"}\n      ],\n      \"timestamp\": \"2026-03-31T10:00:00Z\",\n      \"input_tokens\": 320,\n      \"output_tokens\": 0,\n      \"cumulative_tokens\": 320\n    },\n    {\n      \"turn_id\": 2,\n      \"parent_turn_id\": 1,\n      \"role\": \"assistant\",\n      \"content_blocks\": [\n        {\"type\": \"text\", \"text\": \"I see a subtle but critical bug here. The line `merged = base` does not copy the dictionary \u2014 it creates an alias. Every mutation to `merged` also mutates `base` in the caller's scope. This is a classic Python mutable-reference pitfall. When you recursively call `merge_configs(merged[key], value)`, you're passing the original nested dict, and modifications propagate back unpredictably.\"},\n        {\"type\": \"text\", \"text\": \"The fix is to deep-copy `base` at the start: `merged = copy.deepcopy(base)` or at minimum `merged = dict(base)` for a shallow copy. But since you have nested dicts, you need deep copy or recursive shallow copies.\"}\n      ],\n      \"timestamp\": \"2026-03-31T10:00:08Z\",\n      \"input_tokens\": 0,\n      \"output_tokens\": 410,\n      \"cumulative_tokens\": 730\n    },\n    {\n      \"turn_id\": 3,\n      \"parent_turn_id\": 2,\n      \"role\": \"user\",\n      \"content_blocks\": [\n        {\"type\": \"text\", \"text\": \"That makes sense for the aliasing, but I'm seeing a different symptom. When override has a key with value `0` or an empty string `\\\"\\\"`, that key is dropped entirely from the output. The merged result acts as if that key wasn't in override at all.\"}\n      ],\n      \"timestamp\": \"2026-03-31T10:00:45Z\",\n      \"input_tokens\": 180,\n      \"output_tokens\": 0,\n      \"cumulative_tokens\": 910\n    },\n    {\n      \"turn_id\": 4,\n      \"parent_turn_id\": 3,\n      \"role\": \"assistant\",\n      \"content_blocks\": [\n        {\"type\": \"text\", \"text\": \"Ah \u2014 that's the second bug, and it's the subtle type error you mentioned. Look at the guard clause: `if override:`. In Python, this is a truthiness check. An empty dict `{}` is falsy, which is fine. But more critically, this pattern means you're safe at the top level. The real problem is that your code structure doesn't have the same issue at the value level\u2026\"},\n        {\"type\": \"text\", \"text\": \"Wait \u2014 actually, let me re-read. The `if override:` check will skip the entire merge if `override` is `{}`, `None`, `0`, `False`, or `\\\"\\\"`. But `override` is typed as `Optional[Dict]`, so `0` and `\\\"\\\"` shouldn't reach here. The dropping of falsy values must be happening somewhere else in the call chain. Can you show me where `merge_configs` is called?\"}\n      ],\n      \"timestamp\": \"2026-03-31T10:01:02Z\",\n      \"input_tokens\": 0,\n      \"output_tokens\": 480,\n      \"cumulative_tokens\": 1390\n    },\n    {\n      \"turn_id\": 5,\n      \"parent_turn_id\": 4,\n      \"role\": \"user\",\n      \"content_blocks\": [\n        {\"type\": \"text\", \"text\": \"Here's the caller. The config values come from environment variables parsed through this loader:\"},\n        {\"type\": \"code\", \"text\": \"import os\\nfrom typing import Any\\n\\ndef load_env_config(prefix: str) -> dict[str, Any]:\\n    config: dict[str, Any] = {}\\n    for key, value in os.environ.items():\\n        if key.startswith(prefix):\\n            config_key = key[len(prefix):].lower()\\n            config[config_key] = _parse_value(value)\\n    return config\\n\\ndef _parse_value(raw: str) -> Any:\\n    if raw.lower() in ('true', 'false'):\\n        return raw.lower() == 'true'\\n    try:\\n        return int(raw)\\n    except ValueError:\\n        pass\\n    try:\\n        return float(raw)\\n    except ValueError:\\n        pass\\n    return raw\\n\\n# Usage:\\nenv_overrides = load_env_config('MYAPP_')\\nfinal = merge_configs(defaults, env_overrides)\"}\n      ],\n      \"timestamp\": \"2026"
+        }
+      ],
+      "timestamp": "2026-04-01T03:54:03.131Z",
+      "input_tokens": 25768,
+      "output_tokens": 8,
+      "cumulative_tokens": 172174
+    }
+  ],
+  "replay": {
+    "prefix_group_id": "grp_claude_d85d202e",
+    "prefix_overlap_ratio": 0.805,
+    "reuse_distance_turns": 2,
+    "reuse_distance_seconds": 605,
+    "estimated_kv_bytes_peak": 27547840,
+    "branch_count": 0,
+    "idle_windows_ms": [
+      0,
+      2847,
+      505,
+      514,
+      58,
+      325,
+      17,
+      605469,
+      5,
+      3757,
+      72637
+    ],
+    "arrival_pattern": "reactivation_heavy"
+  },
+  "kv_pressure": {
+    "cold_start": true,
+    "warm_cache_hit_rate": 0.6437927212609932,
+    "estimated_offload_bytes": 13773920,
+    "estimated_reload_bytes": 6886960,
+    "tier": "CPU",
+    "cache_expectation": "reactivated",
+    "eviction_risk_score": 0.86087
+  },
+  "provenance": {
+    "generator_model": "claude-code-real",
+    "generator_prompt_version": "real-transcript-v1",
+    "pipeline_version": "0.1.0"
+  }
+}

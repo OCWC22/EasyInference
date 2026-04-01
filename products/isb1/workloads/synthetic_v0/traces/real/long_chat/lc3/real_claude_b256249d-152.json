@@ -1,0 +1,145 @@
+{
+  "trace_id": "real_claude_b256249d-152",
+  "dataset_version": "0.1.0",
+  "source_type": "real",
+  "workload_family": "long_chat",
+  "language": "en",
+  "tokenizer": {
+    "name": "cl100k_base",
+    "version": "1.0"
+  },
+  "session": {
+    "session_id": "b256249d-152a-4679-bfe1-a75bfd32ccbe",
+    "goal": "make a description of whqat santhica is",
+    "contains_tools": true,
+    "contains_rag": false,
+    "contains_branching": false,
+    "contains_multimodal": false
+  },
+  "turns": [
+    {
+      "turn_id": 1,
+      "parent_turn_id": null,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "make a description of whqat santhica is"
+        }
+      ],
+      "timestamp": "2026-03-11T23:17:49.666Z",
+      "input_tokens": 14,
+      "output_tokens": 0,
+      "cumulative_tokens": 14
+    },
+    {
+      "turn_id": 2,
+      "parent_turn_id": 1,
+      "role": "assistant",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "(assistant response)"
+        }
+      ],
+      "timestamp": "2026-03-11T23:17:54.332Z",
+      "input_tokens": 59671,
+      "output_tokens": 10,
+      "cumulative_tokens": 59695
+    },
+    {
+      "turn_id": 3,
+      "parent_turn_id": 2,
+      "role": "assistant",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "Let me explore the project to understand what Santhica is."
+        }
+      ],
+      "timestamp": "2026-03-11T23:17:54.827Z",
+      "input_tokens": 59671,
+      "output_tokens": 10,
+      "cumulative_tokens": 119376
+    },
+    {
+      "turn_id": 4,
+      "parent_turn_id": 3,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "[Agent] {\"description\": \"Explore Santhica codebase\", \"prompt\": \"Explore this codebase thoroughly to understand what \\\"Santhica\\\" is. Look at README files, main source files, app configuration, Info.plist, package files, and any documentation. I need to understand: what the app does, its target platform, key features, architecture, and purpose. Report back everything you find about the app's functionality and purpose.\", \"subagent_type\": \"Explore\"}",
+          "metadata": {
+            "tool_name": "Agent"
+          }
+        }
+      ],
+      "timestamp": "2026-03-11T23:17:57.441Z",
+      "input_tokens": 59671,
+      "output_tokens": 236,
+      "cumulative_tokens": 179283
+    },
+    {
+      "turn_id": 5,
+      "parent_turn_id": 4,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": ""
+        }
+      ],
+      "timestamp": "2026-03-11T23:35:15.684Z",
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cumulative_tokens": 179283
+    },
+    {
+      "turn_id": 6,
+      "parent_turn_id": 5,
+      "role": "assistant",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "Here's a comprehensive description of **Santhica**:\n\n---\n\n**Santhica** is a native iOS app built for doctors and medical professionals in India to digitize prescription workflows using AI-powered OCR.\n\n**What it does:** Doctors capture handwritten or printed prescriptions with their phone camera, and the app uses OpenAI's GPT model to automatically extract structured data \u2014 diagnosis, medications (name, dosage, frequency, duration), and follow-up instructions. Everything is stored locally on-device with encryption.\n\n**Key features:**\n- **Patient management** \u2014 add, search, and organize patient records with visit history\n- **AI prescription capture** \u2014 camera capture with image preprocessing, then OCR extraction supporting Hindi/English and common Indian medical abbreviations (OD, BD, TDS, etc.)\n- **Editable results** \u2014 review and correct extracted data before saving\n- **Dashboard** \u2014 real-time stats (patient count, today's visits), recent activity\n- **Security** \u2014 biometric auth (Face ID/Touch ID), Keychain-stored API keys, database encryption, PII-filtered logging, and audit trails for medical compliance\n- **Export** \u2014 prescriptions exportable as CSV\n\n**Tech stack:** Swift/SwiftUI, SwiftData for local persistence, MVVM architecture, OpenAI Chat Completions API for OCR processing.\n\n**Target users:** Indian clinicians who want to eliminate handwritten prescription overhead, maintain secure digital patient records, and quickly access structured medication data during consultations."
+        }
+      ],
+      "timestamp": "2026-03-11T23:35:26.698Z",
+      "input_tokens": 61927,
+      "output_tokens": 334,
+      "cumulative_tokens": 241544
+    }
+  ],
+  "replay": {
+    "prefix_group_id": "grp_claude_b256249d",
+    "prefix_overlap_ratio": 0.628,
+    "reuse_distance_turns": 2,
+    "reuse_distance_seconds": 1038,
+    "estimated_kv_bytes_peak": 38647040,
+    "branch_count": 0,
+    "idle_windows_ms": [
+      0,
+      4666,
+      495,
+      2614,
+      1038242,
+      11014
+    ],
+    "arrival_pattern": "reactivation_heavy"
+  },
+  "kv_pressure": {
+    "cold_start": true,
+    "warm_cache_hit_rate": 0.5024251952335422,
+    "estimated_offload_bytes": 19323520,
+    "estimated_reload_bytes": 9661760,
+    "tier": "CPU",
+    "cache_expectation": "reactivated",
+    "eviction_risk_score": 0.95
+  },
+  "provenance": {
+    "generator_model": "claude-code-real",
+    "generator_prompt_version": "real-transcript-v1",
+    "pipeline_version": "0.1.0"
+  }
+}

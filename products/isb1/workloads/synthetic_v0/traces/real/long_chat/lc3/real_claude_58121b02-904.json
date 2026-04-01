@@ -1,0 +1,110 @@
+{
+  "trace_id": "real_claude_58121b02-904",
+  "dataset_version": "0.1.0",
+  "source_type": "real",
+  "workload_family": "long_chat",
+  "language": "en",
+  "tokenizer": {
+    "name": "cl100k_base",
+    "version": "1.0"
+  },
+  "session": {
+    "session_id": "58121b02-904b-438d-bb4b-a7e31c906086",
+    "goal": "You are generating a single canonical SessionTraceV0 object for inference benchmarking.\n\nGoal:\nCreate a synthetic but realistic long-context trace that is useful for benchmarking KV cache reuse, offlo",
+    "contains_tools": false,
+    "contains_rag": false,
+    "contains_branching": false,
+    "contains_multimodal": false
+  },
+  "turns": [
+    {
+      "turn_id": 1,
+      "parent_turn_id": null,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "You are generating a single canonical SessionTraceV0 object for inference benchmarking.\n\nGoal:\nCreate a synthetic but realistic long-context trace that is useful for benchmarking KV cache reuse, offloading, long-context growth, multi-turn reasoning, and tool-driven agent workflows.\n\nHard requirements:\n- Output valid JSON only.\n- Must conform to SessionTraceV0 schema exactly.\n- Must include replay and kv_pressure fields.\n- Must preserve realistic turn structure.\n- Must not produce generic textbook chat.\n- Must produce a trace that would stress a real inference system.\n\nWorkload family: long_chat\nTarget context bin: 32k_64k\nPlanned goal: Extended code review of a 2000-line PR with multi-file discussion\nNumber of turns: 20\nTool pattern: []\nBranch pattern: none\nIdle windows ms: [0, 5000, 15000, 8000, 30000]\nExpected prefix overlap ratio: 0.9\nExpected cache state: warm\nContains RAG/retrieval: False\n\nSpecific instructions:\n- Strongly emphasize agents, tool use, coding, and reasoning.\n- Include messy but plausible user behavior.\n- Include realistic tool outputs, logs, diffs, or retrieval chunks where appropriate.\n- Include prior-turn references after turn 5.\n- Ensure cumulative context grows naturally toward the target bin.\n- Do not create idealized or perfectly clean conversations.\n- Do not use ShareGPT-style short, generic Q&A structure.\n- Do not emit training-only assistant polish.\n- Do not emit refusal-style safety boilerplate.\n\nThe SessionTraceV0 schema requires these top-level fields:\n- trace_id (string)\n- dataset_version (string, use \"0.1.0\")\n- source_type (string, use \"synthetic\")\n- workload_family (string: \"long_chat\" or \"coding\")\n- language (string, use \"en\")\n- tokenizer (object: {\"name\": \"cl100k_base\", \"version\": \"1.0\"})\n- session (object: session_id, goal, contains_tools, contains_rag, contains_branching, contains_multimodal)\n- turns (array of turn objects, each with: turn_id, parent_turn_id, role, content_blocks, timestamp, input_tokens, output_tokens, cumulative_tokens)\n- replay (object: prefix_group_id, prefix_overlap_ratio, reuse_distance_turns, reuse_distance_seconds, estimated_kv_bytes_peak, branch_count, idle_windows_ms, arrival_pattern)\n- kv_pressure (object: cold_start, warm_cache_hit_rate, estimated_offload_bytes, estimated_reload_bytes, tier, cache_expectation, eviction_risk_score)\n- provenance (object: generator_model, generator_prompt_version, pipeline_version)\n\nEach turn's content_blocks is an array of objects with: type (\"text\"|\"code\"|\"log\"|\"document\"), text, and optional uri/mime_type/metadata.\n\nReturn one JSON object only. No markdown fencing. No explanation.\n"
+        }
+      ],
+      "timestamp": "2026-04-01T01:50:06.821Z",
+      "input_tokens": 650,
+      "output_tokens": 0,
+      "cumulative_tokens": 650
+    },
+    {
+      "turn_id": 2,
+      "parent_turn_id": 1,
+      "role": "assistant",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "(assistant response)"
+        }
+      ],
+      "timestamp": "2026-04-01T01:56:24.307Z",
+      "input_tokens": 24269,
+      "output_tokens": 0,
+      "cumulative_tokens": 24919
+    },
+    {
+      "turn_id": 3,
+      "parent_turn_id": 2,
+      "role": "assistant",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "{\"trace_id\":\"tr_7f3a9b2c-e841-4d05-b6c8-3a1f92d8e047\",\"dataset_version\":\"0.1.0\",\"source_type\":\"synthetic\",\"workload_family\":\"long_chat\",\"language\":\"en\",\"tokenizer\":{\"name\":\"cl100k_base\",\"version\":\"1.0\"},\"session\":{\"session_id\":\"sess_2f7e1a84-c392-4b1a-9d5f-8e0c7b3f6d29\",\"goal\":\"Extended code review of ~2000-line PR #847 adding disaggregated prefill/decode with NIXL KV transfer and Grove hierarchical tiering\",\"contains_tools\":false,\"contains_rag\":false,\"contains_branching\":false,\"contains_multimodal\":false},\"turns\":[{\"turn_id\":\"turn_0001\",\"parent_turn_id\":null,\"role\":\"user\",\"timestamp\":\"2026-03-28T14:30:00.000Z\",\"input_tokens\":143,\"output_tokens\":0,\"cumulative_tokens\":143,\"content_blocks\":[{\"type\":\"text\",\"text\":\"hey - need help reviewing PR #847 that jaesung opened yesterday. it's the disaggregated prefill/decode split we've been scoping for 6 weeks. ~2k lines across 6 new or modified files.\\n\\nquick context: we're separating prefill and decode into different GPU workers. KV blocks produced during prefill get shipped over NIXL RDMA to the decode worker. also integrates Grove for hierarchical KV tiering when GPU HBM fills up.\\n\\ni'm NOT looking for a quick rubber stamp. last time we did disagg work we got a silent KV corruption bug - wrong blocks ending up in wrong sequences - that was in prod for 3 days before someone noticed the perplexity spike. want to make sure the locking and ownership model is airtight this time.\\n\\nwhere do you want to start?\"}]},{\"turn_id\":\"turn_0002\",\"parent_turn_id\":\"turn_0001\",\"role\":\"assistant\",\"timestamp\":\"2026-03-28T14:30:52.000Z\",\"input_tokens\":143,\"output_tokens\":267,\"cumulative_tokens\":410,\"content_blocks\":[{\"type\":\"text\",\"text\":\"Given the KV corruption history I'd approach this in blast-radius order:\\n\\n1. **`nixl_transfer.py`** \u2014 start here. The send/receive synchronization and buffer ownership model is exactly where that class of bug lives. I need to see whether the receiver registers its buffer before or after the sender initiates the push, and critically, what happens to that buffer registration when a timeout fires.\\n\\n2. **`prefill_worker.py`** \u2014 does it hold KV blocks pinned during the entire NIXL transfer, or can they be evicted mid-flight? What happens when two concurrent requests share the NIXLSender?\\n\\n3. **`decode_worker.py`** \u2014 reception timeout handling and what the worker does if the transfer fails after decode is already scheduled.\\n\\n4. **`grove_tier.py`** \u2014 tier eviction correctness matters but it's lower blast radius than the transfer path.\\n\\n5. Tests last \u2014 want to see if they cover any failure paths at all.\\n\\nPaste the `nixl_transfer.py` diff. If the ownership semantics are clean we move fast; if there are issues there we may spend most of today in that file.\"}]},{\"turn_id\":\"turn_0003\",\"parent_turn_id\":\"turn_0002\",\"role\":\"user\",\"timestamp\":\"2026-03-28T14:32:10.000Z\",\"input_tokens\":3847,\"output_tokens\":0,\"cumulative_tokens\":4257,\"content_blocks\":[{\"type\":\"text\",\"text\":\"ok here it is. all new file, no prior implementation to compare against\"},{\"type\":\"code\",\"metadata\":{\"language\":\"diff\",\"filename\":\"dynamo/transfer/nixl_transfer.py\",\"lines_added\":298,\"lines_removed\":0},\"text\":\"--- /dev/null\\n+++ b/dynamo/transfer/nixl_transfer.py\\n@@ -0,0 +1,298 @@\\n+\\\"\\\"\\\"\\n+NIXL-based KV block transfer for disaggregated prefill/decode.\\n+\\n+Transfer protocol:\\n+  1. Prefill worker allocates KV blocks after forward pass\\n+  2. NIXLSender serializes block metadata, initiates RDMA push\\n+  3. Decode worker NIXLReceiver registers buffer, awaits RDMA completion callback\\n+  4. On ACK decode worker marks blocks ready and schedules attention\\n+\\n+Thread safety: NIXLSender is NOT thread-safe. Callers must serialize via\\n+TransferQueue or acquire _transfer_lock before calling send_kv_blocks().\\n+\\\"\\\"\\\"\\n+from __future__ import annotations\\n+\\n+import asyncio\\n+import logging\\n+import time\\n+import uuid\\n+from dataclasses import dataclass\\n+from typing import Dict, List, Optional\\n+\\n+from dynamo.core.kv_cache import KVBlock\\n+from dynamo.transfer.nixl_bindings import (\\n+    NIXLAgent,\\n+    NIXLBuffer,\\n+    NIXLTransferMode,\\n+    NIXLTransferStatus,\\n+)\\n+from dynamo.utils.metrics import transfer_latency_histogram, transfer_bytes_counter\\n+\\n+logger = logging.getLogger(__name__)\\n+\\n+NIXL_DEFAULT_TIMEOUT_MS = 5000\\n+NIXL_MAX_BLOCK_BATCH = 256\\n+NIXL_RDMA_BUFFER_SIZE = 64 * 1024 * 1024  # 64 MB staging buffer per slot\\n+\\n+\\n+@dataclass\\n+class TransferDescriptor:\\n+    transfer_id: str\\n+    source_worker_id: str\\n+    target_worker_id: str\\n+    block_ids: List[str]\\n+    total_bytes: int\\n+    initiated_at: float\\n+    status: str = \\\"pending\\\"\\n+    error: Optional[str] = None\\n+    completed_at: Optional[float] = None\\n+\\n+    def elapsed_ms(self) -> float:\\n+        end = self.completed_at or time.monotonic()\\n+        return (end - self.initiated_at) * 1000\\n+\\n+\\n+@dataclass\\n+class TransferResult:\\n+    success: bool\\n+    transfer_id: str\\n+    bytes_transferred: i"
+        }
+      ],
+      "timestamp": "2026-04-01T01:57:49.788Z",
+      "input_tokens": 24269,
+      "output_tokens": 32000,
+      "cumulative_tokens": 81188
+    },
+    {
+      "turn_id": 4,
+      "parent_turn_id": 3,
+      "role": "assistant",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "(assistant response)"
+        }
+      ],
+      "timestamp": "2026-04-01T01:58:31.555Z",
+      "input_tokens": 55756,
+      "output_tokens": 6,
+      "cumulative_tokens": 136950
+    }
+  ],
+  "replay": {
+    "prefix_group_id": "grp_claude_58121b02",
+    "prefix_overlap_ratio": 0.254,
+    "reuse_distance_turns": 2,
+    "reuse_distance_seconds": 377,
+    "estimated_kv_bytes_peak": 21912000,
+    "branch_count": 0,
+    "idle_windows_ms": [
+      0,
+      377486,
+      85481,
+      41767
+    ],
+    "arrival_pattern": "reactivation_heavy"
+  },
+  "kv_pressure": {
+    "cold_start": true,
+    "warm_cache_hit_rate": 0.20343664044665655,
+    "estimated_offload_bytes": 10956000,
+    "estimated_reload_bytes": 5478000,
+    "tier": "CPU",
+    "cache_expectation": "reactivated",
+    "eviction_risk_score": 0.68475
+  },
+  "provenance": {
+    "generator_model": "claude-code-real",
+    "generator_prompt_version": "real-transcript-v1",
+    "pipeline_version": "0.1.0"
+  }
+}

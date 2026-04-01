@@ -1,0 +1,215 @@
+{
+  "trace_id": "real_claude_efadcb4a-84e",
+  "dataset_version": "0.1.0",
+  "source_type": "real",
+  "workload_family": "coding",
+  "language": "en",
+  "tokenizer": {
+    "name": "cl100k_base",
+    "version": "1.0"
+  },
+  "session": {
+    "session_id": "efadcb4a-84e3-4a51-9252-18aa54711988",
+    "goal": "Generate a SessionTraceV0 JSON object for inference benchmarking. Workload family: long_chat. Target: 96k-128k cumulative tokens, 28 turns. Goal: Analyze and compare three competing system architectur",
+    "contains_tools": true,
+    "contains_rag": false,
+    "contains_branching": false,
+    "contains_multimodal": false
+  },
+  "turns": [
+    {
+      "turn_id": 1,
+      "parent_turn_id": null,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "Generate a SessionTraceV0 JSON object for inference benchmarking. Workload family: long_chat. Target: 96k-128k cumulative tokens, 28 turns. Goal: Analyze and compare three competing system architectures for a distributed inference platform with full specs, diagrams described in text, and tradeoff analysis. Include very long assistant responses with detailed analysis. Include replay fields (prefix_group_id, prefix_overlap_ratio: 0.92, idle_windows_ms: [0,8000,20000,180000,10000,5000], arrival_pattern: \"reactivation_heavy\") and kv_pressure fields (cold_start: true, tier: \"CPU\", cache_expectation: \"reactivated\", eviction_risk_score: 0.75). turn_id must be integers. Return one JSON object only, no markdown fencing.\n"
+        }
+      ],
+      "timestamp": "2026-04-01T03:42:29.134Z",
+      "input_tokens": 162,
+      "output_tokens": 0,
+      "cumulative_tokens": 162
+    },
+    {
+      "turn_id": 2,
+      "parent_turn_id": 1,
+      "role": "assistant",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "(assistant response)"
+        }
+      ],
+      "timestamp": "2026-04-01T03:42:31.754Z",
+      "input_tokens": 23894,
+      "output_tokens": 35,
+      "cumulative_tokens": 24091
+    },
+    {
+      "turn_id": 3,
+      "parent_turn_id": 2,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "[Glob] {\"pattern\": \"**/session_trace*\"}",
+          "metadata": {
+            "tool_name": "Glob"
+          }
+        }
+      ],
+      "timestamp": "2026-04-01T03:42:32.278Z",
+      "input_tokens": 23894,
+      "output_tokens": 35,
+      "cumulative_tokens": 48020
+    },
+    {
+      "turn_id": 4,
+      "parent_turn_id": 3,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": ""
+        }
+      ],
+      "timestamp": "2026-04-01T03:42:32.337Z",
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cumulative_tokens": 48020
+    },
+    {
+      "turn_id": 5,
+      "parent_turn_id": 4,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "[Grep] {\"pattern\": \"SessionTraceV0\", \"output_mode\": \"files_with_matches\"}",
+          "metadata": {
+            "tool_name": "Grep"
+          }
+        }
+      ],
+      "timestamp": "2026-04-01T03:42:32.659Z",
+      "input_tokens": 23894,
+      "output_tokens": 35,
+      "cumulative_tokens": 71949
+    },
+    {
+      "turn_id": 6,
+      "parent_turn_id": 5,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": ""
+        }
+      ],
+      "timestamp": "2026-04-01T03:42:32.709Z",
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cumulative_tokens": 71949
+    },
+    {
+      "turn_id": 7,
+      "parent_turn_id": 6,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "code",
+          "text": "[Read] {\"file_path\": \"/Users/romirjain/.superset/worktrees/EasyInference/important-emu/products/isb1/workloads/session_trace.py\"}",
+          "metadata": {
+            "tool_name": "Read"
+          }
+        }
+      ],
+      "timestamp": "2026-04-01T03:42:35.637Z",
+      "input_tokens": 24222,
+      "output_tokens": 92,
+      "cumulative_tokens": 96263
+    },
+    {
+      "turn_id": 8,
+      "parent_turn_id": 7,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": ""
+        }
+      ],
+      "timestamp": "2026-04-01T03:42:35.641Z",
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cumulative_tokens": 96263
+    },
+    {
+      "turn_id": 9,
+      "parent_turn_id": 8,
+      "role": "assistant",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "(assistant response)"
+        }
+      ],
+      "timestamp": "2026-04-01T03:42:46.562Z",
+      "input_tokens": 25709,
+      "output_tokens": 8,
+      "cumulative_tokens": 121980
+    },
+    {
+      "turn_id": 10,
+      "parent_turn_id": 9,
+      "role": "assistant",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "Now I have the schema. Let me generate the trace."
+        }
+      ],
+      "timestamp": "2026-04-01T03:42:46.566Z",
+      "input_tokens": 25709,
+      "output_tokens": 8,
+      "cumulative_tokens": 147697
+    }
+  ],
+  "replay": {
+    "prefix_group_id": "grp_claude_efadcb4a",
+    "prefix_overlap_ratio": 0.774,
+    "reuse_distance_turns": 2,
+    "reuse_distance_seconds": 10,
+    "estimated_kv_bytes_peak": 23631520,
+    "branch_count": 0,
+    "idle_windows_ms": [
+      0,
+      2620,
+      524,
+      59,
+      322,
+      50,
+      2928,
+      4,
+      10921,
+      4
+    ],
+    "arrival_pattern": "steady_interactive"
+  },
+  "kv_pressure": {
+    "cold_start": true,
+    "warm_cache_hit_rate": 0.6194613085705248,
+    "estimated_offload_bytes": 11815760,
+    "estimated_reload_bytes": 0,
+    "tier": "CPU",
+    "cache_expectation": "warm",
+    "eviction_risk_score": 0.738485
+  },
+  "provenance": {
+    "generator_model": "claude-code-real",
+    "generator_prompt_version": "real-transcript-v1",
+    "pipeline_version": "0.1.0"
+  }
+}

@@ -1,0 +1,282 @@
+{
+  "trace_id": "real_claude_b65cf195-5d0",
+  "dataset_version": "0.1.0",
+  "source_type": "real",
+  "workload_family": "coding",
+  "language": "en",
+  "tokenizer": {
+    "name": "cl100k_base",
+    "version": "1.0"
+  },
+  "session": {
+    "session_id": "b65cf195-5d01-4f19-8e36-d9ec979c0258",
+    "goal": "Generate a SessionTraceV0 JSON object for inference benchmarking. Workload family: long_chat. Target: 32k-64k cumulative tokens, 20 turns. Goal: Extended code review of a 2000-line PR with multi-file ",
+    "contains_tools": true,
+    "contains_rag": false,
+    "contains_branching": false,
+    "contains_multimodal": false
+  },
+  "turns": [
+    {
+      "turn_id": 1,
+      "parent_turn_id": null,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "Generate a SessionTraceV0 JSON object for inference benchmarking. Workload family: long_chat. Target: 32k-64k cumulative tokens, 20 turns. Goal: Extended code review of a 2000-line PR with multi-file discussion about a Kubernetes operator. Include large code blocks and prior-turn references after turn 5. Include replay fields (prefix_group_id, prefix_overlap_ratio: 0.90, idle_windows_ms: [0,5000,15000,8000,30000], arrival_pattern: \"steady_interactive\") and kv_pressure fields (cold_start: true, tier: \"HBM\", cache_expectation: \"warm\", eviction_risk_score: 0.35). turn_id must be integers. Return one JSON object only, no markdown fencing.\n"
+        }
+      ],
+      "timestamp": "2026-04-01T03:42:21.149Z",
+      "input_tokens": 150,
+      "output_tokens": 0,
+      "cumulative_tokens": 150
+    },
+    {
+      "turn_id": 2,
+      "parent_turn_id": 1,
+      "role": "assistant",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "(assistant response)"
+        }
+      ],
+      "timestamp": "2026-04-01T03:42:23.337Z",
+      "input_tokens": 23886,
+      "output_tokens": 33,
+      "cumulative_tokens": 24069
+    },
+    {
+      "turn_id": 3,
+      "parent_turn_id": 2,
+      "role": "assistant",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "Let me check the existing session trace schema and examples first."
+        }
+      ],
+      "timestamp": "2026-04-01T03:42:23.860Z",
+      "input_tokens": 23886,
+      "output_tokens": 33,
+      "cumulative_tokens": 47988
+    },
+    {
+      "turn_id": 4,
+      "parent_turn_id": 3,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "[Glob] {\"pattern\": \"**/session_trace*\"}",
+          "metadata": {
+            "tool_name": "Glob"
+          }
+        }
+      ],
+      "timestamp": "2026-04-01T03:42:24.493Z",
+      "input_tokens": 23886,
+      "output_tokens": 33,
+      "cumulative_tokens": 71907
+    },
+    {
+      "turn_id": 5,
+      "parent_turn_id": 4,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": ""
+        }
+      ],
+      "timestamp": "2026-04-01T03:42:24.553Z",
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cumulative_tokens": 71907
+    },
+    {
+      "turn_id": 6,
+      "parent_turn_id": 5,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "[Grep] {\"pattern\": \"SessionTraceV0\", \"output_mode\": \"files_with_matches\"}",
+          "metadata": {
+            "tool_name": "Grep"
+          }
+        }
+      ],
+      "timestamp": "2026-04-01T03:42:24.924Z",
+      "input_tokens": 23886,
+      "output_tokens": 33,
+      "cumulative_tokens": 95826
+    },
+    {
+      "turn_id": 7,
+      "parent_turn_id": 6,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": ""
+        }
+      ],
+      "timestamp": "2026-04-01T03:42:24.956Z",
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cumulative_tokens": 95826
+    },
+    {
+      "turn_id": 8,
+      "parent_turn_id": 7,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "code",
+          "text": "[Read] {\"file_path\": \"/Users/romirjain/.superset/worktrees/EasyInference/important-emu/products/isb1/workloads/session_trace.py\"}",
+          "metadata": {
+            "tool_name": "Read"
+          }
+        }
+      ],
+      "timestamp": "2026-04-01T03:42:28.202Z",
+      "input_tokens": 24231,
+      "output_tokens": 92,
+      "cumulative_tokens": 120149
+    },
+    {
+      "turn_id": 9,
+      "parent_turn_id": 8,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": ""
+        }
+      ],
+      "timestamp": "2026-04-01T03:42:28.204Z",
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cumulative_tokens": 120149
+    },
+    {
+      "turn_id": 10,
+      "parent_turn_id": 9,
+      "role": "assistant",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "Now I have the full schema. Let me generate the JSON object."
+        }
+      ],
+      "timestamp": "2026-04-01T03:42:30.151Z",
+      "input_tokens": 25721,
+      "output_tokens": 1,
+      "cumulative_tokens": 145871
+    },
+    {
+      "turn_id": 11,
+      "parent_turn_id": 10,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "[Grep] {\"pattern\": \"SessionTraceV0|trace_id|workload_family.*long_chat\", \"path\": \"/Users/romirjain/.superset/worktrees/EasyInference/important-emu/products/isb1/workloads/synthetic_generator.py\", \"output_mode\": \"content\", \"head_limit\": 30}",
+          "metadata": {
+            "tool_name": "Grep"
+          }
+        }
+      ],
+      "timestamp": "2026-04-01T03:42:32.930Z",
+      "input_tokens": 25721,
+      "output_tokens": 178,
+      "cumulative_tokens": 171770
+    },
+    {
+      "turn_id": 12,
+      "parent_turn_id": 11,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": ""
+        }
+      ],
+      "timestamp": "2026-04-01T03:42:32.944Z",
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cumulative_tokens": 171770
+    },
+    {
+      "turn_id": 13,
+      "parent_turn_id": 12,
+      "role": "assistant",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "(assistant response)"
+        }
+      ],
+      "timestamp": "2026-04-01T03:42:54.868Z",
+      "input_tokens": 26098,
+      "output_tokens": 13,
+      "cumulative_tokens": 197881
+    },
+    {
+      "turn_id": 14,
+      "parent_turn_id": 13,
+      "role": "assistant",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "{\"trace_id\":\"st-longchat-k8s-operator-review-001\",\"dataset_version\":\"0.1.0\",\"source_type\":\"synthetic\",\"workload_family\":\"long_chat\",\"language\":\"en\",\"tokenizer\":{\"name\":\"cl100k_base\",\"version\":\"0.2.0\"},\"session\":{\"session_id\":\"sess-k8s-op-review-7f3a\",\"goal\":\"Extended code review of a 2000-line PR adding a Kubernetes CRD operator for StatefulSet auto-scaling with multi-file discussion across controller, webhook, and test packages\",\"contains_tools\":false,\"contains_rag\":false,\"contains_branching\":false,\"contains_multimodal\":false},\"turns\":[{\"turn_id\":0,\"parent_turn_id\":null,\"role\":\"system\",\"content_blocks\":[{\"type\":\"text\",\"text\":\"You are a senior platform engineer reviewing a PR that adds a Kubernetes operator for StatefulSet auto-scaling. The operator watches custom CRDs, reconciles desired state, and manages rolling updates. Review for correctness, security, idiomatic Go patterns, and production readiness.\",\"metadata\":{}}],\"timestamp\":\"2026-03-31T14:00:00Z\",\"input_tokens\":300,\"output_tokens\":0,\"cumulative_tokens\":300},{\"turn_id\":1,\"parent_turn_id\":0,\"role\":\"user\",\"content_blocks\":[{\"type\":\"text\",\"text\":\"Here's a PR with 2000 lines across 12 files adding a StatefulSetAutoScaler operator. The CRD defines scaling policies (CPU, memory, custom metrics), cooldown windows, and PDB-aware rollout. Can you start by reviewing the overall architecture? The main files are: controllers/statefulsetautoscaler_controller.go, api/v1alpha1/statefulsetautoscaler_types.go, webhooks/validation.go, and internal/scaling/calculator.go.\",\"metadata\":{\"pr_number\":1847,\"files_changed\":12,\"lines_added\":1620,\"lines_deleted\":380}}],\"timestamp\":\"2026-03-31T14:00:12Z\",\"input_tokens\":900,\"output_tokens\":0,\"cumulative_tokens\":1200},{\"turn_id\":2,\"parent_turn_id\":1,\"role\":\"assistant\",\"content_blocks\":[{\"type\":\"text\",\"text\":\"Good overall structure. The separation between CRD types, controller reconciliation, scaling calculator, and admission webhooks follows the standard kubebuilder layout. A few architectural observations:\\n\\n1. The CRD design with per-metric scaling policies and cooldown windows is solid. I like that you separated ScalingPolicy from the top-level spec.\\n2. The controller correctly uses controller-runtime's Reconcile pattern with predicates to filter irrelevant events.\\n3. The scaling calculator being a standalone package is good for testability.\\n4. However, I'm concerned about the webhook validation \u2014 it looks like it validates at admission time but doesn't re-validate on CRD version upgrades. You'll want a conversion webhook if you plan to evolve the API.\\n\\nLet me see the CRD types file first for a detailed review.\",\"metadata\":{}}],\"timestamp\":\"2026-03-31T14:00:45Z\",\"input_tokens\":0,\"output_tokens\":1400,\"cumulative_tokens\":2600},{\"turn_id\":3,\"parent_turn_id\":2,\"role\":\"user\",\"content_blocks\":[{\"type\":\"text\",\"text\":\"Good catch on the conversion webhook. We're planning v1alpha1 only for now but I'll add a TODO. Here's the types file \u2014 does the ScalingPolicy struct look right? I'm unsure about using resource.Quantity for thresholds vs plain float64.\",\"metadata\":{}}],\"timestamp\":\"2026-03-31T14:01:30Z\",\"input_tokens\":700,\"output_tokens\":0,\"cumulative_tokens\":3300},{\"turn_id\":4,\"parent_turn_id\":3,\"role\":\"assistant\",\"content_blocks\":[{\"type\":\"text\",\"text\":\"resource.Quantity is the right choice for CPU and memory thresholds since it matches how Kubernetes natively represents resource values (e.g., 500m for half a core, 2Gi for memory). For custom metrics that are pure ratios or counts, float64 makes more sense. I'd suggest a union approach: keep resource.Quantity for resource-type metrics and add a separate ThresholdValue float64 field for custom metrics, with validation ensuring exactly one is set. This avoids forcing custom metric users to encode percentages as Kubernetes quantities, which is awkward.\\n\\nAlso check that your deepcopy-gen handles the Quantity fields correctly \u2014 they implement their own marshaling.\",\"metadata\":{}}],\"timestamp\":\"2026-03-31T14:02:05Z\",\"input_tokens\":0,\"output_tokens\":1200,\"cumulative_tokens\":4500},{\"turn_id\":5,\"parent_turn_id\":4,\"role\":\"user\",\"content_blocks\":[{\"type\":\"text\",\"text\":\"Makes sense. Here's the full controller reconcile loop. Note lines 87-142 handle the scaling decision and lines 150-210 handle the StatefulSet patch:\\n\\nfunc (r *StatefulSetAutoScalerReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {\\n    log := r.Log.WithValues(\\\"statefulsetautoscaler\\\", req.NamespacedName)\\n    \\n    var scaler v1alpha1.StatefulSetAutoScaler\\n    if err := r.Get(ctx, req.NamespacedName, &scaler); err != nil {\\n        if apierrors.IsNotFound(err) {\\n            return ctrl.Result{}, nil\\n        }\\n        return ctrl.Result{}, err\\n    }\\n    \\n    var sts appsv1.StatefulSet\\n    stsKey := types.NamespacedName{Name: scaler.Spec.TargetRef.Name, Namespace: scaler.Namespace}\\n    if err := r.Get(ctx, stsKey, &sts); err != nil {\\n        log.Error(err, \\\"failed to get target"
+        }
+      ],
+      "timestamp": "2026-04-01T03:46:50.444Z",
+      "input_tokens": 26098,
+      "output_tokens": 16570,
+      "cumulative_tokens": 240549
+    }
+  ],
+  "replay": {
+    "prefix_group_id": "grp_claude_b65cf195",
+    "prefix_overlap_ratio": 0.836,
+    "reuse_distance_turns": 2,
+    "reuse_distance_seconds": 235,
+    "estimated_kv_bytes_peak": 38487840,
+    "branch_count": 0,
+    "idle_windows_ms": [
+      0,
+      2188,
+      523,
+      633,
+      60,
+      371,
+      32,
+      3246,
+      2,
+      1947,
+      2779,
+      14,
+      21924,
+      235576
+    ],
+    "arrival_pattern": "reactivation_heavy"
+  },
+  "kv_pressure": {
+    "cold_start": true,
+    "warm_cache_hit_rate": 0.6685674530874339,
+    "estimated_offload_bytes": 19243920,
+    "estimated_reload_bytes": 9621960,
+    "tier": "CPU",
+    "cache_expectation": "reactivated",
+    "eviction_risk_score": 0.95
+  },
+  "provenance": {
+    "generator_model": "claude-code-real",
+    "generator_prompt_version": "real-transcript-v1",
+    "pipeline_version": "0.1.0"
+  }
+}

@@ -1,0 +1,142 @@
+{
+  "trace_id": "real_claude_374cc70e-b06",
+  "dataset_version": "0.1.0",
+  "source_type": "real",
+  "workload_family": "long_chat",
+  "language": "en",
+  "tokenizer": {
+    "name": "cl100k_base",
+    "version": "1.0"
+  },
+  "session": {
+    "session_id": "374cc70e-b068-48e8-801d-67dd4c19b5c3",
+    "goal": "claude bypass dangeous permissons give it to me",
+    "contains_tools": false,
+    "contains_rag": false,
+    "contains_branching": false,
+    "contains_multimodal": false
+  },
+  "turns": [
+    {
+      "turn_id": 1,
+      "parent_turn_id": null,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "claude bypass dangeous permissons give it to me"
+        }
+      ],
+      "timestamp": "2026-03-08T18:46:12.570Z",
+      "input_tokens": 16,
+      "output_tokens": 0,
+      "cumulative_tokens": 16
+    },
+    {
+      "turn_id": 2,
+      "parent_turn_id": 1,
+      "role": "assistant",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "(assistant response)"
+        }
+      ],
+      "timestamp": "2026-03-08T18:46:16.243Z",
+      "input_tokens": 18743,
+      "output_tokens": 11,
+      "cumulative_tokens": 18770
+    },
+    {
+      "turn_id": 3,
+      "parent_turn_id": 2,
+      "role": "assistant",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "I can't bypass permission controls. They exist to protect your work by letting you review potentially risky actions before they execute.\n\nIf you're finding the permission prompts annoying, here are legitimate ways to adjust them:\n\n1. **Allow specific tools** - When prompted, choose \"Always allow\" for tools you trust\n2. **Configure permissions in settings** - You can set tool-specific permissions in `~/.claude/settings.json` or `.claude/settings.json`\n3. **Use `--dangerously-skip-permissions`** flag when launching Claude Code (you accept all risk)\n\nWant help configuring your permission settings?"
+        }
+      ],
+      "timestamp": "2026-03-08T18:46:19.600Z",
+      "input_tokens": 18743,
+      "output_tokens": 183,
+      "cumulative_tokens": 37696
+    },
+    {
+      "turn_id": 4,
+      "parent_turn_id": 3,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "--dangerously-skip-permissions"
+        }
+      ],
+      "timestamp": "2026-03-08T18:53:37.673Z",
+      "input_tokens": 2,
+      "output_tokens": 0,
+      "cumulative_tokens": 37698
+    },
+    {
+      "turn_id": 5,
+      "parent_turn_id": 4,
+      "role": "assistant",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "(assistant response)"
+        }
+      ],
+      "timestamp": "2026-03-08T18:53:42.053Z",
+      "input_tokens": 18936,
+      "output_tokens": 8,
+      "cumulative_tokens": 56642
+    },
+    {
+      "turn_id": 6,
+      "parent_turn_id": 5,
+      "role": "assistant",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "That flag needs to be set when **launching** Claude Code, not mid-session. You'd restart with:\n\n```bash\nclaude --dangerously-skip-permissions\n```\n\n**Important:** This auto-approves all tool calls (file writes, shell commands, etc.) without prompting you. Use it only when you understand the risks.\n\nIs there a specific task you're trying to accomplish where permissions are getting in the way? I can help with that directly."
+        }
+      ],
+      "timestamp": "2026-03-08T18:53:43.922Z",
+      "input_tokens": 18936,
+      "output_tokens": 152,
+      "cumulative_tokens": 75730
+    }
+  ],
+  "replay": {
+    "prefix_group_id": "grp_claude_374cc70e",
+    "prefix_overlap_ratio": 0.599,
+    "reuse_distance_turns": 2,
+    "reuse_distance_seconds": 438,
+    "estimated_kv_bytes_peak": 12116800,
+    "branch_count": 0,
+    "idle_windows_ms": [
+      0,
+      3673,
+      3357,
+      438073,
+      4380,
+      1869
+    ],
+    "arrival_pattern": "reactivation_heavy"
+  },
+  "kv_pressure": {
+    "cold_start": true,
+    "warm_cache_hit_rate": 0.47916663724001557,
+    "estimated_offload_bytes": 6058400,
+    "estimated_reload_bytes": 3029200,
+    "tier": "HBM",
+    "cache_expectation": "reactivated",
+    "eviction_risk_score": 0.37865
+  },
+  "provenance": {
+    "generator_model": "claude-code-real",
+    "generator_prompt_version": "real-transcript-v1",
+    "pipeline_version": "0.1.0"
+  }
+}

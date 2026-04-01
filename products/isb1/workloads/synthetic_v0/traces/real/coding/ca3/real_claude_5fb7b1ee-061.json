@@ -1,0 +1,231 @@
+{
+  "trace_id": "real_claude_5fb7b1ee-061",
+  "dataset_version": "0.1.0",
+  "source_type": "real",
+  "workload_family": "coding",
+  "language": "en",
+  "tokenizer": {
+    "name": "cl100k_base",
+    "version": "1.0"
+  },
+  "session": {
+    "session_id": "5fb7b1ee-061a-4bec-a524-15323fd2c7d2",
+    "goal": "Generate a SessionTraceV0 JSON object for inference benchmarking. Workload family: coding. Target: 16k-32k cumulative tokens, 12 turns. Goal: Fix a failing unit test in a Flask app. Include tool turns",
+    "contains_tools": true,
+    "contains_rag": false,
+    "contains_branching": false,
+    "contains_multimodal": false
+  },
+  "turns": [
+    {
+      "turn_id": 1,
+      "parent_turn_id": null,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "Generate a SessionTraceV0 JSON object for inference benchmarking. Workload family: coding. Target: 16k-32k cumulative tokens, 12 turns. Goal: Fix a failing unit test in a Flask app. Include tool turns (role: \"tool\" or \"execution\") with realistic bash output and code diffs. Include content_blocks with type \"code\" and \"log\". session.contains_tools: true. Include replay fields (prefix_group_id, prefix_overlap_ratio: 0.70, idle_windows_ms: [0,2000,4000,3000], arrival_pattern: \"steady_interactive\") and kv_pressure fields (cold_start: true, tier: \"HBM\", cache_expectation: \"warm\", eviction_risk_score: 0.20). turn_id must be integers. source_type: \"synthetic\", dataset_version: \"0.1.0\". Return one JSON object only, no markdown fencing.\n"
+        }
+      ],
+      "timestamp": "2026-04-01T03:43:41.632Z",
+      "input_tokens": 174,
+      "output_tokens": 0,
+      "cumulative_tokens": 174
+    },
+    {
+      "turn_id": 2,
+      "parent_turn_id": 1,
+      "role": "assistant",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "(assistant response)"
+        }
+      ],
+      "timestamp": "2026-04-01T03:43:49.735Z",
+      "input_tokens": 23916,
+      "output_tokens": 35,
+      "cumulative_tokens": 24125
+    },
+    {
+      "turn_id": 3,
+      "parent_turn_id": 2,
+      "role": "assistant",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "Let me check the existing session trace schema first."
+        }
+      ],
+      "timestamp": "2026-04-01T03:43:50.296Z",
+      "input_tokens": 23916,
+      "output_tokens": 35,
+      "cumulative_tokens": 48076
+    },
+    {
+      "turn_id": 4,
+      "parent_turn_id": 3,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "[Glob] {\"pattern\": \"**/session_trace*\"}",
+          "metadata": {
+            "tool_name": "Glob"
+          }
+        }
+      ],
+      "timestamp": "2026-04-01T03:43:50.431Z",
+      "input_tokens": 23916,
+      "output_tokens": 35,
+      "cumulative_tokens": 72027
+    },
+    {
+      "turn_id": 5,
+      "parent_turn_id": 4,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": ""
+        }
+      ],
+      "timestamp": "2026-04-01T03:43:50.531Z",
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cumulative_tokens": 72027
+    },
+    {
+      "turn_id": 6,
+      "parent_turn_id": 5,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "[Grep] {\"pattern\": \"SessionTraceV0\", \"output_mode\": \"files_with_matches\"}",
+          "metadata": {
+            "tool_name": "Grep"
+          }
+        }
+      ],
+      "timestamp": "2026-04-01T03:43:51.488Z",
+      "input_tokens": 23916,
+      "output_tokens": 193,
+      "cumulative_tokens": 96136
+    },
+    {
+      "turn_id": 7,
+      "parent_turn_id": 6,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": ""
+        }
+      ],
+      "timestamp": "2026-04-01T03:43:51.505Z",
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cumulative_tokens": 96136
+    },
+    {
+      "turn_id": 8,
+      "parent_turn_id": 7,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "code",
+          "text": "[Read] {\"file_path\": \"/Users/romirjain/.superset/worktrees/EasyInference/important-emu/products/isb1/workloads/session_trace.py\"}",
+          "metadata": {
+            "tool_name": "Read"
+          }
+        }
+      ],
+      "timestamp": "2026-04-01T03:43:54.462Z",
+      "input_tokens": 24273,
+      "output_tokens": 92,
+      "cumulative_tokens": 120501
+    },
+    {
+      "turn_id": 9,
+      "parent_turn_id": 8,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": ""
+        }
+      ],
+      "timestamp": "2026-04-01T03:43:54.467Z",
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cumulative_tokens": 120501
+    },
+    {
+      "turn_id": 10,
+      "parent_turn_id": 9,
+      "role": "assistant",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "(assistant response)"
+        }
+      ],
+      "timestamp": "2026-04-01T03:43:56.733Z",
+      "input_tokens": 25763,
+      "output_tokens": 10,
+      "cumulative_tokens": 146274
+    },
+    {
+      "turn_id": 11,
+      "parent_turn_id": 10,
+      "role": "assistant",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "Now I have the schema. Here's the SessionTraceV0 JSON object:\n\n{\"trace_id\":\"st-coding-flask-unittest-001\",\"dataset_version\":\"0.1.0\",\"source_type\":\"synthetic\",\"workload_family\":\"coding\",\"language\":\"en\",\"tokenizer\":{\"name\":\"cl100k_base\",\"version\":\"0.2.0\"},\"session\":{\"session_id\":\"sess-flask-fix-a3e7c\",\"goal\":\"Fix a failing unit test in a Flask app\",\"contains_tools\":true,\"contains_rag\":false,\"contains_branching\":false,\"contains_multimodal\":false},\"turns\":[{\"turn_id\":0,\"parent_turn_id\":null,\"role\":\"system\",\"content_blocks\":[{\"type\":\"text\",\"text\":\"You are a senior Python developer. Help the user debug and fix failing tests in their Flask application.\",\"metadata\":{}}],\"timestamp\":\"2026-03-31T10:00:00Z\",\"input_tokens\":42,\"output_tokens\":0,\"cumulative_tokens\":42},{\"turn_id\":1,\"parent_turn_id\":0,\"role\":\"user\",\"content_blocks\":[{\"type\":\"text\",\"text\":\"I have a Flask app with a failing unit test in test_auth.py. When I run pytest, test_login_redirect fails with a 200 instead of 302. Here's the test:\\n\\n```python\\ndef test_login_redirect(client):\\n    resp = client.post('/login', data={'username': 'admin', 'password': 'secret'})\\n    assert resp.status_code == 302\\n    assert resp.headers['Location'] == '/dashboard'\\n```\\n\\nCan you help me figure out why?\",\"metadata\":{}}],\"timestamp\":\"2026-03-31T10:00:05Z\",\"input_tokens\":128,\"output_tokens\":0,\"cumulative_tokens\":170},{\"turn_id\":2,\"parent_turn_id\":1,\"role\":\"assistant\",\"content_blocks\":[{\"type\":\"text\",\"text\":\"Let me look at the login route to understand what's happening. I'll read the auth blueprint first.\",\"metadata\":{}}],\"timestamp\":\"2026-03-31T10:00:08Z\",\"input_tokens\":0,\"output_tokens\":48,\"cumulative_tokens\":218},{\"turn_id\":3,\"parent_turn_id\":2,\"role\":\"execution\",\"content_blocks\":[{\"type\":\"code\",\"text\":\"cat app/auth.py\",\"metadata\":{\"tool\":\"bash\"}},{\"type\":\"log\",\"text\":\"from flask import Blueprint, request, render_template, redirect, url_for, flash\\nfrom werkzeug.security import check_password_hash\\nfrom .models import User\\nfrom .extensions import db\\n\\nauth_bp = Blueprint('auth', __name__)\\n\\n@auth_bp.route('/login', methods=['GET', 'POST'])\\ndef login():\\n    if request.method == 'POST':\\n        username = request.form.get('username')\\n        password = request.form.get('password')\\n        user = User.query.filter_by(username=username).first()\\n        if user and check_password_hash(user.password_hash, password):\\n            flash('Logged in successfully.')\\n            return render_template('dashboard.html', user=user)\\n        flash('Invalid credentials.', 'error')\\n    return render_template('login.html')\",\"metadata\":{\"exit_code\":0}}],\"timestamp\":\"2026-03-31T10:00:10Z\",\"input_tokens\":210,\"output_tokens\":0,\"cumulative_tokens\":428},{\"turn_id\":4,\"parent_turn_id\":3,\"role\":\"assistant\",\"content_blocks\":[{\"type\":\"text\",\"text\":\"Found the bug. On successful login (line 16), the route returns `render_template('dashboard.html')` which gives a 200 response. The test expects a 302 redirect. The route should use `redirect(url_for('dashboard.index'))` instead of rendering the template directly.\\n\\nLet me also check the test fixture to make sure the test user exists in the test database.\",\"metadata\":{}}],\"timestamp\":\"2026-03-31T10:00:14Z\",\"input_tokens\":0,\"output_tokens\":96,\"cumulative_tokens\":524},{\"turn_id\":5,\"parent_turn_id\":4,\"role\":\"execution\",\"content_blocks\":[{\"type\":\"code\",\"text\":\"cat tests/conftest.py\",\"metadata\":{\"tool\":\"bash\"}},{\"type\":\"log\",\"text\":\"import pytest\\nfrom app import create_app\\nfrom app.extensions import db as _db\\nfrom app.models import User\\nfrom werkzeug.security import generate_password_hash\\n\\n@pytest.fixture\\ndef app():\\n    app = create_app('testing')\\n    with app.app_context():\\n        _db.create_all()\\n        u = User(username='admin', password_hash=generate_password_hash('secret'))\\n        _db.session.add(u)\\n        _db.session.commit()\\n        yield app\\n        _db.drop_all()\\n\\n@pytest.fixture\\ndef client(app):\\n    return app.test_client()\",\"metadata\":{\"exit_code\":0}}],\"timestamp\":\"2026-03-31T10:00:16Z\",\"input_tokens\":185,\"output_tokens\":0,\"cumulative_tokens\":709},{\"turn_id\":6,\"parent_turn_id\":5,\"role\":\"assistant\",\"content_blocks\":[{\"type\":\"text\",\"text\":\"Good \u2014 the test fixture correctly seeds the admin user with the password `secret`. The issue is solely in `app/auth.py`. Let me also check if there's a dashboard blueprint registered with the expected endpoint.\",\"metadata\":{}}],\"timestamp\":\"2026-03-31T10:00:19Z\",\"input_tokens\":0,\"output_tokens\":62,\"cumulative_tokens\":771},{\"turn_id\":7,\"parent_turn_id\":6,\"role\":\"execution\",\"content_blocks\":[{\"type\":\"code\",\"text\":\"grep -rn 'dashboard' app/__init__.py app/dashboard.py 2>/dev/null || echo 'dashboard.py not found'\",\"metadata\":{\"tool\":\"bash\"}},{\"type\":\"log\",\"text\":\"app/__init__.py:12:    from .dashboard import dashboard_bp\\napp/__init__.py:13:    app.register_blueprint(dashboard_bp)\\napp/dashboard.py:5:dashboard_bp = Blueprint('dashboard', __name__)\\napp/dashboard.py:7:@dashboard_bp.r"
+        }
+      ],
+      "timestamp": "2026-04-01T03:44:33.011Z",
+      "input_tokens": 25763,
+      "output_tokens": 3004,
+      "cumulative_tokens": 175041
+    }
+  ],
+  "replay": {
+    "prefix_group_id": "grp_claude_5fb7b1ee",
+    "prefix_overlap_ratio": 0.802,
+    "reuse_distance_turns": 2,
+    "reuse_distance_seconds": 36,
+    "estimated_kv_bytes_peak": 28006560,
+    "branch_count": 0,
+    "idle_windows_ms": [
+      0,
+      8103,
+      561,
+      135,
+      100,
+      957,
+      17,
+      2957,
+      5,
+      2266,
+      36278
+    ],
+    "arrival_pattern": "steady_interactive"
+  },
+  "kv_pressure": {
+    "cold_start": true,
+    "warm_cache_hit_rate": 0.6415240912114915,
+    "estimated_offload_bytes": 14003280,
+    "estimated_reload_bytes": 0,
+    "tier": "CPU",
+    "cache_expectation": "warm",
+    "eviction_risk_score": 0.875205
+  },
+  "provenance": {
+    "generator_model": "claude-code-real",
+    "generator_prompt_version": "real-transcript-v1",
+    "pipeline_version": "0.1.0"
+  }
+}

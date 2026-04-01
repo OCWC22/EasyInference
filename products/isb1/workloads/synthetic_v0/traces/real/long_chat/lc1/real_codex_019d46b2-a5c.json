@@ -1,0 +1,126 @@
+{
+  "trace_id": "real_codex_019d46b2-a5c",
+  "dataset_version": "0.1.0",
+  "source_type": "real",
+  "workload_family": "long_chat",
+  "language": "en",
+  "tokenizer": {
+    "name": "o200k_base",
+    "version": "1.0"
+  },
+  "session": {
+    "session_id": "019d46b2-a5ca-7990-ab8a-23cfa22e1931",
+    "goal": "# AGENTS.md instructions for /Users/romirjain/.superset/worktrees/EasyInference/important-emu/products/isb1\n\n<INSTRUCTIONS>\n# AGENTS.md \u2014 Machine-Readable Onboarding for Coding Agents\n\nThis file helps",
+    "contains_tools": false,
+    "contains_rag": false,
+    "contains_branching": false,
+    "contains_multimodal": false
+  },
+  "turns": [
+    {
+      "turn_id": 1,
+      "parent_turn_id": null,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "# AGENTS.md instructions for /Users/romirjain/.superset/worktrees/EasyInference/important-emu/products/isb1\n\n<INSTRUCTIONS>\n# AGENTS.md \u2014 Machine-Readable Onboarding for Coding Agents\n\nThis file helps AI coding agents (Claude Code, Codex, Copilot Workspace, etc.) navigate the EasyInference monorepo without prior context.\n\n## Repository Identity\n\n- **Name:** EasyInference\n- **Remote:** https://github.com/OCWC22/EasyInference.git\n- **Structure:** Two-product monorepo with a shared root for docs, CI, and Make targets\n- **Primary language:** Python 3.11+\n- **Package manager:** `uv` (InferScope), `pip` (ISB-1)\n\n## Products\n\n| Product | Path | Purpose | Package Manager | CLI Entry |\n|---------|------|---------|----------------|-----------|\n| **InferScope** | `products/inferscope/` | Operator CLI + MCP for inference tuning, profiling, benchmarks | `uv` | `inferscope` |\n| **ISB-1** | `products/isb1/` | Reproducible benchmark standard, harness, analysis | `pip` | `isb1` |\n\n**`inferscope-bench/`** is a local donor harness (InferenceX fork). It is NOT a product \u2014 do not modify it for feature work. Its ideas are absorbed into `products/inferscope/src/inferscope/benchmarks/`.\n\n## Routing: Where to Make Changes\n\n| Task | Target Directory |\n|------|-----------------|\n| Recommendation / optimization / engine logic | `products/inferscope/src/inferscope/optimization/`, `engines/` |\n| Benchmark workloads, replay, artifacts | `products/inferscope/src/inferscope/benchmarks/` |\n| Runtime profiling | `products/inferscope/src/inferscope/profiling/` |\n| GPU / model metadata | `products/inferscope/src/inferscope/hardware/`, `models/` |\n| CLI commands | `products/inferscope/src/inferscope/cli*.py` |\n| MCP tools | `products/inferscope/src/inferscope/server*.py` |\n| ISB-1 benchmark harness | `products/isb1/harness/` |\n| ISB-1 workload generators | `products/isb1/workloads/` |\n| ISB-1 analysis / reporting | `products/isb1/analysis/` |\n| Root docs / CI / Makefile | Repository root |\n\n## Dependency Direction (InferScope)\n\n```\nhardware \u2500\u2510\nmodels \u2500\u2500\u2500\u2524\n           \u251c\u2500\u2192 optimization \u2500\u2192 engines\n           \u2502         \u2502\n           \u2502         \u25bc\n           \u251c\u2500\u2192 telemetry \u2500\u2192 profiling\n           \u2502         \u2502\n           \u2502         \u25bc\n           \u2514\u2500\u2192 benchmarks \u2500\u2192 tools\n                     \u2502\n                     \u25bc\n              cli*.py / server*.py\n```\n\n- `optimization` does NOT depend on `benchmarks`\n- `benchmarks` depends on `telemetry` and `optimization`\n- CLI and MCP compose everything \u2014 they are leaf nodes\n\n## GPU Platform Coverage\n\n| Vendor | Supported GPUs | ISA | Status |\n|--------|---------------|-----|--------|\n| NVIDIA Hopper | H100, H200, GH200 | sm_90a | Production |\n| NVIDIA Blackwell | B200, B300, GB200, GB300 | sm_100, sm_103 | Production |\n| AMD CDNA3 | MI300X | gfx942 | Day-one support |\n| AMD CDNA4 | MI355X | gfx950 | Day-one support |\n\nNVIDIA Hopper/Blackwell is the primary validation path. AMD is supported for planning, benchmark gating, and support assessment.\n\n## Development Setup\n\n```bash\n# InferScope (most common)\ncd products/inferscope\nuv sync --dev\ncp .env.example .env  # optional, for INFERSCOPE_DEBUG etc.\n\n# ISB-1\ncd products/isb1\npip install -e \".[dev,quality]\"\n```\n\n## Validation Commands\n\n### InferScope (run from `products/inferscope/`)\n\n```bash\nuv run ruff check src/ tests/          # lint\nuv run ruff format --check src/ tests/  # format check\nuv run mypy src/inferscope/             # type check\nuv run pytest tests/ -v --tb=short      # unit tests\nuv run bandit -r src/inferscope/ -c pyproject.toml -ll  # security\n```\n\n### ISB-1 (run from `products/isb1/`)\n\n```bash\npython -m ruff check .\npython -m black --check .\npytest tests/ -v --tb=short\n```\n\n### From the monorepo root\n\n```bash\nmake all-checks  # runs both products\n```\n\n## Test Conventions (InferScope)\n\n- Tests live in `products/inferscope/tests/`\n- `conftest.py` adds `src/` to `sys.path` \u2014 no editable install required\n- Use `pytest.mark.asyncio` for async tests\n- Use `httpx.MockTransport` for mocking HTTP endpoints (not `unittest.mock.patch`)\n- Use `pytest.mark.integration` for cross-module tests\n- Use `pytest.mark.live_engine` for tests requiring a running inference endpoint\n- Never import from `inferscope-bench/` \u2014 it is not on the Python path\n- Test files follow `test_<module>_<area>.py` naming\n\n## Commit and PR Conventions\n\n- Branch from `main`\n- Keep scope tight \u2014 one concern per PR\n- Update docs when CLI or MCP behavior changes\n- Run the relevant product validation before opening a PR\n- Do not commit `.env` files, `inferscope-bench.tar.gz`, or the `inferscope-bench/` donor tree\n\n## Files to Never Modify for Feature Work\n\n- `inferscope-bench/` \u2014 donor harness, read-only reference\n- `inferscope-bench.tar.gz` \u2014 archive of the donor\n- `.env` files \u2014 local configuration, gitignored\n- `uv.lock` \u2014 managed by `uv`, do not hand-edit\n\n## Key Contracts\n\n- `WorkloadPack` \u2014 the standard benchmark workload container\n- `BenchmarkArtifact` \u2014 the standard benchmark output container\n- "
+        }
+      ],
+      "timestamp": "2026-04-01T01:40:11.045Z",
+      "input_tokens": 4414,
+      "output_tokens": 0,
+      "cumulative_tokens": 4414
+    },
+    {
+      "turn_id": 2,
+      "parent_turn_id": 1,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "<environment_context>\n  <cwd>/Users/romirjain/.superset/worktrees/EasyInference/important-emu/products/isb1</cwd>\n  <shell>bash</shell>\n</environment_context>"
+        }
+      ],
+      "timestamp": "2026-04-01T01:40:11.045Z",
+      "input_tokens": 8,
+      "output_tokens": 0,
+      "cumulative_tokens": 4422
+    },
+    {
+      "turn_id": 3,
+      "parent_turn_id": 2,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "You are generating a single canonical SessionTraceV0 object for inference benchmarking.\n\nGoal:\nCreate a synthetic but realistic long-context trace that is useful for benchmarking KV cache reuse, offloading, long-context growth, multi-turn reasoning, and tool-driven agent workflows.\n\nHard requirements:\n- Output valid JSON only.\n- Must conform to SessionTraceV0 schema exactly.\n- Must include replay and kv_pressure fields.\n- Must preserve realistic turn structure.\n- Must not produce generic textbook chat.\n- Must produce a trace that would stress a real inference system.\n\nWorkload family: long_chat\nTarget context bin: 8k_16k\nPlanned goal: Design a REST API with evolving requirements across turns\nNumber of turns: 11\nTool pattern: []\nBranch pattern: none\nIdle windows ms: [0, 2000, 4000, 1000]\nExpected prefix overlap ratio: 0.88\nExpected cache state: warm\nContains RAG/retrieval: False\n\nSpecific instructions:\n- Strongly emphasize agents, tool use, coding, and reasoning.\n- Include messy but plausible user behavior.\n- Include realistic tool outputs, logs, diffs, or retrieval chunks where appropriate.\n- Include prior-turn references after turn 5.\n- Ensure cumulative context grows naturally toward the target bin.\n- Do not create idealized or perfectly clean conversations.\n- Do not use ShareGPT-style short, generic Q&A structure.\n- Do not emit training-only assistant polish.\n- Do not emit refusal-style safety boilerplate.\n\nThe SessionTraceV0 schema requires these top-level fields:\n- trace_id (string)\n- dataset_version (string, use \"0.1.0\")\n- source_type (string, use \"synthetic\")\n- workload_family (string: \"long_chat\" or \"coding\")\n- language (string, use \"en\")\n- tokenizer (object: {\"name\": \"cl100k_base\", \"version\": \"1.0\"})\n- session (object: session_id, goal, contains_tools, contains_rag, contains_branching, contains_multimodal)\n- turns (array of turn objects, each with: turn_id, parent_turn_id, role, content_blocks, timestamp, input_tokens, output_tokens, cumulative_tokens)\n- replay (object: prefix_group_id, prefix_overlap_ratio, reuse_distance_turns, reuse_distance_seconds, estimated_kv_bytes_peak, branch_count, idle_windows_ms, arrival_pattern)\n- kv_pressure (object: cold_start, warm_cache_hit_rate, estimated_offload_bytes, estimated_reload_bytes, tier, cache_expectation, eviction_risk_score)\n- provenance (object: generator_model, generator_prompt_version, pipeline_version)\n\nEach turn's content_blocks is an array of objects with: type (\"text\"|\"code\"|\"log\"|\"document\"), text, and optional uri/mime_type/metadata.\n\nReturn one JSON object only. No markdown fencing. No explanation.\n"
+        }
+      ],
+      "timestamp": "2026-04-01T01:40:11.045Z",
+      "input_tokens": 646,
+      "output_tokens": 0,
+      "cumulative_tokens": 5068
+    },
+    {
+      "turn_id": 4,
+      "parent_turn_id": 3,
+      "role": "assistant",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "Building the trace object now. I\u2019m drafting an 11-turn linear session with actual long-context content, then I\u2019ll validate the JSON structure and token-growth fields against the requested SessionTraceV0 shape."
+        }
+      ],
+      "timestamp": "2026-04-01T01:48:38.113Z",
+      "input_tokens": 0,
+      "output_tokens": 58,
+      "cumulative_tokens": 5126
+    },
+    {
+      "turn_id": 5,
+      "parent_turn_id": 4,
+      "role": "assistant",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "I have the session structure and turn progression pinned down. Next step is assembling it as a Python dict so I can validate that the final output is strict JSON with the required fields, timestamps, parent links, replay, and kv-pressure metadata."
+        }
+      ],
+      "timestamp": "2026-04-01T01:49:00.387Z",
+      "input_tokens": 0,
+      "output_tokens": 82,
+      "cumulative_tokens": 5208
+    }
+  ],
+  "replay": {
+    "prefix_group_id": "grp_codex_019d46b2",
+    "prefix_overlap_ratio": 0.7,
+    "reuse_distance_turns": 2,
+    "reuse_distance_seconds": 507,
+    "estimated_kv_bytes_peak": 833280,
+    "branch_count": 0,
+    "idle_windows_ms": [
+      0,
+      0,
+      0,
+      507068,
+      22274
+    ],
+    "arrival_pattern": "reactivation_heavy"
+  },
+  "kv_pressure": {
+    "cold_start": true,
+    "warm_cache_hit_rate": 0.5599999999999999,
+    "estimated_offload_bytes": 0,
+    "estimated_reload_bytes": 208320,
+    "tier": "HBM",
+    "cache_expectation": "reactivated",
+    "eviction_risk_score": 0.02604
+  },
+  "provenance": {
+    "generator_model": "codex-real",
+    "generator_prompt_version": "real-transcript-v1",
+    "pipeline_version": "0.1.0"
+  }
+}

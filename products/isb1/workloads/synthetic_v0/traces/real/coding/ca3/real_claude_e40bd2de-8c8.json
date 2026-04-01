@@ -1,0 +1,399 @@
+{
+  "trace_id": "real_claude_e40bd2de-8c8",
+  "dataset_version": "0.1.0",
+  "source_type": "real",
+  "workload_family": "coding",
+  "language": "en",
+  "tokenizer": {
+    "name": "cl100k_base",
+    "version": "1.0"
+  },
+  "session": {
+    "session_id": "e40bd2de-8c85-41b6-af85-acf6902b6234",
+    "goal": "You are working on the repository `astropy/astropy`.\n\n## Issue\nascii.qdp Table format assumes QDP commands are upper case\n### Description\n\nascii.qdp assumes that commands in a QDP file are upper case,",
+    "contains_tools": true,
+    "contains_rag": false,
+    "contains_branching": false,
+    "contains_multimodal": false
+  },
+  "turns": [
+    {
+      "turn_id": 1,
+      "parent_turn_id": null,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "You are working on the repository `astropy/astropy`.\n\n## Issue\nascii.qdp Table format assumes QDP commands are upper case\n### Description\n\nascii.qdp assumes that commands in a QDP file are upper case, for example, for errors they must be \"READ SERR 1 2\" whereas QDP itself is not case sensitive and case use \"read serr 1 2\". \r\n\r\nAs many QDP files are created by hand, the expectation that all commands be all-caps should be removed.\n\n### Expected behavior\n\nThe following qdp file should read into a `Table` with errors, rather than crashing.\r\n```\r\nread serr 1 2 \r\n1 0.5 1 0.5\r\n```\n\n### How to Reproduce\n\nCreate a QDP file:\r\n```\r\n> cat > test.qdp\r\nread serr 1 2 \r\n1 0.5 1 0.5\r\n<EOF>\r\n\r\n > python\r\nPython 3.10.9 (main, Dec  7 2022, 02:03:23) [Clang 13.0.0 (clang-1300.0.29.30)] on darwin\r\nType \"help\", \"copyright\", \"credits\" or \"license\" for more information.\r\n>>> from astropy.table import Table\r\n>>> Table.read('test.qdp',format='ascii.qdp')\r\nWARNING: table_id not specified. Reading the first available table [astropy.io.ascii.qdp]\r\nTraceback (most recent call last):\r\n...\r\n    raise ValueError(f'Unrecognized QDP line: {line}')\r\nValueError: Unrecognized QDP line: read serr 1 2\r\n```\r\n\r\nRunning \"qdp test.qdp\" works just fine.\r\n\n\n### Versions\n\nPython 3.10.9 (main, Dec  7 2022, 02:03:23) [Clang 13.0.0 (clang-1300.0.29.30)]\r\nastropy 5.1\r\nNumpy 1.24.1\r\npyerfa 2.0.0.1\r\nScipy 1.10.0\r\nMatplotlib 3.6.3\r\n\n\n\n## Hints from discussion\nWelcome to Astropy \ud83d\udc4b and thank you for your first issue!\n\nA project member will respond to you as soon as possible; in the meantime, please double-check the [guidelines for submitting issues](https://github.com/astropy/astropy/blob/main/CONTRIBUTING.md#reporting-issues) and make sure you've provided the requested details.\n\nGitHub issues in the Astropy repository are used to track bug reports and feature requests; If your issue poses a question about how to use Astropy, please instead raise your question in the [Astropy Discourse user forum](https://community.openastronomy.org/c/astropy/8) and close this issue.\n\nIf you feel that this issue has not been responded to in a timely manner, please send a message directly to the [development mailing list](http://groups.google.com/group/astropy-dev).  If the issue is urgent or sensitive in nature (e.g., a security vulnerability) please send an e-mail directly to the private e-mail feedback@astropy.org.\nHuh, so we do have this format... https://docs.astropy.org/en/stable/io/ascii/index.html\r\n\r\n@taldcroft , you know anything about this?\nThis is the format I'm using, which has the issue: https://docs.astropy.org/en/stable/api/astropy.io.ascii.QDP.html\r\n\nThe issue is that the regex that searches for QDP commands is not case insensitive. \r\n\r\nThis attached patch fixes the issue, but I'm sure there's a better way of doing it.\r\n\r\n[qdp.patch](https://github.com/astropy/astropy/files/10667923/qdp.patch)\r\n\n@jak574 - the fix is probably as simple as that. Would you like to put in a bugfix PR?\n\nFix this issue. Read the relevant source files, understand the codebase, make the necessary changes, and write or update tests to verify your fix. Run the tests to confirm they pass."
+        }
+      ],
+      "timestamp": "2026-04-01T00:27:00.389Z",
+      "input_tokens": 904,
+      "output_tokens": 0,
+      "cumulative_tokens": 904
+    },
+    {
+      "turn_id": 2,
+      "parent_turn_id": 1,
+      "role": "assistant",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "(assistant response)"
+        }
+      ],
+      "timestamp": "2026-04-01T00:27:02.654Z",
+      "input_tokens": 33839,
+      "output_tokens": 3,
+      "cumulative_tokens": 34746
+    },
+    {
+      "turn_id": 3,
+      "parent_turn_id": 2,
+      "role": "assistant",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "I'll help you fix this issue. Let me start by exploring the repository structure and finding the relevant QDP format handling code."
+        }
+      ],
+      "timestamp": "2026-04-01T00:27:02.893Z",
+      "input_tokens": 33839,
+      "output_tokens": 3,
+      "cumulative_tokens": 68588
+    },
+    {
+      "turn_id": 4,
+      "parent_turn_id": 3,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "[Bash] {\"command\": \"find /private/tmp/inference-dataset-workspace -type f -name \\\"*.py\\\" | grep -i qdp | head -20\"}",
+          "metadata": {
+            "tool_name": "Bash"
+          }
+        }
+      ],
+      "timestamp": "2026-04-01T00:27:03.126Z",
+      "input_tokens": 33839,
+      "output_tokens": 241,
+      "cumulative_tokens": 102668
+    },
+    {
+      "turn_id": 5,
+      "parent_turn_id": 4,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": ""
+        }
+      ],
+      "timestamp": "2026-04-01T00:27:06.273Z",
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cumulative_tokens": 102668
+    },
+    {
+      "turn_id": 6,
+      "parent_turn_id": 5,
+      "role": "assistant",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "(assistant response)"
+        }
+      ],
+      "timestamp": "2026-04-01T00:27:07.841Z",
+      "input_tokens": 34185,
+      "output_tokens": 3,
+      "cumulative_tokens": 136856
+    },
+    {
+      "turn_id": 7,
+      "parent_turn_id": 6,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "code",
+          "text": "[Read] {\"file_path\": \"/private/tmp/inference-dataset-workspace/astropy/astropy/io/ascii/qdp.py\"}",
+          "metadata": {
+            "tool_name": "Read"
+          }
+        }
+      ],
+      "timestamp": "2026-04-01T00:27:08.002Z",
+      "input_tokens": 34185,
+      "output_tokens": 176,
+      "cumulative_tokens": 171217
+    },
+    {
+      "turn_id": 8,
+      "parent_turn_id": 7,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": ""
+        }
+      ],
+      "timestamp": "2026-04-01T00:27:08.260Z",
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cumulative_tokens": 171217
+    },
+    {
+      "turn_id": 9,
+      "parent_turn_id": 8,
+      "role": "assistant",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "(assistant response)"
+        }
+      ],
+      "timestamp": "2026-04-01T00:27:13.197Z",
+      "input_tokens": 42235,
+      "output_tokens": 1,
+      "cumulative_tokens": 213453
+    },
+    {
+      "turn_id": 10,
+      "parent_turn_id": 9,
+      "role": "assistant",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "Now let me check the test file to understand the expected behavior better:"
+        }
+      ],
+      "timestamp": "2026-04-01T00:27:13.383Z",
+      "input_tokens": 42235,
+      "output_tokens": 1,
+      "cumulative_tokens": 255689
+    },
+    {
+      "turn_id": 11,
+      "parent_turn_id": 10,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "code",
+          "text": "[Read] {\"file_path\": \"/private/tmp/inference-dataset-workspace/astropy/astropy/io/ascii/tests/test_qdp.py\"}",
+          "metadata": {
+            "tool_name": "Read"
+          }
+        }
+      ],
+      "timestamp": "2026-04-01T00:27:13.882Z",
+      "input_tokens": 42235,
+      "output_tokens": 477,
+      "cumulative_tokens": 298401
+    },
+    {
+      "turn_id": 12,
+      "parent_turn_id": 11,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": ""
+        }
+      ],
+      "timestamp": "2026-04-01T00:27:13.885Z",
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cumulative_tokens": 298401
+    },
+    {
+      "turn_id": 13,
+      "parent_turn_id": 12,
+      "role": "assistant",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "(assistant response)"
+        }
+      ],
+      "timestamp": "2026-04-01T00:27:17.297Z",
+      "input_tokens": 47164,
+      "output_tokens": 1,
+      "cumulative_tokens": 345566
+    },
+    {
+      "turn_id": 14,
+      "parent_turn_id": 13,
+      "role": "assistant",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "Let me first create a test file and reproduce the issue:"
+        }
+      ],
+      "timestamp": "2026-04-01T00:27:17.498Z",
+      "input_tokens": 47164,
+      "output_tokens": 1,
+      "cumulative_tokens": 392731
+    },
+    {
+      "turn_id": 15,
+      "parent_turn_id": 14,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "[Bash] {\"command\": \"cd /private/tmp/inference-dataset-workspace/astropy && cat > /tmp/test.qdp << 'EOF'\\nread serr 1 2\\n1 0.5 1 0.5\\nEOF\\ncat /tmp/test.qdp\"}",
+          "metadata": {
+            "tool_name": "Bash"
+          }
+        }
+      ],
+      "timestamp": "2026-04-01T00:27:18.190Z",
+      "input_tokens": 47164,
+      "output_tokens": 331,
+      "cumulative_tokens": 440226
+    },
+    {
+      "turn_id": 16,
+      "parent_turn_id": 15,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": ""
+        }
+      ],
+      "timestamp": "2026-04-01T00:27:18.712Z",
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cumulative_tokens": 440226
+    },
+    {
+      "turn_id": 17,
+      "parent_turn_id": 16,
+      "role": "assistant",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "(assistant response)"
+        }
+      ],
+      "timestamp": "2026-04-01T00:27:20.517Z",
+      "input_tokens": 47564,
+      "output_tokens": 1,
+      "cumulative_tokens": 487791
+    },
+    {
+      "turn_id": 18,
+      "parent_turn_id": 17,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "[Bash] {\"command\": \"python << 'EOF'\\nfrom astropy.table import Table\\ntry:\\n    t = Table.read('/tmp/test.qdp', format='ascii.qdp')\\n    print(\\\"Successfully read table:\\\")\\n    print(t)\\nexcept Exception as e:\\n    print(f\\\"Error: {type(e).__name__}: {e}\\\")\\nEOF\\n\"}",
+          "metadata": {
+            "tool_name": "Bash"
+          }
+        }
+      ],
+      "timestamp": "2026-04-01T00:27:21.057Z",
+      "input_tokens": 47564,
+      "output_tokens": 181,
+      "cumulative_tokens": 535536
+    },
+    {
+      "turn_id": 19,
+      "parent_turn_id": 18,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": ""
+        }
+      ],
+      "timestamp": "2026-04-01T00:27:22.345Z",
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cumulative_tokens": 535536
+    },
+    {
+      "turn_id": 20,
+      "parent_turn_id": 19,
+      "role": "assistant",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "(assistant response)"
+        }
+      ],
+      "timestamp": "2026-04-01T00:27:24.011Z",
+      "input_tokens": 48012,
+      "output_tokens": 2,
+      "cumulative_tokens": 583550
+    },
+    {
+      "turn_id": 21,
+      "parent_turn_id": 20,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "[Bash] {\"command\": \"python -m pytest astropy/io/ascii/tests/test_qdp.py::test_roundtrip -xvs\"}",
+          "metadata": {
+            "tool_name": "Bash"
+          }
+        }
+      ],
+      "timestamp": "2026-04-01T00:27:24.187Z",
+      "input_tokens": 48012,
+      "output_tokens": 125,
+      "cumulative_tokens": 631687
+    }
+  ],
+  "replay": {
+    "prefix_group_id": "grp_claude_e40bd2de",
+    "prefix_overlap_ratio": 0.894,
+    "reuse_distance_turns": 2,
+    "reuse_distance_seconds": 4,
+    "estimated_kv_bytes_peak": 101069920,
+    "branch_count": 0,
+    "idle_windows_ms": [
+      0,
+      2265,
+      239,
+      233,
+      3147,
+      1568,
+      161,
+      258,
+      4937,
+      186,
+      499,
+      3,
+      3412,
+      201,
+      692,
+      522,
+      1805,
+      540,
+      1288,
+      1666
+    ],
+    "arrival_pattern": "steady_interactive"
+  },
+  "kv_pressure": {
+    "cold_start": true,
+    "warm_cache_hit_rate": 0.7151909715914302,
+    "estimated_offload_bytes": 50534960,
+    "estimated_reload_bytes": 0,
+    "tier": "CPU",
+    "cache_expectation": "warm",
+    "eviction_risk_score": 0.95
+  },
+  "provenance": {
+    "generator_model": "claude-code-real",
+    "generator_prompt_version": "real-transcript-v1",
+    "pipeline_version": "0.1.0"
+  }
+}

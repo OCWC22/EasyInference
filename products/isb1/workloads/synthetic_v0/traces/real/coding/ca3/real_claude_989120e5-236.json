@@ -1,0 +1,215 @@
+{
+  "trace_id": "real_claude_989120e5-236",
+  "dataset_version": "0.1.0",
+  "source_type": "real",
+  "workload_family": "coding",
+  "language": "en",
+  "tokenizer": {
+    "name": "cl100k_base",
+    "version": "1.0"
+  },
+  "session": {
+    "session_id": "989120e5-2362-4568-93db-837093d942f1",
+    "goal": "Generate a SessionTraceV0 JSON object for inference benchmarking. Workload family: coding. Target: 64k-96k cumulative tokens, 18 turns. Goal: Investigate and fix a memory leak using profiling output. ",
+    "contains_tools": true,
+    "contains_rag": false,
+    "contains_branching": false,
+    "contains_multimodal": false
+  },
+  "turns": [
+    {
+      "turn_id": 1,
+      "parent_turn_id": null,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "Generate a SessionTraceV0 JSON object for inference benchmarking. Workload family: coding. Target: 64k-96k cumulative tokens, 18 turns. Goal: Investigate and fix a memory leak using profiling output. Include tool turns with profiler output, heap dumps as log blocks, and code patches. Include retrieval turn with profiling documentation. session.contains_tools: true, session.contains_rag: true. Include replay fields (prefix_group_id, prefix_overlap_ratio: 0.75, idle_windows_ms: [0,5000,20000,10000], arrival_pattern: \"steady_interactive\") and kv_pressure fields (cold_start: true, tier: \"HBM\", cache_expectation: \"warm\", eviction_risk_score: 0.45). turn_id must be integers. Return one JSON object only, no markdown fencing.\n"
+        }
+      ],
+      "timestamp": "2026-04-01T03:42:56.378Z",
+      "input_tokens": 168,
+      "output_tokens": 0,
+      "cumulative_tokens": 168
+    },
+    {
+      "turn_id": 2,
+      "parent_turn_id": 1,
+      "role": "assistant",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "(assistant response)"
+        }
+      ],
+      "timestamp": "2026-04-01T03:42:59.195Z",
+      "input_tokens": 23901,
+      "output_tokens": 36,
+      "cumulative_tokens": 24105
+    },
+    {
+      "turn_id": 3,
+      "parent_turn_id": 2,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "[Glob] {\"pattern\": \"**/session_trace*\"}",
+          "metadata": {
+            "tool_name": "Glob"
+          }
+        }
+      ],
+      "timestamp": "2026-04-01T03:42:59.313Z",
+      "input_tokens": 23901,
+      "output_tokens": 36,
+      "cumulative_tokens": 48042
+    },
+    {
+      "turn_id": 4,
+      "parent_turn_id": 3,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": ""
+        }
+      ],
+      "timestamp": "2026-04-01T03:42:59.372Z",
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cumulative_tokens": 48042
+    },
+    {
+      "turn_id": 5,
+      "parent_turn_id": 4,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "[Grep] {\"pattern\": \"SessionTraceV0\", \"output_mode\": \"files_with_matches\"}",
+          "metadata": {
+            "tool_name": "Grep"
+          }
+        }
+      ],
+      "timestamp": "2026-04-01T03:43:00.315Z",
+      "input_tokens": 23901,
+      "output_tokens": 170,
+      "cumulative_tokens": 72113
+    },
+    {
+      "turn_id": 6,
+      "parent_turn_id": 5,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": ""
+        }
+      ],
+      "timestamp": "2026-04-01T03:43:00.451Z",
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cumulative_tokens": 72113
+    },
+    {
+      "turn_id": 7,
+      "parent_turn_id": 6,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "code",
+          "text": "[Read] {\"file_path\": \"/Users/romirjain/.superset/worktrees/EasyInference/important-emu/products/isb1/workloads/session_trace.py\"}",
+          "metadata": {
+            "tool_name": "Read"
+          }
+        }
+      ],
+      "timestamp": "2026-04-01T03:43:03.329Z",
+      "input_tokens": 24231,
+      "output_tokens": 92,
+      "cumulative_tokens": 96436
+    },
+    {
+      "turn_id": 8,
+      "parent_turn_id": 7,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": ""
+        }
+      ],
+      "timestamp": "2026-04-01T03:43:03.332Z",
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cumulative_tokens": 96436
+    },
+    {
+      "turn_id": 9,
+      "parent_turn_id": 8,
+      "role": "assistant",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "(assistant response)"
+        }
+      ],
+      "timestamp": "2026-04-01T03:43:13.436Z",
+      "input_tokens": 25721,
+      "output_tokens": 8,
+      "cumulative_tokens": 122165
+    },
+    {
+      "turn_id": 10,
+      "parent_turn_id": 9,
+      "role": "assistant",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "{\"trace_id\":\"st-coding-memleak-001\",\"dataset_version\":\"0.1.0\",\"source_type\":\"synthetic\",\"workload_family\":\"coding\",\"language\":\"en\",\"tokenizer\":{\"name\":\"Qwen/Qwen3-Coder-Next\",\"version\":\"0.4.0\"},\"session\":{\"session_id\":\"sess-memleak-debug-7a3f\",\"goal\":\"Investigate and fix a memory leak using profiling output\",\"contains_tools\":true,\"contains_rag\":true,\"contains_branching\":false,\"contains_multimodal\":false},\"turns\":[{\"turn_id\":0,\"parent_turn_id\":null,\"role\":\"system\",\"content_blocks\":[{\"type\":\"text\",\"text\":\"You are a senior systems engineer debugging a memory leak in a high-throughput inference serving pipeline. The service runs vLLM workers behind a Dynamo frontend on H200 SXM GPUs. Use profiling tools, heap analysis, and code patches to identify and resolve the leak. Always verify fixes with a second profiling pass.\"}],\"timestamp\":\"2026-03-31T14:00:00Z\",\"input_tokens\":128,\"output_tokens\":0,\"cumulative_tokens\":128},{\"turn_id\":1,\"parent_turn_id\":0,\"role\":\"user\",\"content_blocks\":[{\"type\":\"text\",\"text\":\"Our inference gateway has been leaking memory for the past 48 hours. RSS grows ~200MB/hour on the Dynamo frontend pod. We've narrowed it down to the request routing layer but haven't pinpointed the root cause. The pod OOMKills every 18 hours. Here's our service topology:\\n\\n- Dynamo frontend (dynamo-frontend-0): routes incoming requests, manages KV cache metadata, handles disaggregated prefill/decode scheduling\\n- 4x vLLM workers (worker-0 through worker-3): H200 SXM, TP=4 per worker\\n- Grove KV tiering: HBM \u2192 CPU DRAM \u2192 NVMe\\n- LMCache enabled with prefix dedup\\n\\nThe leak does NOT appear on the workers, only the frontend. We suspect it's in the request lifecycle tracking or KV metadata bookkeeping. Can you help investigate?\"},{\"type\":\"text\",\"text\":\"Relevant config:\\n```yaml\\ndynamo:\\n  frontend:\\n    max_inflight_requests: 2048\\n    routing_strategy: least_load\\n    kv_metadata_ttl_seconds: 300\\n    request_tracking:\\n      enabled: true\\n      gc_interval_seconds: 60\\n      max_completed_entries: 10000\\n  grove:\\n    tiers: [gpu, cpu, nvme]\\n    eviction_policy: lru\\n    metadata_sync_interval_ms: 500\\n```\"}],\"timestamp\":\"2026-03-31T14:00:12Z\",\"input_tokens\":1842,\"output_tokens\":0,\"cumulative_tokens\":1970},{\"turn_id\":2,\"parent_turn_id\":1,\"role\":\"assistant\",\"content_blocks\":[{\"type\":\"text\",\"text\":\"This is a classic frontend-side metadata leak pattern. The 200MB/hour growth rate combined with the `kv_metadata_ttl_seconds: 300` and `max_completed_entries: 10000` settings suggests one of these scenarios:\\n\\n1. **Request tracking entries not being GC'd** \u2014 completed request metadata accumulates beyond the 10K cap because the GC sweep misses entries in certain states (e.g., partially completed disaggregated requests where prefill succeeded but decode was rerouted)\\n2. **Grove metadata sync accumulation** \u2014 the 500ms sync interval creates KV metadata snapshots that reference stale tier mappings, and the TTL expiry doesn't cascade to dependent objects\\n3. **NIXL transfer callback leak** \u2014 async callbacks for KV transfers between prefill/decode workers hold references to request context objects\\n\\nLet me start by pulling profiling documentation for the Dynamo frontend's memory subsystem, then we'll run a targeted heap profile.\"},{\"type\":\"text\",\"text\":\"**Investigation plan:**\\n1. Pull profiling docs for `memray` integration with Dynamo\\n2. Attach `memray` to the live frontend process for a 10-minute capture\\n3. Analyze the flamegraph and top allocators\\n4. Take a heap dump and diff against a baseline\\n5. Identify the leaking object graph\\n6. Patch the root cause\\n7. Verify with a second profiling pass\"}],\"timestamp\":\"2026-03-31T14:00:30Z\",\"input_tokens\":0,\"output_tokens\":2150,\"cumulative_tokens\":4120},{\"turn_id\":3,\"parent_turn_id\":2,\"role\":\"retrieval\",\"content_blocks\":[{\"type\":\"document\",\"text\":\"# Dynamo Frontend Memory Profiling Guide\\n\\n## Overview\\nThe Dynamo frontend process manages request lifecycle state, KV cache metadata indices, and NIXL transfer coordination. Memory profiling is critical for long-running deployments.\\n\\n## Using memray with Dynamo\\n\\n### Attach to running process\\n```bash\\nmemray attach --pid $(pgrep -f dynamo-frontend) --duration 600 -o /tmp/frontend_profile.bin\\n```\\n\\n### Generate flamegraph\\n```bash\\nmemray flamegraph /tmp/frontend_profile.bin -o /tmp/frontend_flame.html\\n```\\n\\n### Top allocators report\\n```bash\\nmemray stats /tmp/frontend_profile.bin --top 50\\n```\\n\\n## Known Memory-Sensitive Subsystems\\n\\n### 1. RequestTracker (dynamo/frontend/request_tracker.py)\\n- Maintains `_active_requests: dict[str, RequestContext]` and `_completed_log: deque[CompletedEntry]`\\n- `RequestContext` holds references to: prompt tokens, KV cache slot assignments, routing decisions, timing metadata\\n- GC sweep runs every `gc_interval_seconds` and evicts entries from `_completed_log` beyond `max_completed_entries`\\n- **Known issue (v0.9.x):** Disaggregated requests create TWO entries in `_active_requests` ("
+        }
+      ],
+      "timestamp": "2026-04-01T03:46:30.941Z",
+      "input_tokens": 25721,
+      "output_tokens": 12093,
+      "cumulative_tokens": 159979
+    }
+  ],
+  "replay": {
+    "prefix_group_id": "grp_claude_989120e5",
+    "prefix_overlap_ratio": 0.76,
+    "reuse_distance_turns": 2,
+    "reuse_distance_seconds": 197,
+    "estimated_kv_bytes_peak": 25596640,
+    "branch_count": 0,
+    "idle_windows_ms": [
+      0,
+      2817,
+      118,
+      59,
+      943,
+      136,
+      2878,
+      3,
+      10104,
+      197505
+    ],
+    "arrival_pattern": "reactivation_heavy"
+  },
+  "kv_pressure": {
+    "cold_start": true,
+    "warm_cache_hit_rate": 0.6079307540677824,
+    "estimated_offload_bytes": 12798320,
+    "estimated_reload_bytes": 6399160,
+    "tier": "CPU",
+    "cache_expectation": "reactivated",
+    "eviction_risk_score": 0.799895
+  },
+  "provenance": {
+    "generator_model": "claude-code-real",
+    "generator_prompt_version": "real-transcript-v1",
+    "pipeline_version": "0.1.0"
+  }
+}

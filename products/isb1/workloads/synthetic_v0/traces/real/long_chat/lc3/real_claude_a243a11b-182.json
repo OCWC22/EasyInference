@@ -1,0 +1,174 @@
+{
+  "trace_id": "real_claude_a243a11b-182",
+  "dataset_version": "0.1.0",
+  "source_type": "real",
+  "workload_family": "long_chat",
+  "language": "en",
+  "tokenizer": {
+    "name": "cl100k_base",
+    "version": "1.0"
+  },
+  "session": {
+    "session_id": "a243a11b-182f-40be-9e73-94e35b161d9f",
+    "goal": "need the bypass dangerous permissions command",
+    "contains_tools": false,
+    "contains_rag": false,
+    "contains_branching": false,
+    "contains_multimodal": false
+  },
+  "turns": [
+    {
+      "turn_id": 1,
+      "parent_turn_id": null,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "need the bypass dangerous permissions command"
+        }
+      ],
+      "timestamp": "2026-03-07T04:39:16.574Z",
+      "input_tokens": 12,
+      "output_tokens": 0,
+      "cumulative_tokens": 12
+    },
+    {
+      "turn_id": 2,
+      "parent_turn_id": 1,
+      "role": "assistant",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "(assistant response)"
+        }
+      ],
+      "timestamp": "2026-03-07T04:39:20.042Z",
+      "input_tokens": 10927,
+      "output_tokens": 10,
+      "cumulative_tokens": 10949
+    },
+    {
+      "turn_id": 3,
+      "parent_turn_id": 2,
+      "role": "assistant",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "You can bypass permission prompts in Claude Code with the `--dangerously-skip-permissions` flag:\n\n```bash\nclaude --dangerously-skip-permissions\n```\n\nThis skips all tool approval prompts (file edits, bash commands, etc.). It's meant for CI/automation, not interactive use \u2014 it removes all safety guardrails."
+        }
+      ],
+      "timestamp": "2026-03-07T04:39:21.391Z",
+      "input_tokens": 10927,
+      "output_tokens": 124,
+      "cumulative_tokens": 22000
+    },
+    {
+      "turn_id": 4,
+      "parent_turn_id": 3,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "  i see this its going at abot 5 files a second, is that good "
+        }
+      ],
+      "timestamp": "2026-03-08T02:45:26.225Z",
+      "input_tokens": 28,
+      "output_tokens": 0,
+      "cumulative_tokens": 22028
+    },
+    {
+      "turn_id": 5,
+      "parent_turn_id": 4,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "[Request interrupted by user]"
+        }
+      ],
+      "timestamp": "2026-03-08T02:45:28.468Z",
+      "input_tokens": 8,
+      "output_tokens": 0,
+      "cumulative_tokens": 22036
+    },
+    {
+      "turn_id": 6,
+      "parent_turn_id": 5,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "this is what i see "
+        }
+      ],
+      "timestamp": "2026-03-08T06:19:56.690Z",
+      "input_tokens": 10,
+      "output_tokens": 0,
+      "cumulative_tokens": 22046
+    },
+    {
+      "turn_id": 7,
+      "parent_turn_id": 6,
+      "role": "assistant",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "(assistant response)"
+        }
+      ],
+      "timestamp": "2026-03-08T06:20:04.099Z",
+      "input_tokens": 24632,
+      "output_tokens": 8,
+      "cumulative_tokens": 46686
+    },
+    {
+      "turn_id": 8,
+      "parent_turn_id": 7,
+      "role": "assistant",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "Looks like it's working correctly. Auth completed, and you're in the interactive REPL (v2.3.4). You can now type natural language at the `you >` prompt \u2014 e.g. \"scan for bugs\", \"why is test_login failing\", etc.\n\nThe model config shows:\n- **Orchestrator**: qwen3-235b-a22b (the big reasoning model)\n- **Workers**: gemini-2.5-flash (fast cheap model for tool calls)\n\nThat's the intended setup. Go ahead and try a command."
+        }
+      ],
+      "timestamp": "2026-03-08T06:20:06.772Z",
+      "input_tokens": 24632,
+      "output_tokens": 274,
+      "cumulative_tokens": 71592
+    }
+  ],
+  "replay": {
+    "prefix_group_id": "grp_claude_a243a11b",
+    "prefix_overlap_ratio": 0.624,
+    "reuse_distance_turns": 2,
+    "reuse_distance_seconds": 79564,
+    "estimated_kv_bytes_peak": 11454720,
+    "branch_count": 0,
+    "idle_windows_ms": [
+      0,
+      3468,
+      1349,
+      79564834,
+      2243,
+      12868222,
+      7409,
+      2673
+    ],
+    "arrival_pattern": "reactivation_heavy"
+  },
+  "kv_pressure": {
+    "cold_start": true,
+    "warm_cache_hit_rate": 0.4988963766634701,
+    "estimated_offload_bytes": 5727360,
+    "estimated_reload_bytes": 2863680,
+    "tier": "HBM",
+    "cache_expectation": "reactivated",
+    "eviction_risk_score": 0.35796
+  },
+  "provenance": {
+    "generator_model": "claude-code-real",
+    "generator_prompt_version": "real-transcript-v1",
+    "pipeline_version": "0.1.0"
+  }
+}

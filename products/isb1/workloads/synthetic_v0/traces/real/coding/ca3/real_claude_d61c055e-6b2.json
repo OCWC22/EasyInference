@@ -1,0 +1,2796 @@
+{
+  "trace_id": "real_claude_d61c055e-6b2",
+  "dataset_version": "0.1.0",
+  "source_type": "real",
+  "workload_family": "coding",
+  "language": "en",
+  "tokenizer": {
+    "name": "cl100k_base",
+    "version": "1.0"
+  },
+  "session": {
+    "session_id": "d61c055e-6b21-4400-a303-73c7ccf30ad2",
+    "goal": "\u276f\u00a0claude",
+    "contains_tools": true,
+    "contains_rag": false,
+    "contains_branching": false,
+    "contains_multimodal": false
+  },
+  "turns": [
+    {
+      "turn_id": 1,
+      "parent_turn_id": null,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "\u276f\u00a0claude"
+        }
+      ],
+      "timestamp": "2026-03-20T21:48:19.504Z",
+      "input_tokens": 4,
+      "output_tokens": 0,
+      "cumulative_tokens": 4
+    },
+    {
+      "turn_id": 2,
+      "parent_turn_id": 1,
+      "role": "assistant",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "(assistant response)"
+        }
+      ],
+      "timestamp": "2026-03-20T21:48:23.384Z",
+      "input_tokens": 24779,
+      "output_tokens": 9,
+      "cumulative_tokens": 24792
+    },
+    {
+      "turn_id": 3,
+      "parent_turn_id": 2,
+      "role": "assistant",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "Hey! What are you working on?"
+        }
+      ],
+      "timestamp": "2026-03-20T21:48:28.438Z",
+      "input_tokens": 24779,
+      "output_tokens": 51,
+      "cumulative_tokens": 49622
+    },
+    {
+      "turn_id": 4,
+      "parent_turn_id": 3,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "are there any issues in thsi codebase which dont allow the tool to auto fix the issues properly scan deeply and lmk do not code yet"
+        }
+      ],
+      "timestamp": "2026-03-20T21:48:37.674Z",
+      "input_tokens": 52,
+      "output_tokens": 0,
+      "cumulative_tokens": 49674
+    },
+    {
+      "turn_id": 5,
+      "parent_turn_id": 4,
+      "role": "assistant",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "(assistant response)"
+        }
+      ],
+      "timestamp": "2026-03-20T21:48:41.354Z",
+      "input_tokens": 25014,
+      "output_tokens": 11,
+      "cumulative_tokens": 74699
+    },
+    {
+      "turn_id": 6,
+      "parent_turn_id": 5,
+      "role": "assistant",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "Let me do a deep investigation of the auto-fix pipeline to find issues preventing it from working properly."
+        }
+      ],
+      "timestamp": "2026-03-20T21:48:41.954Z",
+      "input_tokens": 25014,
+      "output_tokens": 11,
+      "cumulative_tokens": 99724
+    },
+    {
+      "turn_id": 7,
+      "parent_turn_id": 6,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "[Agent] {\"description\": \"Investigate self-healing pipeline\", \"subagent_type\": \"Explore\", \"prompt\": \"Thoroughly investigate the self-healing / auto-fix pipeline in this codebase. I need to find bugs, logic errors, or architectural issues that would prevent the tool from automatically fixing issues properly.\\n\\nKey files to examine deeply:\\n- api/ai/self_healer.py - the 12-step pipeline\\n- api/ai/rollback.py - rollback logic\\n- autodebug/healing/ - healing subsystem (locks, patterns, test_classifier)\\n- autodebug/detection/ - regression guard, adaptive_n\\n- autodebug/strategies/bandit_selector.py - Thompson sampling\\n- api/ai/flaky_predictor.py - historical predictor\\n- api/db/self_heal.py - database helpers\\n- api/webhooks/pr_merged.py - auto-unquarantine\\n- worker/ - job processing, queue system\\n\\nFor each file, look for:\\n1. Logic bugs (wrong conditions, off-by-one, swallowed exceptions)\\n2. Race conditions or concurrency issues\\n3. Missing error handling that would silently fail\\n4. Hardcod",
+          "metadata": {
+            "tool_name": "Agent"
+          }
+        }
+      ],
+      "timestamp": "2026-03-20T21:48:52.552Z",
+      "input_tokens": 25014,
+      "output_tokens": 11,
+      "cumulative_tokens": 124749
+    },
+    {
+      "turn_id": 8,
+      "parent_turn_id": 7,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "[Agent] {\"description\": \"Investigate CLI scan/fix flow\", \"subagent_type\": \"Explore\", \"prompt\": \"Thoroughly investigate the CLI-side auto-fix and scan flow in this codebase. I need to find bugs or issues that prevent the tool from automatically fixing issues properly.\\n\\nKey areas to examine:\\n- autodebug/cli_v2.py - the main CLI commands, especially scan, fix, heal commands\\n- autodebug/scanner/ or any scanning modules\\n- autodebug/fix/ or any fix-application modules  \\n- autodebug/upgrade.py\\n- api/ai/analysis_cache.py\\n- api/ai/ - all AI analysis modules\\n- api/db/github.py - GitHub integration for PRs/fixes\\n\\nLook for:\\n1. Commands that claim to fix but don't actually apply fixes\\n2. Broken scan logic that misses issues\\n3. AI analysis that doesn't properly feed into fix generation\\n4. Cache invalidation issues\\n5. GitHub PR creation failures\\n6. Error handling that swallows failures silently\\n7. Missing validation of AI-generated fixes before applying\\n8. Race conditions in concurrent fix",
+          "metadata": {
+            "tool_name": "Agent"
+          }
+        }
+      ],
+      "timestamp": "2026-03-20T21:48:55.105Z",
+      "input_tokens": 25014,
+      "output_tokens": 11,
+      "cumulative_tokens": 149774
+    },
+    {
+      "turn_id": 9,
+      "parent_turn_id": 8,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "[Agent] {\"description\": \"Investigate worker and queue system\", \"subagent_type\": \"Explore\", \"prompt\": \"Thoroughly investigate the worker/queue system and how it processes auto-fix jobs. Find bugs that would prevent fixes from being applied properly.\\n\\nKey areas:\\n- worker/ directory - all files (queue.py, broker.py, metrics.py, etc.)\\n- api/sessions.py - session processing\\n- api/main.py - API endpoints related to healing/fixing\\n- api/db/ - all database modules, especially self_heal.py and github.py\\n- Any webhook handlers\\n\\nLook for:\\n1. Jobs that get stuck or lost in the queue\\n2. Retry logic that doesn't actually retry or retries infinitely\\n3. Dead letter queue issues\\n4. Worker crashes that aren't recovered\\n5. Database transaction issues\\n6. Missing or incorrect status updates\\n7. Race conditions between workers\\n8. Memory leaks or resource exhaustion\\n9. Incorrect error classification that prevents retry\\n\\nTrace what happens when a fix job enters the queue through to completion/failu",
+          "metadata": {
+            "tool_name": "Agent"
+          }
+        }
+      ],
+      "timestamp": "2026-03-20T21:49:04.192Z",
+      "input_tokens": 25014,
+      "output_tokens": 1127,
+      "cumulative_tokens": 175915
+    },
+    {
+      "turn_id": 10,
+      "parent_turn_id": 9,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": ""
+        }
+      ],
+      "timestamp": "2026-03-20T23:41:28.302Z",
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cumulative_tokens": 175915
+    },
+    {
+      "turn_id": 11,
+      "parent_turn_id": 10,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": ""
+        }
+      ],
+      "timestamp": "2026-03-20T23:41:28.307Z",
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cumulative_tokens": 175915
+    },
+    {
+      "turn_id": 12,
+      "parent_turn_id": 11,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": ""
+        }
+      ],
+      "timestamp": "2026-03-20T23:41:28.308Z",
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cumulative_tokens": 175915
+    },
+    {
+      "turn_id": 13,
+      "parent_turn_id": 12,
+      "role": "assistant",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "The agents hit API issues. Let me investigate directly by reading the key files."
+        }
+      ],
+      "timestamp": "2026-03-21T00:03:29.430Z",
+      "input_tokens": 26487,
+      "output_tokens": 1,
+      "cumulative_tokens": 202403
+    },
+    {
+      "turn_id": 14,
+      "parent_turn_id": 13,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "code",
+          "text": "[Read] {\"file_path\": \"/Users/romirjain/Desktop/hikaflow/hikaflow.debugger/api/ai/self_healer.py\"}",
+          "metadata": {
+            "tool_name": "Read"
+          }
+        }
+      ],
+      "timestamp": "2026-03-21T00:03:30.444Z",
+      "input_tokens": 26487,
+      "output_tokens": 1,
+      "cumulative_tokens": 228891
+    },
+    {
+      "turn_id": 15,
+      "parent_turn_id": 14,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": ""
+        }
+      ],
+      "timestamp": "2026-03-21T00:03:30.750Z",
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cumulative_tokens": 228891
+    },
+    {
+      "turn_id": 16,
+      "parent_turn_id": 15,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "code",
+          "text": "[Read] {\"file_path\": \"/Users/romirjain/Desktop/hikaflow/hikaflow.debugger/api/ai/rollback.py\"}",
+          "metadata": {
+            "tool_name": "Read"
+          }
+        }
+      ],
+      "timestamp": "2026-03-21T00:03:31.352Z",
+      "input_tokens": 26487,
+      "output_tokens": 1,
+      "cumulative_tokens": 255379
+    },
+    {
+      "turn_id": 17,
+      "parent_turn_id": 16,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": ""
+        }
+      ],
+      "timestamp": "2026-03-21T00:03:31.365Z",
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cumulative_tokens": 255379
+    },
+    {
+      "turn_id": 18,
+      "parent_turn_id": 17,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "code",
+          "text": "[Read] {\"file_path\": \"/Users/romirjain/Desktop/hikaflow/hikaflow.debugger/api/db/self_heal.py\"}",
+          "metadata": {
+            "tool_name": "Read"
+          }
+        }
+      ],
+      "timestamp": "2026-03-21T00:03:31.801Z",
+      "input_tokens": 26487,
+      "output_tokens": 1,
+      "cumulative_tokens": 281867
+    },
+    {
+      "turn_id": 19,
+      "parent_turn_id": 18,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": ""
+        }
+      ],
+      "timestamp": "2026-03-21T00:03:31.994Z",
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cumulative_tokens": 281867
+    },
+    {
+      "turn_id": 20,
+      "parent_turn_id": 19,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "code",
+          "text": "[Read] {\"file_path\": \"/Users/romirjain/Desktop/hikaflow/hikaflow.debugger/api/db/github.py\"}",
+          "metadata": {
+            "tool_name": "Read"
+          }
+        }
+      ],
+      "timestamp": "2026-03-21T00:03:36.811Z",
+      "input_tokens": 26487,
+      "output_tokens": 292,
+      "cumulative_tokens": 308646
+    },
+    {
+      "turn_id": 21,
+      "parent_turn_id": 20,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": ""
+        }
+      ],
+      "timestamp": "2026-03-21T00:03:37.036Z",
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cumulative_tokens": 308646
+    },
+    {
+      "turn_id": 22,
+      "parent_turn_id": 21,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "code",
+          "text": "[Read] {\"file_path\": \"/Users/romirjain/Desktop/hikaflow/hikaflow.debugger/autodebug/healing/locks.py\"}",
+          "metadata": {
+            "tool_name": "Read"
+          }
+        }
+      ],
+      "timestamp": "2026-03-21T00:03:40.598Z",
+      "input_tokens": 52190,
+      "output_tokens": 18,
+      "cumulative_tokens": 360854
+    },
+    {
+      "turn_id": 23,
+      "parent_turn_id": 22,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": ""
+        }
+      ],
+      "timestamp": "2026-03-21T00:03:40.606Z",
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cumulative_tokens": 360854
+    },
+    {
+      "turn_id": 24,
+      "parent_turn_id": 23,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "code",
+          "text": "[Read] {\"file_path\": \"/Users/romirjain/Desktop/hikaflow/hikaflow.debugger/autodebug/detection/regression_guard.py\"}",
+          "metadata": {
+            "tool_name": "Read"
+          }
+        }
+      ],
+      "timestamp": "2026-03-21T00:03:41.665Z",
+      "input_tokens": 52190,
+      "output_tokens": 18,
+      "cumulative_tokens": 413062
+    },
+    {
+      "turn_id": 25,
+      "parent_turn_id": 24,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": ""
+        }
+      ],
+      "timestamp": "2026-03-21T00:03:41.671Z",
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cumulative_tokens": 413062
+    },
+    {
+      "turn_id": 26,
+      "parent_turn_id": 25,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "code",
+          "text": "[Read] {\"file_path\": \"/Users/romirjain/Desktop/hikaflow/hikaflow.debugger/autodebug/healing/test_classifier.py\"}",
+          "metadata": {
+            "tool_name": "Read"
+          }
+        }
+      ],
+      "timestamp": "2026-03-21T00:03:41.978Z",
+      "input_tokens": 52190,
+      "output_tokens": 18,
+      "cumulative_tokens": 465270
+    },
+    {
+      "turn_id": 27,
+      "parent_turn_id": 26,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": ""
+        }
+      ],
+      "timestamp": "2026-03-21T00:03:41.986Z",
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cumulative_tokens": 465270
+    },
+    {
+      "turn_id": 28,
+      "parent_turn_id": 27,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "code",
+          "text": "[Read] {\"file_path\": \"/Users/romirjain/Desktop/hikaflow/hikaflow.debugger/api/ai/verified_fixer.py\"}",
+          "metadata": {
+            "tool_name": "Read"
+          }
+        }
+      ],
+      "timestamp": "2026-03-21T00:03:47.205Z",
+      "input_tokens": 52190,
+      "output_tokens": 282,
+      "cumulative_tokens": 517742
+    },
+    {
+      "turn_id": 29,
+      "parent_turn_id": 28,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": ""
+        }
+      ],
+      "timestamp": "2026-03-21T00:03:47.399Z",
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cumulative_tokens": 517742
+    },
+    {
+      "turn_id": 30,
+      "parent_turn_id": 29,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "Now let me check the CLI scan/fix flow and a few more critical areas."
+        },
+        {
+          "type": "log",
+          "text": "[Grep] {\"pattern\": \"def scan|def fix|def heal|def auto_fix|def auto_debug\", \"path\": \"/Users/romirjain/Desktop/hikaflow/hikaflow.debugger/autodebug/cli_v2.py\", \"output_mode\": \"content\", \"-A\": 5}",
+          "metadata": {
+            "tool_name": "Grep"
+          }
+        },
+        {
+          "type": "code",
+          "text": "[Read] {\"file_path\": \"/Users/romirjain/Desktop/hikaflow/hikaflow.debugger/api/ai/analysis_cache.py\"}",
+          "metadata": {
+            "tool_name": "Read"
+          }
+        },
+        {
+          "type": "code",
+          "text": "[Read] {\"file_path\": \"/Users/romirjain/Desktop/hikaflow/hikaflow.debugger/autodebug/strategies/bandit_selector.py\", \"limit\": 100}",
+          "metadata": {
+            "tool_name": "Read"
+          }
+        }
+      ],
+      "timestamp": "2026-03-21T00:04:10.332Z",
+      "input_tokens": 69273,
+      "output_tokens": 354,
+      "cumulative_tokens": 587369
+    },
+    {
+      "turn_id": 31,
+      "parent_turn_id": 30,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": ""
+        }
+      ],
+      "timestamp": "2026-03-21T00:04:10.347Z",
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cumulative_tokens": 587369
+    },
+    {
+      "turn_id": 32,
+      "parent_turn_id": 31,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": ""
+        }
+      ],
+      "timestamp": "2026-03-21T00:04:10.353Z",
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cumulative_tokens": 587369
+    },
+    {
+      "turn_id": 33,
+      "parent_turn_id": 32,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": ""
+        }
+      ],
+      "timestamp": "2026-03-21T00:04:10.557Z",
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cumulative_tokens": 587369
+    },
+    {
+      "turn_id": 34,
+      "parent_turn_id": 33,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "code",
+          "text": "[Read] {\"file_path\": \"/Users/romirjain/Desktop/hikaflow/hikaflow.debugger/autodebug/cli_v2.py\", \"offset\": 907, \"limit\": 120}",
+          "metadata": {
+            "tool_name": "Read"
+          }
+        }
+      ],
+      "timestamp": "2026-03-21T00:04:15.441Z",
+      "input_tokens": 75432,
+      "output_tokens": 18,
+      "cumulative_tokens": 662819
+    },
+    {
+      "turn_id": 35,
+      "parent_turn_id": 34,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": ""
+        }
+      ],
+      "timestamp": "2026-03-21T00:04:15.447Z",
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cumulative_tokens": 662819
+    },
+    {
+      "turn_id": 36,
+      "parent_turn_id": 35,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "code",
+          "text": "[Read] {\"file_path\": \"/Users/romirjain/Desktop/hikaflow/hikaflow.debugger/autodebug/cli_v2.py\", \"offset\": 3611, \"limit\": 150}",
+          "metadata": {
+            "tool_name": "Read"
+          }
+        }
+      ],
+      "timestamp": "2026-03-21T00:04:16.367Z",
+      "input_tokens": 75432,
+      "output_tokens": 18,
+      "cumulative_tokens": 738269
+    },
+    {
+      "turn_id": 37,
+      "parent_turn_id": 36,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": ""
+        }
+      ],
+      "timestamp": "2026-03-21T00:04:16.376Z",
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cumulative_tokens": 738269
+    },
+    {
+      "turn_id": 38,
+      "parent_turn_id": 37,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "[Grep] {\"pattern\": \"_raise_for_status\\\\b\", \"path\": \"/Users/romirjain/Desktop/hikaflow/hikaflow.debugger/api/db/self_heal.py\", \"output_mode\": \"content\"}",
+          "metadata": {
+            "tool_name": "Grep"
+          }
+        }
+      ],
+      "timestamp": "2026-03-21T00:04:17.383Z",
+      "input_tokens": 75432,
+      "output_tokens": 325,
+      "cumulative_tokens": 814026
+    },
+    {
+      "turn_id": 39,
+      "parent_turn_id": 38,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": ""
+        }
+      ],
+      "timestamp": "2026-03-21T00:04:17.400Z",
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cumulative_tokens": 814026
+    },
+    {
+      "turn_id": 40,
+      "parent_turn_id": 39,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "code",
+          "text": "[Read] {\"file_path\": \"/Users/romirjain/Desktop/hikaflow/hikaflow.debugger/autodebug/cli_v2.py\", \"offset\": 1030, \"limit\": 250}",
+          "metadata": {
+            "tool_name": "Read"
+          }
+        }
+      ],
+      "timestamp": "2026-03-21T00:04:22.611Z",
+      "input_tokens": 79687,
+      "output_tokens": 18,
+      "cumulative_tokens": 893731
+    },
+    {
+      "turn_id": 41,
+      "parent_turn_id": 40,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": ""
+        }
+      ],
+      "timestamp": "2026-03-21T00:04:22.830Z",
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cumulative_tokens": 893731
+    },
+    {
+      "turn_id": 42,
+      "parent_turn_id": 41,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "[Grep] {\"pattern\": \"def _raise_for_status\", \"path\": \"/Users/romirjain/Desktop/hikaflow/hikaflow.debugger/api/db\", \"output_mode\": \"content\", \"-A\": 5}",
+          "metadata": {
+            "tool_name": "Grep"
+          }
+        }
+      ],
+      "timestamp": "2026-03-21T00:04:23.533Z",
+      "input_tokens": 79687,
+      "output_tokens": 18,
+      "cumulative_tokens": 973436
+    },
+    {
+      "turn_id": 43,
+      "parent_turn_id": 42,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": ""
+        }
+      ],
+      "timestamp": "2026-03-21T00:04:23.550Z",
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cumulative_tokens": 973436
+    },
+    {
+      "turn_id": 44,
+      "parent_turn_id": 43,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "code",
+          "text": "[Read] {\"file_path\": \"/Users/romirjain/Desktop/hikaflow/hikaflow.debugger/api/webhooks/pr_merged.py\"}",
+          "metadata": {
+            "tool_name": "Read"
+          }
+        }
+      ],
+      "timestamp": "2026-03-21T00:04:24.151Z",
+      "input_tokens": 79687,
+      "output_tokens": 302,
+      "cumulative_tokens": 1053425
+    },
+    {
+      "turn_id": 45,
+      "parent_turn_id": 44,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": ""
+        }
+      ],
+      "timestamp": "2026-03-21T00:04:24.156Z",
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cumulative_tokens": 1053425
+    },
+    {
+      "turn_id": 46,
+      "parent_turn_id": 45,
+      "role": "assistant",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "Now let me check the scan fix-application flow and the worker queue."
+        }
+      ],
+      "timestamp": "2026-03-21T00:04:27.693Z",
+      "input_tokens": 85738,
+      "output_tokens": 1,
+      "cumulative_tokens": 1139164
+    },
+    {
+      "turn_id": 47,
+      "parent_turn_id": 46,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "code",
+          "text": "[Read] {\"file_path\": \"/Users/romirjain/Desktop/hikaflow/hikaflow.debugger/autodebug/cli_v2.py\", \"offset\": 1280, \"limit\": 200}",
+          "metadata": {
+            "tool_name": "Read"
+          }
+        }
+      ],
+      "timestamp": "2026-03-21T00:04:29.204Z",
+      "input_tokens": 85738,
+      "output_tokens": 1,
+      "cumulative_tokens": 1224903
+    },
+    {
+      "turn_id": 48,
+      "parent_turn_id": 47,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": ""
+        }
+      ],
+      "timestamp": "2026-03-21T00:04:29.212Z",
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cumulative_tokens": 1224903
+    },
+    {
+      "turn_id": 49,
+      "parent_turn_id": 48,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "[Grep] {\"pattern\": \"async def _apply_fix|def _apply_fix|def apply_fix|async def apply_fix\", \"path\": \"/Users/romirjain/Desktop/hikaflow/hikaflow.debugger/autodebug\", \"output_mode\": \"content\", \"-A\": 3}",
+          "metadata": {
+            "tool_name": "Grep"
+          }
+        }
+      ],
+      "timestamp": "2026-03-21T00:04:30.998Z",
+      "input_tokens": 85738,
+      "output_tokens": 1,
+      "cumulative_tokens": 1310642
+    },
+    {
+      "turn_id": 50,
+      "parent_turn_id": 49,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": ""
+        }
+      ],
+      "timestamp": "2026-03-21T00:04:31.026Z",
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cumulative_tokens": 1310642
+    },
+    {
+      "turn_id": 51,
+      "parent_turn_id": 50,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "[Grep] {\"pattern\": \"def _raise_for_status\\\\b\", \"path\": \"/Users/romirjain/Desktop/hikaflow/hikaflow.debugger/api/db/self_heal.py\", \"output_mode\": \"content\"}",
+          "metadata": {
+            "tool_name": "Grep"
+          }
+        }
+      ],
+      "timestamp": "2026-03-21T00:04:31.920Z",
+      "input_tokens": 85738,
+      "output_tokens": 376,
+      "cumulative_tokens": 1396756
+    },
+    {
+      "turn_id": 52,
+      "parent_turn_id": 51,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": ""
+        }
+      ],
+      "timestamp": "2026-03-21T00:04:31.941Z",
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cumulative_tokens": 1396756
+    },
+    {
+      "turn_id": 53,
+      "parent_turn_id": 52,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "code",
+          "text": "[Read] {\"file_path\": \"/Users/romirjain/Desktop/hikaflow/hikaflow.debugger/autodebug/cli_v2.py\", \"offset\": 1818, \"limit\": 200}",
+          "metadata": {
+            "tool_name": "Read"
+          }
+        }
+      ],
+      "timestamp": "2026-03-21T00:04:37.053Z",
+      "input_tokens": 90703,
+      "output_tokens": 25,
+      "cumulative_tokens": 1487484
+    },
+    {
+      "turn_id": 54,
+      "parent_turn_id": 53,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": ""
+        }
+      ],
+      "timestamp": "2026-03-21T00:04:37.068Z",
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cumulative_tokens": 1487484
+    },
+    {
+      "turn_id": 55,
+      "parent_turn_id": 54,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "code",
+          "text": "[Read] {\"file_path\": \"/Users/romirjain/Desktop/hikaflow/hikaflow.debugger/autodebug/pipeline/fix_tester.py\"}",
+          "metadata": {
+            "tool_name": "Read"
+          }
+        }
+      ],
+      "timestamp": "2026-03-21T00:04:42.509Z",
+      "input_tokens": 90703,
+      "output_tokens": 186,
+      "cumulative_tokens": 1578373
+    },
+    {
+      "turn_id": 56,
+      "parent_turn_id": 55,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": ""
+        }
+      ],
+      "timestamp": "2026-03-21T00:04:42.723Z",
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cumulative_tokens": 1578373
+    },
+    {
+      "turn_id": 57,
+      "parent_turn_id": 56,
+      "role": "assistant",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "(assistant response)"
+        }
+      ],
+      "timestamp": "2026-03-21T00:04:48.359Z",
+      "input_tokens": 99253,
+      "output_tokens": 9,
+      "cumulative_tokens": 1677635
+    },
+    {
+      "turn_id": 58,
+      "parent_turn_id": 57,
+      "role": "assistant",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "Let me check a few more critical areas."
+        }
+      ],
+      "timestamp": "2026-03-21T00:04:48.838Z",
+      "input_tokens": 99253,
+      "output_tokens": 9,
+      "cumulative_tokens": 1776897
+    },
+    {
+      "turn_id": 59,
+      "parent_turn_id": 58,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "[Grep] {\"pattern\": \"from api\\\\.db import\", \"path\": \"/Users/romirjain/Desktop/hikaflow/hikaflow.debugger/api/ai/self_healer.py\", \"output_mode\": \"content\"}",
+          "metadata": {
+            "tool_name": "Grep"
+          }
+        }
+      ],
+      "timestamp": "2026-03-21T00:04:50.666Z",
+      "input_tokens": 99253,
+      "output_tokens": 9,
+      "cumulative_tokens": 1876159
+    },
+    {
+      "turn_id": 60,
+      "parent_turn_id": 59,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": ""
+        }
+      ],
+      "timestamp": "2026-03-21T00:04:50.690Z",
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cumulative_tokens": 1876159
+    },
+    {
+      "turn_id": 61,
+      "parent_turn_id": 60,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "[Grep] {\"pattern\": \"def upsert_self_heal_config|def get_self_heal_events\", \"path\": \"/Users/romirjain/Desktop/hikaflow/hikaflow.debugger/api/db\", \"output_mode\": \"content\", \"-A\": 3}",
+          "metadata": {
+            "tool_name": "Grep"
+          }
+        }
+      ],
+      "timestamp": "2026-03-21T00:04:52.235Z",
+      "input_tokens": 99253,
+      "output_tokens": 9,
+      "cumulative_tokens": 1975421
+    },
+    {
+      "turn_id": 62,
+      "parent_turn_id": 61,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": ""
+        }
+      ],
+      "timestamp": "2026-03-21T00:04:52.252Z",
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cumulative_tokens": 1975421
+    },
+    {
+      "turn_id": 63,
+      "parent_turn_id": 62,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "[Grep] {\"pattern\": \"from api\\\\.db import\", \"path\": \"/Users/romirjain/Desktop/hikaflow/hikaflow.debugger/api/ai/rollback.py\", \"output_mode\": \"content\"}",
+          "metadata": {
+            "tool_name": "Grep"
+          }
+        }
+      ],
+      "timestamp": "2026-03-21T00:04:52.811Z",
+      "input_tokens": 99253,
+      "output_tokens": 443,
+      "cumulative_tokens": 2075117
+    },
+    {
+      "turn_id": 64,
+      "parent_turn_id": 63,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": ""
+        }
+      ],
+      "timestamp": "2026-03-21T00:04:52.829Z",
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cumulative_tokens": 2075117
+    },
+    {
+      "turn_id": 65,
+      "parent_turn_id": 64,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "[Grep] {\"pattern\": \"def upsert_self_heal_config|def get_self_heal_events|def get_run\\\\b|def get_self_heal_event_by_pr|def update_self_heal_event\", \"path\": \"/Users/romirjain/Desktop/hikaflow/hikaflow.debugger/api/db/__init__.py\", \"output_mode\": \"content\", \"-A\": 2}",
+          "metadata": {
+            "tool_name": "Grep"
+          }
+        }
+      ],
+      "timestamp": "2026-03-21T00:05:07.086Z",
+      "input_tokens": 100238,
+      "output_tokens": 180,
+      "cumulative_tokens": 2175535
+    },
+    {
+      "turn_id": 66,
+      "parent_turn_id": 65,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": ""
+        }
+      ],
+      "timestamp": "2026-03-21T00:05:07.114Z",
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cumulative_tokens": 2175535
+    },
+    {
+      "turn_id": 67,
+      "parent_turn_id": 66,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "code",
+          "text": "[Read] {\"file_path\": \"/Users/romirjain/Desktop/hikaflow/hikaflow.debugger/api/db/__init__.py\", \"limit\": 80}",
+          "metadata": {
+            "tool_name": "Read"
+          }
+        }
+      ],
+      "timestamp": "2026-03-21T00:05:16.830Z",
+      "input_tokens": 100433,
+      "output_tokens": 97,
+      "cumulative_tokens": 2276065
+    },
+    {
+      "turn_id": 68,
+      "parent_turn_id": 67,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": ""
+        }
+      ],
+      "timestamp": "2026-03-21T00:05:16.843Z",
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cumulative_tokens": 2276065
+    },
+    {
+      "turn_id": 69,
+      "parent_turn_id": 68,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "[Grep] {\"pattern\": \"from api\\\\.db\\\\.self_heal import|upsert_self_heal_config|get_self_heal_events|get_self_heal_event_by_pr|update_self_heal_event\", \"path\": \"/Users/romirjain/Desktop/hikaflow/hikaflow.debugger/api/db/__init__.py\", \"output_mode\": \"content\"}",
+          "metadata": {
+            "tool_name": "Grep"
+          }
+        }
+      ],
+      "timestamp": "2026-03-21T00:05:26.601Z",
+      "input_tokens": 101414,
+      "output_tokens": 161,
+      "cumulative_tokens": 2377640
+    },
+    {
+      "turn_id": 70,
+      "parent_turn_id": 69,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": ""
+        }
+      ],
+      "timestamp": "2026-03-21T00:05:26.618Z",
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cumulative_tokens": 2377640
+    },
+    {
+      "turn_id": 71,
+      "parent_turn_id": 70,
+      "role": "assistant",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "Now let me check the sync vs async mismatch \u2014 the `enable_self_healing` function calls `upsert_self_heal_config` via `asyncio.to_thread`, but it's actually an async function."
+        }
+      ],
+      "timestamp": "2026-03-21T00:05:30.561Z",
+      "input_tokens": 101751,
+      "output_tokens": 1,
+      "cumulative_tokens": 2479392
+    },
+    {
+      "turn_id": 72,
+      "parent_turn_id": 71,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "code",
+          "text": "[Read] {\"file_path\": \"/Users/romirjain/Desktop/hikaflow/hikaflow.debugger/api/ai/self_healer.py\", \"offset\": 836, \"limit\": 35}",
+          "metadata": {
+            "tool_name": "Read"
+          }
+        }
+      ],
+      "timestamp": "2026-03-21T00:05:31.449Z",
+      "input_tokens": 101751,
+      "output_tokens": 1,
+      "cumulative_tokens": 2581144
+    },
+    {
+      "turn_id": 73,
+      "parent_turn_id": 72,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": ""
+        }
+      ],
+      "timestamp": "2026-03-21T00:05:31.455Z",
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cumulative_tokens": 2581144
+    },
+    {
+      "turn_id": 74,
+      "parent_turn_id": 73,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "code",
+          "text": "[Read] {\"file_path\": \"/Users/romirjain/Desktop/hikaflow/hikaflow.debugger/api/ai/self_healer.py\", \"offset\": 869, \"limit\": 30}",
+          "metadata": {
+            "tool_name": "Read"
+          }
+        }
+      ],
+      "timestamp": "2026-03-21T00:05:36.696Z",
+      "input_tokens": 101751,
+      "output_tokens": 268,
+      "cumulative_tokens": 2683163
+    },
+    {
+      "turn_id": 75,
+      "parent_turn_id": 74,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": ""
+        }
+      ],
+      "timestamp": "2026-03-21T00:05:36.701Z",
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cumulative_tokens": 2683163
+    },
+    {
+      "turn_id": 76,
+      "parent_turn_id": 75,
+      "role": "assistant",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "Now let me check one more critical area \u2014 the `store_self_heal_event` verification_passed logic and also the `_raise_for_status` import in `self_heal.py`."
+        }
+      ],
+      "timestamp": "2026-03-21T00:05:41.699Z",
+      "input_tokens": 102855,
+      "output_tokens": 1,
+      "cumulative_tokens": 2786019
+    },
+    {
+      "turn_id": 77,
+      "parent_turn_id": 76,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "[Grep] {\"pattern\": \"import.*_raise_for_status\", \"path\": \"/Users/romirjain/Desktop/hikaflow/hikaflow.debugger/api/db/self_heal.py\", \"output_mode\": \"content\"}",
+          "metadata": {
+            "tool_name": "Grep"
+          }
+        }
+      ],
+      "timestamp": "2026-03-21T00:05:42.229Z",
+      "input_tokens": 102855,
+      "output_tokens": 1,
+      "cumulative_tokens": 2888875
+    },
+    {
+      "turn_id": 78,
+      "parent_turn_id": 77,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": ""
+        }
+      ],
+      "timestamp": "2026-03-21T00:05:42.247Z",
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cumulative_tokens": 2888875
+    },
+    {
+      "turn_id": 79,
+      "parent_turn_id": 78,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "code",
+          "text": "[Read] {\"file_path\": \"/Users/romirjain/Desktop/hikaflow/hikaflow.debugger/autodebug/validation/fix_validator.py\", \"limit\": 50}",
+          "metadata": {
+            "tool_name": "Read"
+          }
+        }
+      ],
+      "timestamp": "2026-03-21T00:05:47.945Z",
+      "input_tokens": 102855,
+      "output_tokens": 252,
+      "cumulative_tokens": 2991982
+    },
+    {
+      "turn_id": 80,
+      "parent_turn_id": 79,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": ""
+        }
+      ],
+      "timestamp": "2026-03-21T00:05:47.953Z",
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cumulative_tokens": 2991982
+    },
+    {
+      "turn_id": 81,
+      "parent_turn_id": 80,
+      "role": "assistant",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "I now have enough data to give a comprehensive assessment. Here are the issues I found:\n\n---\n\n## Deep Scan: Issues Preventing Auto-Fix from Working Properly\n\n### 1. **CRITICAL: `enable_self_healing` passes wrong args to async DB function**\n**File**: `api/ai/self_healer.py:865`\n\n```python\nawait asyncio.to_thread(upsert_self_heal_config, config)\n```\n\n`upsert_self_heal_config` in `api/db/self_heal.py:38` is **async** (`async def upsert_self_heal_config(org_id, config)`). Wrapping an async function in `asyncio.to_thread()` just returns a coroutine object \u2014 it never actually executes. Same problem with `check_stale_fix_prs` at line 881 calling `get_self_heal_events` (also async) via `to_thread`.\n\n**Impact**: Enabling self-healing silently does nothing. Config is never saved to DB.\n\n---\n\n### 2. **CRITICAL: `enable_self_healing` passes wrong signature**\n**File**: `api/ai/self_healer.py:865`\n\n`upsert_self_heal_config(org_id: str, config: Dict)` expects two args: `(org_id, config_dict)`. But the call is `upsert_self_heal_config(config)` passing a `SelfHealConfig` dataclass as the only arg. Even if the async issue were fixed, this would crash with a TypeError.\n\n---\n\n### 3. **CRITICAL: `_raise_for_status` not imported in `self_heal.py` sync functions**\n**File**: `api/db/self_heal.py:243, 262, 304, 328, 356, 378, 435, 457`\n\nThe sync functions (`store_learning_checkpoint`, `get_learning_checkpoint`, `acquire_healing_lock`, `release_healing_lock`, etc.) call `_raise_for_status(resp)` but the import at the top only imports `_raise_for_status_async`. The sync `_raise_for_status` from `api.db.core` is **not imported**.\n\nWait \u2014 re-checking: line 8-16 imports `_raise_for_status_async` but also has `import requests`. Let me verify...\n\nActually looking more carefully at the imports at lines 8-16:\n```python\nfrom api.db.core import (\n    _encode_filter_value, _headers, _parse_content_range_total,\n    _raise_for_status_async, _supabase_url, get_async_client, logger,\n)\nimport requests\n```\n\nThe sync `_raise_for_status` is **NOT** imported. All sync functions calling `_raise_for_status(resp)` will get `NameError: name '_raise_for_status' is not defined`. This breaks:\n- `acquire_healing_lock` \u2014 locks can never be acquired\n- `release_healing_lock` \u2014 locks can never be released  \n- `store_learning_checkpoint` \u2014 learning data lost\n- `get_learning_checkpoint` \u2014 learning data inaccessible\n- `get_self_heal_event_by_pr` \u2014 rollback can't find events\n- `update_self_heal_event` \u2014 events can't be updated\n\n**Impact**: The entire lock mechanism, rollback, and event tracking are broken. Self-healing will crash on lock acquisition.\n\n---\n\n### 4. **HIGH: `store_self_heal_event` \u2014 incorrect `verification_passed` logic**\n**File**: `api/db/self_heal.py:86`\n\n```python\n\"verification_passed\": action == \"pr_created\" or action == \"fix_generated\",\n```\n\nThis marks `fix_generated` events as `verification_passed=True`, but `fix_generated` is the action when confidence is *below threshold* or when auto-PR is disabled. A `fix_generated` event with reason \"Below confidence threshold (65% < 90%)\" gets stored as verified. This corrupts stats and misleads dashboards.\n\n---\n\n### 5. **HIGH: Diff application silently returns original on mismatch**\n**File**: `api/ai/verified_fixer.py:411`\n\n```python\nreturn \"\\n\".join(original_lines)  # abort: return original unchanged\n```\n\nWhen a diff line doesn't match, `_apply_unified_diff` returns the **original unpatched code** instead of `None`. The caller (`_apply_fix`) will then treat this as a successful patch, validate the original code (which passes since it's valid Python), and consider the \"fix\" verified. The test then runs 20 times with the **original unfixed code**, and if the test is flaky, it may pass all 20 runs \u2014 resulting in a \"verified fix\" PR that changes nothing.\n\n---\n\n### 6. **HIGH: Sandbox verification doesn't test in project context**\n**File**: `api/ai/verified_fixer.py:454-457`\n\nThe sandbox only copies the patched test file to a bare temp directory. It doesn't copy the project's dependencies, conftest.py, or source-under-test. Unless `MODAL_SANDBOX_ENABLED` is set, pytest will likely fail with import errors on every run, causing the verification to always fail and no fixes to ever pass verification.\n\n---\n\n### 7. **MEDIUM: Race condition in healing lock**\n**File**: `api/db/self_heal.py:296-328`\n\nThe lock uses a two-step approach: DELETE expired \u2192 INSERT new. Between the DELETE and INSERT, another worker could INSERT the same lock. This is mitigated by the UNIQUE constraint (409 response), but the real issue is that the DELETE is unconditional on the worker \u2014 if worker A's lock is still valid and worker B deletes it (because some *other* expired lock for the same key was cleaned), worker B effectively steals the lock.\n\n---\n\n### 8. **MEDIUM: `handle_pr_merged` uses sync DB calls in async context**\n**File**: `api/webhooks/pr_merged.py:34, 79`\n\n```python\nevent = get_self_heal_event_by_pr(pr_url)  # sync call in async fun"
+        }
+      ],
+      "timestamp": "2026-03-21T00:06:43.109Z",
+      "input_tokens": 103650,
+      "output_tokens": 2269,
+      "cumulative_tokens": 3097901
+    },
+    {
+      "turn_id": 82,
+      "parent_turn_id": 81,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "fix all"
+        }
+      ],
+      "timestamp": "2026-03-21T00:27:24.994Z",
+      "input_tokens": 4,
+      "output_tokens": 0,
+      "cumulative_tokens": 3097905
+    },
+    {
+      "turn_id": 83,
+      "parent_turn_id": 82,
+      "role": "assistant",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "\n\nLet me start by re-reading the key files to fix, then apply all fixes."
+        }
+      ],
+      "timestamp": "2026-03-21T00:27:28.948Z",
+      "input_tokens": 106035,
+      "output_tokens": 2,
+      "cumulative_tokens": 3203942
+    },
+    {
+      "turn_id": 84,
+      "parent_turn_id": 83,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "code",
+          "text": "[Read] {\"file_path\": \"/Users/romirjain/Desktop/hikaflow/hikaflow.debugger/api/db/self_heal.py\", \"offset\": 1, \"limit\": 20}",
+          "metadata": {
+            "tool_name": "Read"
+          }
+        }
+      ],
+      "timestamp": "2026-03-21T00:27:29.902Z",
+      "input_tokens": 106035,
+      "output_tokens": 2,
+      "cumulative_tokens": 3309979
+    },
+    {
+      "turn_id": 85,
+      "parent_turn_id": 84,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": ""
+        }
+      ],
+      "timestamp": "2026-03-21T00:27:29.929Z",
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cumulative_tokens": 3309979
+    },
+    {
+      "turn_id": 86,
+      "parent_turn_id": 85,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "[Grep] {\"pattern\": \"def get_run\\\\b\", \"path\": \"/Users/romirjain/Desktop/hikaflow/hikaflow.debugger/api/db\", \"output_mode\": \"content\", \"-A\": 3}",
+          "metadata": {
+            "tool_name": "Grep"
+          }
+        }
+      ],
+      "timestamp": "2026-03-21T00:27:35.777Z",
+      "input_tokens": 106035,
+      "output_tokens": 253,
+      "cumulative_tokens": 3416267
+    },
+    {
+      "turn_id": 87,
+      "parent_turn_id": 86,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": ""
+        }
+      ],
+      "timestamp": "2026-03-21T00:27:35.812Z",
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cumulative_tokens": 3416267
+    },
+    {
+      "turn_id": 88,
+      "parent_turn_id": 87,
+      "role": "assistant",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "Good \u2014 `get_run` is sync, so the `to_thread` call is correct for that one. Now let me apply all fixes.\n\n**Fix #3: Add missing `_raise_for_status` import in `self_heal.py`**"
+        }
+      ],
+      "timestamp": "2026-03-21T00:27:39.993Z",
+      "input_tokens": 106740,
+      "output_tokens": 1,
+      "cumulative_tokens": 3523008
+    },
+    {
+      "turn_id": 89,
+      "parent_turn_id": 88,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "code",
+          "text": "[Edit] {\"replace_all\": false, \"file_path\": \"/Users/romirjain/Desktop/hikaflow/hikaflow.debugger/api/db/self_heal.py\", \"old_string\": \"from api.db.core import (\\n    _encode_filter_value,\\n    _headers,\\n    _parse_content_range_total,\\n    _raise_for_status_async,\\n    _supabase_url,\\n    get_async_client,\\n    logger,\\n)\", \"new_string\": \"from api.db.core import (\\n    _encode_filter_value,\\n    _headers,\\n    _parse_content_range_total,\\n    _raise_for_status,\\n    _raise_for_status_async,\\n    _supabase_url,\\n    get_async_client,\\n    logger,\\n)\"}",
+          "metadata": {
+            "tool_name": "Edit"
+          }
+        }
+      ],
+      "timestamp": "2026-03-21T00:27:41.643Z",
+      "input_tokens": 106740,
+      "output_tokens": 317,
+      "cumulative_tokens": 3630065
+    },
+    {
+      "turn_id": 90,
+      "parent_turn_id": 89,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": ""
+        }
+      ],
+      "timestamp": "2026-03-21T00:27:41.718Z",
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cumulative_tokens": 3630065
+    },
+    {
+      "turn_id": 91,
+      "parent_turn_id": 90,
+      "role": "assistant",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "**Fix #1 & #2: Fix `enable_self_healing` \u2014 async function + wrong signature**"
+        }
+      ],
+      "timestamp": "2026-03-21T00:27:45.472Z",
+      "input_tokens": 107124,
+      "output_tokens": 5,
+      "cumulative_tokens": 3737194
+    },
+    {
+      "turn_id": 92,
+      "parent_turn_id": 91,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "code",
+          "text": "[Edit] {\"replace_all\": false, \"file_path\": \"/Users/romirjain/Desktop/hikaflow/hikaflow.debugger/api/ai/self_healer.py\", \"old_string\": \"    from api.db import upsert_self_heal_config\\n\\n    config = SelfHealConfig(\\n        org_id=org_id,\\n        enabled=True,\\n        auto_pr=auto_pr,\\n        min_confidence=min_confidence,\\n        slack_webhook_url=slack_webhook_url,\\n    )\\n\\n    await asyncio.to_thread(upsert_self_heal_config, config)\\n    return config\", \"new_string\": \"    from api.db.self_heal import upsert_self_heal_config\\n\\n    config = SelfHealConfig(\\n        org_id=org_id,\\n        enabled=True,\\n        auto_pr=auto_pr,\\n        min_confidence=min_confidence,\\n        slack_webhook_url=slack_webhook_url,\\n    )\\n\\n    config_dict = {\\n        \\\"enabled\\\": config.enabled,\\n        \\\"auto_pr\\\": config.auto_pr,\\n        \\\"auto_merge\\\": config.auto_merge,\\n        \\\"min_confidence\\\": config.min_confidence,\\n        \\\"require_approvals\\\": config.require_approvals,\\n        \\\"excluded",
+          "metadata": {
+            "tool_name": "Edit"
+          }
+        }
+      ],
+      "timestamp": "2026-03-21T00:27:50.089Z",
+      "input_tokens": 107124,
+      "output_tokens": 532,
+      "cumulative_tokens": 3844850
+    },
+    {
+      "turn_id": 93,
+      "parent_turn_id": 92,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": ""
+        }
+      ],
+      "timestamp": "2026-03-21T00:27:50.114Z",
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cumulative_tokens": 3844850
+    },
+    {
+      "turn_id": 94,
+      "parent_turn_id": 93,
+      "role": "assistant",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "**Fix `check_stale_fix_prs` \u2014 also calling async via `to_thread`**"
+        }
+      ],
+      "timestamp": "2026-03-21T00:27:53.405Z",
+      "input_tokens": 107724,
+      "output_tokens": 3,
+      "cumulative_tokens": 3952577
+    },
+    {
+      "turn_id": 95,
+      "parent_turn_id": 94,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "code",
+          "text": "[Edit] {\"replace_all\": false, \"file_path\": \"/Users/romirjain/Desktop/hikaflow/hikaflow.debugger/api/ai/self_healer.py\", \"old_string\": \"    from datetime import datetime, timedelta, timezone\\n\\n    from api.db import get_self_heal_events\\n\\n    events = await asyncio.to_thread(get_self_heal_events, org_id)\", \"new_string\": \"    from datetime import datetime, timedelta, timezone\\n\\n    from api.db.self_heal import get_self_heal_events\\n\\n    events = await get_self_heal_events(org_id)\"}",
+          "metadata": {
+            "tool_name": "Edit"
+          }
+        }
+      ],
+      "timestamp": "2026-03-21T00:27:54.824Z",
+      "input_tokens": 107724,
+      "output_tokens": 254,
+      "cumulative_tokens": 4060555
+    },
+    {
+      "turn_id": 96,
+      "parent_turn_id": 95,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": ""
+        }
+      ],
+      "timestamp": "2026-03-21T00:27:54.864Z",
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cumulative_tokens": 4060555
+    },
+    {
+      "turn_id": 97,
+      "parent_turn_id": 96,
+      "role": "assistant",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "Those Pyright diagnostics are pre-existing (not from my changes). Now let me fix the remaining issues.\n\n**Fix #5: Diff mismatch returns original code instead of None**"
+        }
+      ],
+      "timestamp": "2026-03-21T00:27:58.958Z",
+      "input_tokens": 108821,
+      "output_tokens": 1,
+      "cumulative_tokens": 4169377
+    },
+    {
+      "turn_id": 98,
+      "parent_turn_id": 97,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "code",
+          "text": "[Read] {\"file_path\": \"/Users/romirjain/Desktop/hikaflow/hikaflow.debugger/api/ai/verified_fixer.py\", \"offset\": 398, \"limit\": 35}",
+          "metadata": {
+            "tool_name": "Read"
+          }
+        }
+      ],
+      "timestamp": "2026-03-21T00:27:59.441Z",
+      "input_tokens": 108821,
+      "output_tokens": 160,
+      "cumulative_tokens": 4278358
+    },
+    {
+      "turn_id": 99,
+      "parent_turn_id": 98,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": ""
+        }
+      ],
+      "timestamp": "2026-03-21T00:27:59.464Z",
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cumulative_tokens": 4278358
+    },
+    {
+      "turn_id": 100,
+      "parent_turn_id": 99,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "code",
+          "text": "[Edit] {\"replace_all\": false, \"file_path\": \"/Users/romirjain/Desktop/hikaflow/hikaflow.debugger/api/ai/verified_fixer.py\", \"old_string\": \"                        return \\\"\\\\n\\\".join(original_lines)  # abort: return original unchanged\", \"new_string\": \"                        return None  # abort: diff doesn't match the source\"}",
+          "metadata": {
+            "tool_name": "Edit"
+          }
+        }
+      ],
+      "timestamp": "2026-03-21T00:28:12.536Z",
+      "input_tokens": 110112,
+      "output_tokens": 171,
+      "cumulative_tokens": 4388641
+    },
+    {
+      "turn_id": 101,
+      "parent_turn_id": 100,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": ""
+        }
+      ],
+      "timestamp": "2026-03-21T00:28:12.549Z",
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cumulative_tokens": 4388641
+    },
+    {
+      "turn_id": 102,
+      "parent_turn_id": 101,
+      "role": "assistant",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "**Fix #4: Incorrect `verification_passed` flag in `store_self_heal_event`**"
+        }
+      ],
+      "timestamp": "2026-03-21T00:28:17.756Z",
+      "input_tokens": 110332,
+      "output_tokens": 4,
+      "cumulative_tokens": 4498977
+    },
+    {
+      "turn_id": 103,
+      "parent_turn_id": 102,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "code",
+          "text": "[Edit] {\"replace_all\": false, \"file_path\": \"/Users/romirjain/Desktop/hikaflow/hikaflow.debugger/api/db/self_heal.py\", \"old_string\": \"        \\\"verification_passed\\\": action == \\\"pr_created\\\" or action == \\\"fix_generated\\\",\", \"new_string\": \"        \\\"verification_passed\\\": action == \\\"pr_created\\\",\"}",
+          "metadata": {
+            "tool_name": "Edit"
+          }
+        }
+      ],
+      "timestamp": "2026-03-21T00:28:18.882Z",
+      "input_tokens": 110332,
+      "output_tokens": 196,
+      "cumulative_tokens": 4609505
+    },
+    {
+      "turn_id": 104,
+      "parent_turn_id": 103,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": ""
+        }
+      ],
+      "timestamp": "2026-03-21T00:28:18.898Z",
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cumulative_tokens": 4609505
+    },
+    {
+      "turn_id": 105,
+      "parent_turn_id": 104,
+      "role": "assistant",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "**Fix #6: Sandbox verification missing project context \u2014 copy conftest and install project**"
+        }
+      ],
+      "timestamp": "2026-03-21T00:28:25.975Z",
+      "input_tokens": 111252,
+      "output_tokens": 1,
+      "cumulative_tokens": 4720758
+    },
+    {
+      "turn_id": 106,
+      "parent_turn_id": 105,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "code",
+          "text": "[Read] {\"file_path\": \"/Users/romirjain/Desktop/hikaflow/hikaflow.debugger/api/ai/verified_fixer.py\", \"offset\": 450, \"limit\": 25}",
+          "metadata": {
+            "tool_name": "Read"
+          }
+        }
+      ],
+      "timestamp": "2026-03-21T00:28:26.760Z",
+      "input_tokens": 111252,
+      "output_tokens": 137,
+      "cumulative_tokens": 4832147
+    },
+    {
+      "turn_id": 107,
+      "parent_turn_id": 106,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": ""
+        }
+      ],
+      "timestamp": "2026-03-21T00:28:26.785Z",
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cumulative_tokens": 4832147
+    },
+    {
+      "turn_id": 108,
+      "parent_turn_id": 107,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "code",
+          "text": "[Edit] {\"replace_all\": false, \"file_path\": \"/Users/romirjain/Desktop/hikaflow/hikaflow.debugger/api/ai/verified_fixer.py\", \"old_string\": \"        # Create temp directory for sandbox\\n        with tempfile.TemporaryDirectory() as sandbox_dir:\\n            # Write patched test file (offloaded to avoid blocking event loop)\\n            def _setup_sandbox():\\n                test_path = os.path.join(sandbox_dir, os.path.basename(test_file_path))\\n                with open(test_path, \\\"w\\\") as f:\\n                    f.write(patched_code)\\n\\n                if transcripts_dir and os.path.exists(transcripts_dir):\\n                    sandbox_transcripts = os.path.join(sandbox_dir, \\\"transcripts\\\")\\n                    shutil.copytree(transcripts_dir, sandbox_transcripts, symlinks=False)\\n\\n                    conftest_content = self._generate_replay_conftest(sandbox_transcripts)\\n                    conftest_path = os.path.join(sandbox_dir, \\\"conftest.py\\\")\\n                    with open(conftest_p",
+          "metadata": {
+            "tool_name": "Edit"
+          }
+        }
+      ],
+      "timestamp": "2026-03-21T00:28:41.545Z",
+      "input_tokens": 112135,
+      "output_tokens": 1151,
+      "cumulative_tokens": 4945433
+    },
+    {
+      "turn_id": 109,
+      "parent_turn_id": 108,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": ""
+        }
+      ],
+      "timestamp": "2026-03-21T00:28:41.568Z",
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cumulative_tokens": 4945433
+    },
+    {
+      "turn_id": 110,
+      "parent_turn_id": 109,
+      "role": "assistant",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "Now update the sandbox test runner to use the correct relative path and add project_root to PYTHONPATH:"
+        }
+      ],
+      "timestamp": "2026-03-21T00:28:51.450Z",
+      "input_tokens": 113335,
+      "output_tokens": 1,
+      "cumulative_tokens": 5058769
+    },
+    {
+      "turn_id": 111,
+      "parent_turn_id": 110,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "code",
+          "text": "[Read] {\"file_path\": \"/Users/romirjain/Desktop/hikaflow/hikaflow.debugger/api/ai/verified_fixer.py\", \"offset\": 488, \"limit\": 20}",
+          "metadata": {
+            "tool_name": "Read"
+          }
+        }
+      ],
+      "timestamp": "2026-03-21T00:28:52.000Z",
+      "input_tokens": 113335,
+      "output_tokens": 141,
+      "cumulative_tokens": 5172245
+    },
+    {
+      "turn_id": 112,
+      "parent_turn_id": 111,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": ""
+        }
+      ],
+      "timestamp": "2026-03-21T00:28:52.017Z",
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cumulative_tokens": 5172245
+    },
+    {
+      "turn_id": 113,
+      "parent_turn_id": 112,
+      "role": "assistant",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "Now update the `_run_single_test` method to include project_root in PYTHONPATH:"
+        }
+      ],
+      "timestamp": "2026-03-21T00:28:56.853Z",
+      "input_tokens": 114357,
+      "output_tokens": 1,
+      "cumulative_tokens": 5286603
+    },
+    {
+      "turn_id": 114,
+      "parent_turn_id": 113,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "code",
+          "text": "[Read] {\"file_path\": \"/Users/romirjain/Desktop/hikaflow/hikaflow.debugger/api/ai/verified_fixer.py\", \"offset\": 610, \"limit\": 50}",
+          "metadata": {
+            "tool_name": "Read"
+          }
+        }
+      ],
+      "timestamp": "2026-03-21T00:29:02.695Z",
+      "input_tokens": 114357,
+      "output_tokens": 141,
+      "cumulative_tokens": 5401101
+    },
+    {
+      "turn_id": 115,
+      "parent_turn_id": 114,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": ""
+        }
+      ],
+      "timestamp": "2026-03-21T00:29:02.718Z",
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cumulative_tokens": 5401101
+    },
+    {
+      "turn_id": 116,
+      "parent_turn_id": 115,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "code",
+          "text": "[Edit] {\"replace_all\": false, \"file_path\": \"/Users/romirjain/Desktop/hikaflow/hikaflow.debugger/api/ai/verified_fixer.py\", \"old_string\": \"            env = os.environ.copy()\\n            env[\\\"PYTHONDONTWRITEBYTECODE\\\"] = \\\"1\\\"\\n            if use_replay:\\n                env[\\\"HIKAFLOW_REPLAY\\\"] = \\\"1\\\"\", \"new_string\": \"            env = os.environ.copy()\\n            env[\\\"PYTHONDONTWRITEBYTECODE\\\"] = \\\"1\\\"\\n            # Add sandbox dir to PYTHONPATH so project imports resolve\\n            existing_pp = env.get(\\\"PYTHONPATH\\\", \\\"\\\")\\n            env[\\\"PYTHONPATH\\\"] = sandbox_dir + (os.pathsep + existing_pp if existing_pp else \\\"\\\")\\n            if use_replay:\\n                env[\\\"HIKAFLOW_REPLAY\\\"] = \\\"1\\\"\"}",
+          "metadata": {
+            "tool_name": "Edit"
+          }
+        }
+      ],
+      "timestamp": "2026-03-21T00:29:09.586Z",
+      "input_tokens": 115228,
+      "output_tokens": 299,
+      "cumulative_tokens": 5516628
+    },
+    {
+      "turn_id": 117,
+      "parent_turn_id": 116,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": ""
+        }
+      ],
+      "timestamp": "2026-03-21T00:29:09.604Z",
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cumulative_tokens": 5516628
+    },
+    {
+      "turn_id": 118,
+      "parent_turn_id": 117,
+      "role": "assistant",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "**Fix #8: `handle_pr_merged` uses sync DB calls in async context**"
+        }
+      ],
+      "timestamp": "2026-03-21T00:29:16.552Z",
+      "input_tokens": 115576,
+      "output_tokens": 1,
+      "cumulative_tokens": 5632205
+    },
+    {
+      "turn_id": 119,
+      "parent_turn_id": 118,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "code",
+          "text": "[Edit] {\"replace_all\": false, \"file_path\": \"/Users/romirjain/Desktop/hikaflow/hikaflow.debugger/api/webhooks/pr_merged.py\", \"old_string\": \"from __future__ import annotations\\n\\nfrom typing import Any, Dict, Optional\\n\\nfrom api.db import get_self_heal_event_by_pr, update_self_heal_event\\nfrom api.logging_config import get_logger\\nfrom autodebug.flakiness import QuarantineManager\\n\\nlogger = get_logger(__name__)\\n\\n\\nasync def handle_pr_merged(\\n    pr_url: str,\\n    merged_by: Optional[str] = None,\\n) -> Dict[str, Any]:\\n    \\\"\\\"\\\"Handle a PR merged webhook event.\\n\\n    Args:\\n        pr_url: The URL of the merged PR\\n        merged_by: GitHub username who merged\\n\\n    Returns:\\n        Dict with action taken and details\\n    \\\"\\\"\\\"\\n    # Find the self-heal event for this PR\\n    event = get_self_heal_event_by_pr(pr_url)\", \"new_string\": \"from __future__ import annotations\\n\\nimport asyncio\\nfrom typing import Any, Dict, Optional\\n\\nfrom api.db import get_self_heal_event_by_pr, update_self_",
+          "metadata": {
+            "tool_name": "Edit"
+          }
+        }
+      ],
+      "timestamp": "2026-03-21T00:29:27.251Z",
+      "input_tokens": 115576,
+      "output_tokens": 573,
+      "cumulative_tokens": 5748354
+    },
+    {
+      "turn_id": 120,
+      "parent_turn_id": 119,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": ""
+        }
+      ],
+      "timestamp": "2026-03-21T00:29:27.273Z",
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cumulative_tokens": 5748354
+    },
+    {
+      "turn_id": 121,
+      "parent_turn_id": 120,
+      "role": "assistant",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "Now fix the second sync call in `handle_pr_merged`:"
+        }
+      ],
+      "timestamp": "2026-03-21T00:29:31.430Z",
+      "input_tokens": 116707,
+      "output_tokens": 2,
+      "cumulative_tokens": 5865063
+    },
+    {
+      "turn_id": 122,
+      "parent_turn_id": 121,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "code",
+          "text": "[Read] {\"file_path\": \"/Users/romirjain/Desktop/hikaflow/hikaflow.debugger/api/webhooks/pr_merged.py\", \"offset\": 75, \"limit\": 20}",
+          "metadata": {
+            "tool_name": "Read"
+          }
+        }
+      ],
+      "timestamp": "2026-03-21T00:29:36.503Z",
+      "input_tokens": 116707,
+      "output_tokens": 132,
+      "cumulative_tokens": 5981902
+    },
+    {
+      "turn_id": 123,
+      "parent_turn_id": 122,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": ""
+        }
+      ],
+      "timestamp": "2026-03-21T00:29:36.518Z",
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cumulative_tokens": 5981902
+    },
+    {
+      "turn_id": 124,
+      "parent_turn_id": 123,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "code",
+          "text": "[Edit] {\"replace_all\": false, \"file_path\": \"/Users/romirjain/Desktop/hikaflow/hikaflow.debugger/api/webhooks/pr_merged.py\", \"old_string\": \"    # Update event status AFTER successful unquarantine\\n    update_self_heal_event(event_id, {\\n        \\\"action\\\": \\\"pr_merged\\\",\\n        \\\"reason\\\": f\\\"PR merged by {merged_by or 'unknown'}\\\",\\n    })\", \"new_string\": \"    # Update event status AFTER successful unquarantine (sync \\u2014 offload to thread)\\n    await asyncio.to_thread(update_self_heal_event, event_id, {\\n        \\\"action\\\": \\\"pr_merged\\\",\\n        \\\"reason\\\": f\\\"PR merged by {merged_by or 'unknown'}\\\",\\n    })\"}",
+          "metadata": {
+            "tool_name": "Edit"
+          }
+        }
+      ],
+      "timestamp": "2026-03-21T00:29:42.447Z",
+      "input_tokens": 117051,
+      "output_tokens": 274,
+      "cumulative_tokens": 6099227
+    },
+    {
+      "turn_id": 125,
+      "parent_turn_id": 124,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": ""
+        }
+      ],
+      "timestamp": "2026-03-21T00:29:42.457Z",
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cumulative_tokens": 6099227
+    },
+    {
+      "turn_id": 126,
+      "parent_turn_id": 125,
+      "role": "assistant",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "**Fix #11: Test classifier regex too broad for \"auth\" \u2014 blocks auth flaky tests**"
+        }
+      ],
+      "timestamp": "2026-03-21T00:29:47.404Z",
+      "input_tokens": 117374,
+      "output_tokens": 4,
+      "cumulative_tokens": 6216605
+    },
+    {
+      "turn_id": 127,
+      "parent_turn_id": 126,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "code",
+          "text": "[Edit] {\"replace_all\": false, \"file_path\": \"/Users/romirjain/Desktop/hikaflow/hikaflow.debugger/autodebug/healing/test_classifier.py\", \"old_string\": \"    TestType.SECURITY: [\\n        re.compile(r\\\"(?i)(security|auth[nz]|xss|csrf|injection|pentest|vuln)\\\"),\\n    ],\", \"new_string\": \"    TestType.SECURITY: [\\n        re.compile(r\\\"(?i)(security|authn|authz|xss|csrf|injection|pentest|vuln)\\\"),\\n    ],\"}",
+          "metadata": {
+            "tool_name": "Edit"
+          }
+        }
+      ],
+      "timestamp": "2026-03-21T00:29:49.863Z",
+      "input_tokens": 117374,
+      "output_tokens": 249,
+      "cumulative_tokens": 6334228
+    },
+    {
+      "turn_id": 128,
+      "parent_turn_id": 127,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": ""
+        }
+      ],
+      "timestamp": "2026-03-21T00:29:49.890Z",
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cumulative_tokens": 6334228
+    },
+    {
+      "turn_id": 129,
+      "parent_turn_id": 128,
+      "role": "assistant",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "Now fix the path pattern too:"
+        }
+      ],
+      "timestamp": "2026-03-21T00:29:55.621Z",
+      "input_tokens": 117673,
+      "output_tokens": 2,
+      "cumulative_tokens": 6451903
+    },
+    {
+      "turn_id": 130,
+      "parent_turn_id": 129,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "code",
+          "text": "[Edit] {\"replace_all\": false, \"file_path\": \"/Users/romirjain/Desktop/hikaflow/hikaflow.debugger/autodebug/healing/test_classifier.py\", \"old_string\": \"    TestType.SECURITY: [\\n        re.compile(r\\\"(?i)(security|[\\\\b/]auth[nz]?[\\\\b/])\\\"),\\n    ],\", \"new_string\": \"    TestType.SECURITY: [\\n        re.compile(r\\\"(?i)(security|[\\\\b/]auth[nz][\\\\b/])\\\"),\\n    ],\"}",
+          "metadata": {
+            "tool_name": "Edit"
+          }
+        }
+      ],
+      "timestamp": "2026-03-21T00:30:02.292Z",
+      "input_tokens": 117673,
+      "output_tokens": 224,
+      "cumulative_tokens": 6569800
+    },
+    {
+      "turn_id": 131,
+      "parent_turn_id": 130,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": ""
+        }
+      ],
+      "timestamp": "2026-03-21T00:30:02.311Z",
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cumulative_tokens": 6569800
+    },
+    {
+      "turn_id": 132,
+      "parent_turn_id": 131,
+      "role": "assistant",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "**Fix #9: Rollback \u2014 store changed_files in fix metadata so rollback correlation works**"
+        }
+      ],
+      "timestamp": "2026-03-21T00:30:08.654Z",
+      "input_tokens": 118058,
+      "output_tokens": 1,
+      "cumulative_tokens": 6687859
+    },
+    {
+      "turn_id": 133,
+      "parent_turn_id": 132,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "code",
+          "text": "[Read] {\"file_path\": \"/Users/romirjain/Desktop/hikaflow/hikaflow.debugger/api/ai/self_healer.py\", \"offset\": 640, \"limit\": 30}",
+          "metadata": {
+            "tool_name": "Read"
+          }
+        }
+      ],
+      "timestamp": "2026-03-21T00:30:14.487Z",
+      "input_tokens": 118058,
+      "output_tokens": 140,
+      "cumulative_tokens": 6806057
+    },
+    {
+      "turn_id": 134,
+      "parent_turn_id": 133,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": ""
+        }
+      ],
+      "timestamp": "2026-03-21T00:30:14.505Z",
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cumulative_tokens": 6806057
+    },
+    {
+      "turn_id": 135,
+      "parent_turn_id": 134,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "code",
+          "text": "[Edit] {\"replace_all\": false, \"file_path\": \"/Users/romirjain/Desktop/hikaflow/hikaflow.debugger/api/ai/self_healer.py\", \"old_string\": \"        return {\\n            \\\"id\\\": run_id,\\n            \\\"description\\\": result.description,\\n            \\\"diff\\\": result.diff,\\n            \\\"patched_code\\\": result.patched_code,\\n            \\\"confidence\\\": result.confidence,\\n            \\\"verification\\\": {\\n                \\\"passed\\\": result.verification.passed,\\n                \\\"passed_runs\\\": result.verification.passed_runs,\\n                \\\"total_runs\\\": result.verification.total_runs,\\n            },\\n            \\\"root_cause_summary\\\": result.root_cause_summary,\\n            \\\"error_type\\\": run.get(\\\"exception_type\\\", \\\"unknown\\\"),\\n            \\\"strategy\\\": strategy,\\n            \\\"pattern_id\\\": pattern_id,\\n        }\", \"new_string\": \"        # Extract changed files from diff for rollback correlation\\n        changed_files = []\\n        if result.diff:\\n            import re as _re\\n          ",
+          "metadata": {
+            "tool_name": "Edit"
+          }
+        }
+      ],
+      "timestamp": "2026-03-21T00:30:23.790Z",
+      "input_tokens": 118641,
+      "output_tokens": 564,
+      "cumulative_tokens": 6925262
+    },
+    {
+      "turn_id": 136,
+      "parent_turn_id": 135,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": ""
+        }
+      ],
+      "timestamp": "2026-03-21T00:30:23.800Z",
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cumulative_tokens": 6925262
+    },
+    {
+      "turn_id": 137,
+      "parent_turn_id": 136,
+      "role": "assistant",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "**Fix #7: Healing lock race condition \u2014 make delete conditional on worker**"
+        }
+      ],
+      "timestamp": "2026-03-21T00:30:29.048Z",
+      "input_tokens": 119254,
+      "output_tokens": 4,
+      "cumulative_tokens": 7044520
+    },
+    {
+      "turn_id": 138,
+      "parent_turn_id": 137,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "code",
+          "text": "[Read] {\"file_path\": \"/Users/romirjain/Desktop/hikaflow/hikaflow.debugger/api/db/self_heal.py\", \"offset\": 273, \"limit\": 70}",
+          "metadata": {
+            "tool_name": "Read"
+          }
+        }
+      ],
+      "timestamp": "2026-03-21T00:30:34.918Z",
+      "input_tokens": 119254,
+      "output_tokens": 134,
+      "cumulative_tokens": 7163908
+    },
+    {
+      "turn_id": 139,
+      "parent_turn_id": 138,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": ""
+        }
+      ],
+      "timestamp": "2026-03-21T00:30:34.940Z",
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cumulative_tokens": 7163908
+    },
+    {
+      "turn_id": 140,
+      "parent_turn_id": 139,
+      "role": "assistant",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "The lock logic is actually fine \u2014 Step 1 only deletes locks for the same `lock_key` that are expired (`acquired_at < cutoff`). If the lock is still valid (not expired), the DELETE matches zero rows and Step 2's INSERT correctly returns 409. The \"race\" I identified is actually a non-issue because of the `lock_key=eq.` filter + `acquired_at=lt.` condition. The two-step approach is safe given the UNIQUE constraint. I'll leave this as-is.\n\nNow let me verify all the fixes compile cleanly:"
+        }
+      ],
+      "timestamp": "2026-03-21T00:30:42.083Z",
+      "input_tokens": 120380,
+      "output_tokens": 1,
+      "cumulative_tokens": 7284289
+    },
+    {
+      "turn_id": 141,
+      "parent_turn_id": 140,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "[Bash] {\"command\": \"python -c \\\"\\nimport py_compile, sys\\nfiles = [\\n    'api/db/self_heal.py',\\n    'api/ai/self_healer.py',\\n    'api/ai/verified_fixer.py',\\n    'api/webhooks/pr_merged.py',\\n    'autodebug/healing/test_classifier.py',\\n]\\nok = True\\nfor f in files:\\n    try:\\n        py_compile.compile(f, doraise=True)\\n        print(f'OK: {f}')\\n    except py_compile.PyCompileError as e:\\n        print(f'FAIL: {f}: {e}')\\n        ok = False\\nif ok:\\n    print('\\\\nAll files compile cleanly.')\\nelse:\\n    print('\\\\nSome files have syntax errors.')\\n    sys.exit(1)\\n\\\"\", \"description\": \"Verify all edited files compile\"}",
+          "metadata": {
+            "tool_name": "Bash"
+          }
+        }
+      ],
+      "timestamp": "2026-03-21T00:30:49.254Z",
+      "input_tokens": 120380,
+      "output_tokens": 428,
+      "cumulative_tokens": 7405097
+    },
+    {
+      "turn_id": 142,
+      "parent_turn_id": 141,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": ""
+        }
+      ],
+      "timestamp": "2026-03-21T00:30:50.075Z",
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cumulative_tokens": 7405097
+    },
+    {
+      "turn_id": 143,
+      "parent_turn_id": 142,
+      "role": "assistant",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "Now let me run the relevant tests:"
+        }
+      ],
+      "timestamp": "2026-03-21T00:30:54.971Z",
+      "input_tokens": 120868,
+      "output_tokens": 1,
+      "cumulative_tokens": 7525966
+    },
+    {
+      "turn_id": 144,
+      "parent_turn_id": 143,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "[Bash] {\"command\": \"python -m pytest tests/test_self_healer.py tests/test_rollback.py tests/test_verified_fixer.py tests/test_analysis_cache.py tests/test_healing_locks.py tests/test_test_classifier.py tests/test_fix_tester.py -v --tb=short 2>&1 | tail -80\", \"description\": \"Run tests for edited modules\", \"timeout\": 120000}",
+          "metadata": {
+            "tool_name": "Bash"
+          }
+        }
+      ],
+      "timestamp": "2026-03-21T00:31:01.943Z",
+      "input_tokens": 120868,
+      "output_tokens": 205,
+      "cumulative_tokens": 7647039
+    },
+    {
+      "turn_id": 145,
+      "parent_turn_id": 144,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": ""
+        }
+      ],
+      "timestamp": "2026-03-21T00:31:04.405Z",
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cumulative_tokens": 7647039
+    },
+    {
+      "turn_id": 146,
+      "parent_turn_id": 145,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "[Bash] {\"command\": \"find tests -name \\\"*self_heal*\\\" -o -name \\\"*rollback*\\\" -o -name \\\"*verified_fix*\\\" -o -name \\\"*analysis_cache*\\\" -o -name \\\"*healing*\\\" -o -name \\\"*test_classifier*\\\" -o -name \\\"*fix_test*\\\" 2>/dev/null | head -20\", \"description\": \"Find relevant test files\"}",
+          "metadata": {
+            "tool_name": "Bash"
+          }
+        }
+      ],
+      "timestamp": "2026-03-21T00:31:10.491Z",
+      "input_tokens": 121502,
+      "output_tokens": 148,
+      "cumulative_tokens": 7768689
+    },
+    {
+      "turn_id": 147,
+      "parent_turn_id": 146,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": ""
+        }
+      ],
+      "timestamp": "2026-03-21T00:31:11.002Z",
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cumulative_tokens": 7768689
+    },
+    {
+      "turn_id": 148,
+      "parent_turn_id": 147,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "[Bash] {\"command\": \"python -m pytest tests/test_rollback.py tests/test_test_classifier.py tests/test_healing.py tests/test_healing_locks.py tests/test_self_heal_endpoints.py tests/test_rollback_ai.py -v --tb=short 2>&1 | tail -100\", \"description\": \"Run relevant tests\", \"timeout\": 120000}",
+          "metadata": {
+            "tool_name": "Bash"
+          }
+        }
+      ],
+      "timestamp": "2026-03-21T00:31:17.815Z",
+      "input_tokens": 122150,
+      "output_tokens": 161,
+      "cumulative_tokens": 7891000
+    },
+    {
+      "turn_id": 149,
+      "parent_turn_id": 148,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": ""
+        }
+      ],
+      "timestamp": "2026-03-21T00:31:22.587Z",
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cumulative_tokens": 7891000
+    },
+    {
+      "turn_id": 150,
+      "parent_turn_id": 149,
+      "role": "assistant",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "All 77 tests pass. Let me also run a broader test to check for regressions:"
+        }
+      ],
+      "timestamp": "2026-03-21T00:31:26.762Z",
+      "input_tokens": 122342,
+      "output_tokens": 2,
+      "cumulative_tokens": 8013344
+    },
+    {
+      "turn_id": 151,
+      "parent_turn_id": 150,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "[Bash] {\"command\": \"python -m pytest tests/ -x --tb=short -q 2>&1 | tail -20\", \"description\": \"Run full test suite for regressions\", \"timeout\": 300000}",
+          "metadata": {
+            "tool_name": "Bash"
+          }
+        }
+      ],
+      "timestamp": "2026-03-21T00:31:27.406Z",
+      "input_tokens": 122342,
+      "output_tokens": 138,
+      "cumulative_tokens": 8135824
+    },
+    {
+      "turn_id": 152,
+      "parent_turn_id": 151,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": ""
+        }
+      ],
+      "timestamp": "2026-03-21T00:32:11.942Z",
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cumulative_tokens": 8135824
+    },
+    {
+      "turn_id": 153,
+      "parent_turn_id": 152,
+      "role": "assistant",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "Let me check if that failure is pre-existing:"
+        }
+      ],
+      "timestamp": "2026-03-21T00:32:17.803Z",
+      "input_tokens": 122555,
+      "output_tokens": 1,
+      "cumulative_tokens": 8258380
+    },
+    {
+      "turn_id": 154,
+      "parent_turn_id": 153,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "[Bash] {\"command\": \"git stash && python -m pytest tests/test_cli_scan_multilang.py::test_is_scannable_source_path_covers_broader_languages --tb=short -q 2>&1 | tail -5\", \"description\": \"Check if test failure is pre-existing\", \"timeout\": 60000}",
+          "metadata": {
+            "tool_name": "Bash"
+          }
+        }
+      ],
+      "timestamp": "2026-03-21T00:32:24.101Z",
+      "input_tokens": 122555,
+      "output_tokens": 179,
+      "cumulative_tokens": 8381114
+    },
+    {
+      "turn_id": 155,
+      "parent_turn_id": 154,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": ""
+        }
+      ],
+      "timestamp": "2026-03-21T00:32:26.724Z",
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cumulative_tokens": 8381114
+    },
+    {
+      "turn_id": 156,
+      "parent_turn_id": 155,
+      "role": "assistant",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "Pre-existing failure (fails on `main` without my changes too). Let me restore my changes:"
+        }
+      ],
+      "timestamp": "2026-03-21T00:32:30.872Z",
+      "input_tokens": 126179,
+      "output_tokens": 1,
+      "cumulative_tokens": 8507294
+    },
+    {
+      "turn_id": 157,
+      "parent_turn_id": 156,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "[Bash] {\"command\": \"git stash pop\", \"description\": \"Restore changes\"}",
+          "metadata": {
+            "tool_name": "Bash"
+          }
+        }
+      ],
+      "timestamp": "2026-03-21T00:32:31.041Z",
+      "input_tokens": 126179,
+      "output_tokens": 96,
+      "cumulative_tokens": 8633569
+    },
+    {
+      "turn_id": 158,
+      "parent_turn_id": 157,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": ""
+        }
+      ],
+      "timestamp": "2026-03-21T00:32:31.652Z",
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cumulative_tokens": 8633569
+    },
+    {
+      "turn_id": 159,
+      "parent_turn_id": 158,
+      "role": "assistant",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "I see the linter reverted some of my changes. Let me check which ones got reverted:"
+        }
+      ],
+      "timestamp": "2026-03-21T00:32:35.864Z",
+      "input_tokens": 126288,
+      "output_tokens": 1,
+      "cumulative_tokens": 8759858
+    },
+    {
+      "turn_id": 160,
+      "parent_turn_id": 159,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "[Bash] {\"command\": \"git diff api/ai/verified_fixer.py api/webhooks/pr_merged.py api/ai/self_healer.py autodebug/healing/test_classifier.py api/db/self_heal.py 2>&1 | head -200\", \"description\": \"Check current state of changes\"}",
+          "metadata": {
+            "tool_name": "Bash"
+          }
+        }
+      ],
+      "timestamp": "2026-03-21T00:32:37.111Z",
+      "input_tokens": 126288,
+      "output_tokens": 155,
+      "cumulative_tokens": 8886301
+    },
+    {
+      "turn_id": 161,
+      "parent_turn_id": 160,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": ""
+        }
+      ],
+      "timestamp": "2026-03-21T00:32:37.655Z",
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cumulative_tokens": 8886301
+    },
+    {
+      "turn_id": 162,
+      "parent_turn_id": 161,
+      "role": "assistant",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "Good, all my changes are intact. The system-reminders showed the linter reverting some changes, but `git stash pop` restored everything correctly. Let me verify the test_classifier change specifically:"
+        }
+      ],
+      "timestamp": "2026-03-21T00:32:42.030Z",
+      "input_tokens": 128038,
+      "output_tokens": 3,
+      "cumulative_tokens": 9014342
+    },
+    {
+      "turn_id": 163,
+      "parent_turn_id": 162,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "[Bash] {\"command\": \"git diff autodebug/healing/test_classifier.py\", \"description\": \"Check test_classifier changes\"}",
+          "metadata": {
+            "tool_name": "Bash"
+          }
+        }
+      ],
+      "timestamp": "2026-03-21T00:32:42.599Z",
+      "input_tokens": 128038,
+      "output_tokens": 129,
+      "cumulative_tokens": 9142509
+    },
+    {
+      "turn_id": 164,
+      "parent_turn_id": 163,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": ""
+        }
+      ],
+      "timestamp": "2026-03-21T00:32:43.111Z",
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cumulative_tokens": 9142509
+    },
+    {
+      "turn_id": 165,
+      "parent_turn_id": 164,
+      "role": "assistant",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "All changes are in place. Let me run the directly related tests one more time to confirm everything passes:"
+        }
+      ],
+      "timestamp": "2026-03-21T00:32:47.089Z",
+      "input_tokens": 128557,
+      "output_tokens": 1,
+      "cumulative_tokens": 9271067
+    },
+    {
+      "turn_id": 166,
+      "parent_turn_id": 165,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "[Bash] {\"command\": \"python -m pytest tests/test_rollback.py tests/test_test_classifier.py tests/test_healing.py tests/test_healing_locks.py tests/test_self_heal_endpoints.py tests/test_rollback_ai.py -v --tb=short -q 2>&1 | tail -10\", \"description\": \"Re-run relevant tests\", \"timeout\": 60000}",
+          "metadata": {
+            "tool_name": "Bash"
+          }
+        }
+      ],
+      "timestamp": "2026-03-21T00:32:48.536Z",
+      "input_tokens": 128557,
+      "output_tokens": 187,
+      "cumulative_tokens": 9399811
+    },
+    {
+      "turn_id": 167,
+      "parent_turn_id": 166,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": ""
+        }
+      ],
+      "timestamp": "2026-03-21T00:32:52.382Z",
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cumulative_tokens": 9399811
+    },
+    {
+      "turn_id": 168,
+      "parent_turn_id": 167,
+      "role": "assistant",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "All 77 tests pass. Here's a summary of all fixes applied:\n\n| # | File | Fix |\n|---|------|-----|\n| **3** | `api/db/self_heal.py:9` | Added missing `_raise_for_status` import \u2014 was causing NameError on all sync DB functions (locks, rollback, events) |\n| **1+2** | `api/ai/self_healer.py:855-885` | `enable_self_healing`: changed from `asyncio.to_thread` (wrong for async fn) to direct `await`, fixed signature to pass `(org_id, config_dict)` instead of just `(config)` |\n| **1b** | `api/ai/self_healer.py:889-891` | `check_stale_fix_prs`: same async-via-to_thread fix \u2014 now directly awaits `get_self_heal_events` |\n| **5** | `api/ai/verified_fixer.py:411` | Diff mismatch now returns `None` instead of original code \u2014 prevents \"verified\" PRs that change nothing |\n| **6** | `api/ai/verified_fixer.py:452-497` | Sandbox now preserves directory structure, copies conftest.py/pytest config files, and adds `PYTHONPATH` so imports resolve |\n| **4** | `api/db/self_heal.py:87` | `verification_passed` no longer set true for `fix_generated` (which includes below-threshold fixes) |\n| **8** | `api/webhooks/pr_merged.py:11,35,80` | Wrapped sync DB calls in `asyncio.to_thread` to avoid blocking the event loop |\n| **9** | `api/ai/self_healer.py:644-660` | Extract `changed_files` from fix diff and include in fix metadata so rollback correlation can detect cross-module regressions |\n| **11** | `autodebug/healing/test_classifier.py:42,64` | Tightened `auth` regex to `authn|authz` (name) and `auth[nz]` (path) so generic auth tests aren't blocked from healing |"
+        }
+      ],
+      "timestamp": "2026-03-21T00:33:07.994Z",
+      "input_tokens": 128775,
+      "output_tokens": 524,
+      "cumulative_tokens": 9529110
+    }
+  ],
+  "replay": {
+    "prefix_group_id": "grp_claude_d61c055e",
+    "prefix_overlap_ratio": 0.985,
+    "reuse_distance_turns": 2,
+    "reuse_distance_seconds": 6744,
+    "estimated_kv_bytes_peak": 1524657600,
+    "branch_count": 0,
+    "idle_windows_ms": [
+      0,
+      3880,
+      5054,
+      9236,
+      3680,
+      600,
+      10598,
+      2553,
+      9087,
+      6744110,
+      5,
+      1,
+      1321122,
+      1014,
+      306,
+      602,
+      13,
+      436,
+      193,
+      4817
+    ],
+    "arrival_pattern": "reactivation_heavy"
+  },
+  "kv_pressure": {
+    "cold_start": true,
+    "warm_cache_hit_rate": 0.7879130567393986,
+    "estimated_offload_bytes": 762328800,
+    "estimated_reload_bytes": 381164400,
+    "tier": "CPU",
+    "cache_expectation": "reactivated",
+    "eviction_risk_score": 0.95
+  },
+  "provenance": {
+    "generator_model": "claude-code-real",
+    "generator_prompt_version": "real-transcript-v1",
+    "pipeline_version": "0.1.0"
+  }
+}

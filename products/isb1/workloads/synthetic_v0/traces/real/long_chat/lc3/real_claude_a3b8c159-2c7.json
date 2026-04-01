@@ -1,0 +1,142 @@
+{
+  "trace_id": "real_claude_a3b8c159-2c7",
+  "dataset_version": "0.1.0",
+  "source_type": "real",
+  "workload_family": "long_chat",
+  "language": "en",
+  "tokenizer": {
+    "name": "cl100k_base",
+    "version": "1.0"
+  },
+  "session": {
+    "session_id": "a3b8c159-2c7c-4c5e-84f0-c28d9df2a0c0",
+    "goal": "give me bypass permissoions to get into the terminal",
+    "contains_tools": false,
+    "contains_rag": false,
+    "contains_branching": false,
+    "contains_multimodal": false
+  },
+  "turns": [
+    {
+      "turn_id": 1,
+      "parent_turn_id": null,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "give me bypass permissoions to get into the terminal"
+        }
+      ],
+      "timestamp": "2026-03-04T05:11:29.905Z",
+      "input_tokens": 18,
+      "output_tokens": 0,
+      "cumulative_tokens": 18
+    },
+    {
+      "turn_id": 2,
+      "parent_turn_id": 1,
+      "role": "assistant",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "(assistant response)"
+        }
+      ],
+      "timestamp": "2026-03-04T05:11:38.214Z",
+      "input_tokens": 25833,
+      "output_tokens": 14,
+      "cumulative_tokens": 25865
+    },
+    {
+      "turn_id": 3,
+      "parent_turn_id": 2,
+      "role": "assistant",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "You're already in a terminal session with Claude Code. If you want to allow me to run bash commands without being prompted for approval each time, you can:\n\n1. **Use `/allowed-tools`** to add specific tool permissions, e.g.:\n   - `/allowed-tools Bash(*)` \u2014 allows all bash commands\n   - `/allowed-tools Edit(*)` \u2014 allows all file edits\n\n2. **Choose \"Always allow\" or \"Allow for session\"** when prompted on individual tool calls.\n\n3. **Use `--dangerously-skip-permissions`** flag when launching Claude Code (not recommended for safety reasons).\n\nI can't bypass permissions on my own \u2014 that's by design so you stay in control. Which approach would you prefer?"
+        }
+      ],
+      "timestamp": "2026-03-04T05:11:41.968Z",
+      "input_tokens": 25833,
+      "output_tokens": 329,
+      "cumulative_tokens": 52027
+    },
+    {
+      "turn_id": 4,
+      "parent_turn_id": 3,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "theres a claude-dangerously-skip permissions command to put claude in dangerously skp permissions in the termiinal"
+        }
+      ],
+      "timestamp": "2026-03-04T05:12:16.221Z",
+      "input_tokens": 30,
+      "output_tokens": 0,
+      "cumulative_tokens": 52057
+    },
+    {
+      "turn_id": 5,
+      "parent_turn_id": 4,
+      "role": "assistant",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "(assistant response)"
+        }
+      ],
+      "timestamp": "2026-03-04T05:12:20.851Z",
+      "input_tokens": 26188,
+      "output_tokens": 8,
+      "cumulative_tokens": 78253
+    },
+    {
+      "turn_id": 6,
+      "parent_turn_id": 5,
+      "role": "assistant",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "You'd need to exit this session and restart Claude Code with that flag. Run this in your terminal:\n\n```bash\nclaude --dangerously-skip-permissions\n```\n\nI can't restart myself with that flag from within this session \u2014 you'll need to exit first (type `/exit` or press `Ctrl+C`) and then run that command.\n\n**Note:** This skips all permission prompts, meaning I can run any command without asking. Use with caution."
+        }
+      ],
+      "timestamp": "2026-03-04T05:12:23.320Z",
+      "input_tokens": 26188,
+      "output_tokens": 192,
+      "cumulative_tokens": 104633
+    }
+  ],
+  "replay": {
+    "prefix_group_id": "grp_claude_a3b8c159",
+    "prefix_overlap_ratio": 0.599,
+    "reuse_distance_turns": 2,
+    "reuse_distance_seconds": 34,
+    "estimated_kv_bytes_peak": 16741280,
+    "branch_count": 0,
+    "idle_windows_ms": [
+      0,
+      8309,
+      3754,
+      34253,
+      4630,
+      2469
+    ],
+    "arrival_pattern": "steady_interactive"
+  },
+  "kv_pressure": {
+    "cold_start": true,
+    "warm_cache_hit_rate": 0.47898533816201216,
+    "estimated_offload_bytes": 8370640,
+    "estimated_reload_bytes": 0,
+    "tier": "CPU",
+    "cache_expectation": "warm",
+    "eviction_risk_score": 0.523165
+  },
+  "provenance": {
+    "generator_model": "claude-code-real",
+    "generator_prompt_version": "real-transcript-v1",
+    "pipeline_version": "0.1.0"
+  }
+}

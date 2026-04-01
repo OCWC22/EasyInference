@@ -1,0 +1,231 @@
+{
+  "trace_id": "real_claude_d525f7f6-f5b",
+  "dataset_version": "0.1.0",
+  "source_type": "real",
+  "workload_family": "long_chat",
+  "language": "en",
+  "tokenizer": {
+    "name": "cl100k_base",
+    "version": "1.0"
+  },
+  "session": {
+    "session_id": "d525f7f6-f5b1-4506-955e-b64cd63d587f",
+    "goal": "Generate a SessionTraceV0 JSON object for inference benchmarking. Workload family: long_chat. Target: 8k-16k cumulative tokens, 14 turns. Goal: Analyze a research paper about transformer architectures",
+    "contains_tools": true,
+    "contains_rag": false,
+    "contains_branching": false,
+    "contains_multimodal": false
+  },
+  "turns": [
+    {
+      "turn_id": 1,
+      "parent_turn_id": null,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "Generate a SessionTraceV0 JSON object for inference benchmarking. Workload family: long_chat. Target: 8k-16k cumulative tokens, 14 turns. Goal: Analyze a research paper about transformer architectures with iterative clarification questions. Include retrieval turns with type \"document\" content blocks. Include replay fields (prefix_group_id, prefix_overlap_ratio: 0.78, idle_windows_ms: [0,3000,6000,4000], arrival_pattern: \"steady_interactive\") and kv_pressure fields (cold_start: true, tier: \"HBM\", cache_expectation: \"warm\", eviction_risk_score: 0.12). session.contains_rag: true. turn_id must be integers. Return one JSON object only, no markdown fencing.\n"
+        }
+      ],
+      "timestamp": "2026-04-01T03:42:18.329Z",
+      "input_tokens": 144,
+      "output_tokens": 0,
+      "cumulative_tokens": 144
+    },
+    {
+      "turn_id": 2,
+      "parent_turn_id": 1,
+      "role": "assistant",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "(assistant response)"
+        }
+      ],
+      "timestamp": "2026-04-01T03:42:20.194Z",
+      "input_tokens": 23884,
+      "output_tokens": 36,
+      "cumulative_tokens": 24064
+    },
+    {
+      "turn_id": 3,
+      "parent_turn_id": 2,
+      "role": "assistant",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "Let me check the existing session trace schema first."
+        }
+      ],
+      "timestamp": "2026-04-01T03:42:20.736Z",
+      "input_tokens": 23884,
+      "output_tokens": 36,
+      "cumulative_tokens": 47984
+    },
+    {
+      "turn_id": 4,
+      "parent_turn_id": 3,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "[Glob] {\"pattern\": \"**/session_trace*\"}",
+          "metadata": {
+            "tool_name": "Glob"
+          }
+        }
+      ],
+      "timestamp": "2026-04-01T03:42:21.243Z",
+      "input_tokens": 23884,
+      "output_tokens": 36,
+      "cumulative_tokens": 71904
+    },
+    {
+      "turn_id": 5,
+      "parent_turn_id": 4,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": ""
+        }
+      ],
+      "timestamp": "2026-04-01T03:42:21.361Z",
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cumulative_tokens": 71904
+    },
+    {
+      "turn_id": 6,
+      "parent_turn_id": 5,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "[Grep] {\"pattern\": \"SessionTraceV0\", \"output_mode\": \"files_with_matches\"}",
+          "metadata": {
+            "tool_name": "Grep"
+          }
+        }
+      ],
+      "timestamp": "2026-04-01T03:42:21.869Z",
+      "input_tokens": 23884,
+      "output_tokens": 182,
+      "cumulative_tokens": 95970
+    },
+    {
+      "turn_id": 7,
+      "parent_turn_id": 6,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": ""
+        }
+      ],
+      "timestamp": "2026-04-01T03:42:21.891Z",
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cumulative_tokens": 95970
+    },
+    {
+      "turn_id": 8,
+      "parent_turn_id": 7,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "code",
+          "text": "[Read] {\"file_path\": \"/Users/romirjain/.superset/worktrees/EasyInference/important-emu/products/isb1/workloads/session_trace.py\"}",
+          "metadata": {
+            "tool_name": "Read"
+          }
+        }
+      ],
+      "timestamp": "2026-04-01T03:42:26.278Z",
+      "input_tokens": 24224,
+      "output_tokens": 92,
+      "cumulative_tokens": 120286
+    },
+    {
+      "turn_id": 9,
+      "parent_turn_id": 8,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": ""
+        }
+      ],
+      "timestamp": "2026-04-01T03:42:26.281Z",
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cumulative_tokens": 120286
+    },
+    {
+      "turn_id": 10,
+      "parent_turn_id": 9,
+      "role": "assistant",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "(assistant response)"
+        }
+      ],
+      "timestamp": "2026-04-01T03:42:44.440Z",
+      "input_tokens": 25709,
+      "output_tokens": 8,
+      "cumulative_tokens": 146003
+    },
+    {
+      "turn_id": 11,
+      "parent_turn_id": 10,
+      "role": "assistant",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "{\"trace_id\":\"st-long-chat-transformer-paper-20260331-001\",\"dataset_version\":\"0.1.0\",\"source_type\":\"synthetic\",\"workload_family\":\"long_chat\",\"language\":\"en\",\"tokenizer\":{\"name\":\"cl100k_base\",\"version\":\"0.2.0\"},\"session\":{\"session_id\":\"sess-a7e3f1b0-4c29-4d8a-b6e1-9f0c2d3e4a5b\",\"goal\":\"Analyze a research paper about transformer architectures with iterative clarification questions\",\"contains_tools\":false,\"contains_rag\":true,\"contains_branching\":false,\"contains_multimodal\":false},\"turns\":[{\"turn_id\":1,\"parent_turn_id\":null,\"role\":\"system\",\"content_blocks\":[{\"type\":\"text\",\"text\":\"You are a research assistant specializing in deep learning architectures. Help the user analyze academic papers with precise, technically grounded responses. When referencing specific claims, cite the relevant section.\",\"metadata\":{}}],\"timestamp\":\"2026-03-31T14:00:00Z\",\"input_tokens\":250,\"output_tokens\":0,\"cumulative_tokens\":250},{\"turn_id\":2,\"parent_turn_id\":1,\"role\":\"user\",\"content_blocks\":[{\"type\":\"text\",\"text\":\"I have a paper titled 'Efficient Sparse Attention for Long-Context Transformers' that proposes a new sparse attention mechanism. Can you analyze the core contribution and how it compares to standard multi-head attention? I'll share the relevant sections.\",\"metadata\":{}}],\"timestamp\":\"2026-03-31T14:00:05Z\",\"input_tokens\":350,\"output_tokens\":0,\"cumulative_tokens\":600},{\"turn_id\":3,\"parent_turn_id\":2,\"role\":\"retrieval\",\"content_blocks\":[{\"type\":\"document\",\"text\":\"Abstract: We introduce Strided Grouped Sparse Attention (SGSA), a sub-quadratic attention mechanism that reduces FLOPs by 4.7x on 128K-token sequences while retaining 98.2% of dense attention quality on downstream coding and summarization benchmarks. SGSA partitions the query space into overlapping groups with learned stride patterns, enabling each head to attend to a structured sparse subset of keys. Section 3.1 \u2014 Architecture: Each attention head is assigned a stride factor s_h drawn from a learned distribution. Within each group of s_h consecutive queries, attention is computed against a union of (a) local keys within a sliding window of size w, and (b) global sentinel keys selected via a lightweight top-k router. The router scores are detached from the main backward pass to avoid gradient interference. Section 3.2 \u2014 KV Cache Implications: Because each head attends to a different sparse subset, the KV cache cannot be trivially shared across heads in disaggregated inference. We propose Cache-Aligned SGSA (CA-SGSA) which constrains stride factors to multiples of the cache block size B, ensuring KV blocks can be reused across heads within the same stride group.\",\"uri\":\"arxiv:2026.04521\",\"mime_type\":\"application/pdf\",\"metadata\":{\"section\":\"abstract+3.1+3.2\",\"page_range\":\"1-6\"}}],\"timestamp\":\"2026-03-31T14:00:06Z\",\"input_tokens\":1200,\"output_tokens\":0,\"cumulative_tokens\":1800},{\"turn_id\":4,\"parent_turn_id\":3,\"role\":\"assistant\",\"content_blocks\":[{\"type\":\"text\",\"text\":\"The core contribution is Strided Grouped Sparse Attention (SGSA), which achieves sub-quadratic complexity through two mechanisms working in tandem:\\n\\n1. **Structured sparsity via learned strides**: Rather than using fixed sparse patterns (like Longformer's sliding window or BigBird's random+global), SGSA learns per-head stride factors that partition queries into overlapping groups. Each group only attends to a union of local keys (sliding window) and global sentinel keys (top-k routed). The key insight is that different heads can specialize in different context ranges by learning different strides.\\n\\n2. **Cache-aligned variant (CA-SGSA)**: This is arguably the more novel contribution \u2014 they address the practical deployment problem that per-head sparse patterns break KV cache sharing in disaggregated serving. By constraining strides to multiples of cache block size B, KV blocks become reusable across heads.\\n\\nCompared to standard multi-head attention:\\n- **FLOPs**: 4.7x reduction at 128K context (sub-quadratic vs quadratic)\\n- **Quality**: 98.2% retention on downstream tasks \u2014 the gap is small but nonzero\\n- **KV cache**: More complex management due to heterogeneous per-head access patterns, partially mitigated by CA-SGSA\\n- **Gradient flow**: The detached router scores avoid interference but may limit the router's ability to adapt during fine-tuning\\n\\nShall I dig into any specific aspect \u2014 the router mechanism, the quality benchmarks, or the KV cache implications for Dynamo-style disaggregated inference?\",\"metadata\":{}}],\"timestamp\":\"2026-03-31T14:00:12Z\",\"input_tokens\":0,\"output_tokens\":1400,\"cumulative_tokens\":3200},{\"turn_id\":5,\"parent_turn_id\":4,\"role\":\"user\",\"content_blocks\":[{\"type\":\"text\",\"text\":\"Yes, the detached router gradient concerns me. If the router can't adapt during fine-tuning, doesn't that mean the sparse patterns are essentially fixed after pretraining? How does this affect transfer to new domains?\",\"metadata\":{}}],\"timestamp\":\"2026-03-31T14:00:45Z\",\"input_tokens\":200,\"output_tokens\":0"
+        }
+      ],
+      "timestamp": "2026-04-01T03:44:21.630Z",
+      "input_tokens": 25709,
+      "output_tokens": 8,
+      "cumulative_tokens": 171720
+    }
+  ],
+  "replay": {
+    "prefix_group_id": "grp_claude_d525f7f6",
+    "prefix_overlap_ratio": 0.805,
+    "reuse_distance_turns": 2,
+    "reuse_distance_seconds": 97,
+    "estimated_kv_bytes_peak": 27475200,
+    "branch_count": 0,
+    "idle_windows_ms": [
+      0,
+      1865,
+      542,
+      507,
+      118,
+      508,
+      22,
+      4387,
+      3,
+      18159,
+      97190
+    ],
+    "arrival_pattern": "reactivation_heavy"
+  },
+  "kv_pressure": {
+    "cold_start": true,
+    "warm_cache_hit_rate": 0.6437368963036944,
+    "estimated_offload_bytes": 13737600,
+    "estimated_reload_bytes": 6868800,
+    "tier": "CPU",
+    "cache_expectation": "reactivated",
+    "eviction_risk_score": 0.8586
+  },
+  "provenance": {
+    "generator_model": "claude-code-real",
+    "generator_prompt_version": "real-transcript-v1",
+    "pipeline_version": "0.1.0"
+  }
+}

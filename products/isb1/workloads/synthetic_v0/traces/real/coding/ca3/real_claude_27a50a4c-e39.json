@@ -1,0 +1,486 @@
+{
+  "trace_id": "real_claude_27a50a4c-e39",
+  "dataset_version": "0.1.0",
+  "source_type": "real",
+  "workload_family": "coding",
+  "language": "en",
+  "tokenizer": {
+    "name": "cl100k_base",
+    "version": "1.0"
+  },
+  "session": {
+    "session_id": "27a50a4c-e391-4508-9547-4b198102adb5",
+    "goal": "Generate a SessionTraceV0 JSON object for inference benchmarking. Workload family: coding. Target: 128k+ cumulative tokens, 30 turns. Goal: Full repo audit with security review, performance profiling,",
+    "contains_tools": true,
+    "contains_rag": false,
+    "contains_branching": false,
+    "contains_multimodal": false
+  },
+  "turns": [
+    {
+      "turn_id": 1,
+      "parent_turn_id": null,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "Generate a SessionTraceV0 JSON object for inference benchmarking. Workload family: coding. Target: 128k+ cumulative tokens, 30 turns. Goal: Full repo audit with security review, performance profiling, and fixes across a large Python project. Include many tool turns with file reads, grep, bash, edits. Include two alternative fix attempts where one fails. Include log and code content blocks. session.contains_tools: true, session.contains_branching: true. Include replay fields (prefix_group_id, prefix_overlap_ratio: 0.65, idle_windows_ms: [0,5000,30000,300000,10000,60000], arrival_pattern: \"reactivation_heavy\") and kv_pressure fields (cold_start: true, tier: \"NVMe\", cache_expectation: \"reactivated\", eviction_risk_score: 0.85). turn_id must be integers. Return one JSON object only, no markdown fencing.\n"
+        }
+      ],
+      "timestamp": "2026-04-01T03:51:47.662Z",
+      "input_tokens": 188,
+      "output_tokens": 0,
+      "cumulative_tokens": 188
+    },
+    {
+      "turn_id": 2,
+      "parent_turn_id": 1,
+      "role": "assistant",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "(assistant response)"
+        }
+      ],
+      "timestamp": "2026-04-01T03:51:51.997Z",
+      "input_tokens": 23928,
+      "output_tokens": 34,
+      "cumulative_tokens": 24150
+    },
+    {
+      "turn_id": 3,
+      "parent_turn_id": 2,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "[Glob] {\"pattern\": \"**/session_trace*\"}",
+          "metadata": {
+            "tool_name": "Glob"
+          }
+        }
+      ],
+      "timestamp": "2026-04-01T03:51:52.519Z",
+      "input_tokens": 23928,
+      "output_tokens": 34,
+      "cumulative_tokens": 48112
+    },
+    {
+      "turn_id": 4,
+      "parent_turn_id": 3,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": ""
+        }
+      ],
+      "timestamp": "2026-04-01T03:51:52.564Z",
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cumulative_tokens": 48112
+    },
+    {
+      "turn_id": 5,
+      "parent_turn_id": 4,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "[Glob] {\"pattern\": \"**/SessionTrace*\"}",
+          "metadata": {
+            "tool_name": "Glob"
+          }
+        }
+      ],
+      "timestamp": "2026-04-01T03:51:52.851Z",
+      "input_tokens": 23928,
+      "output_tokens": 34,
+      "cumulative_tokens": 72074
+    },
+    {
+      "turn_id": 6,
+      "parent_turn_id": 5,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "[Glob] {\"pattern\": \"**/synthetic_v0/**\"}",
+          "metadata": {
+            "tool_name": "Glob"
+          }
+        }
+      ],
+      "timestamp": "2026-04-01T03:51:52.932Z",
+      "input_tokens": 23928,
+      "output_tokens": 34,
+      "cumulative_tokens": 96036
+    },
+    {
+      "turn_id": 7,
+      "parent_turn_id": 6,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": ""
+        }
+      ],
+      "timestamp": "2026-04-01T03:51:52.894Z",
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cumulative_tokens": 96036
+    },
+    {
+      "turn_id": 8,
+      "parent_turn_id": 7,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": ""
+        }
+      ],
+      "timestamp": "2026-04-01T03:51:52.978Z",
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cumulative_tokens": 96036
+    },
+    {
+      "turn_id": 9,
+      "parent_turn_id": 8,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "code",
+          "text": "[Read] {\"file_path\": \"/Users/romirjain/.superset/worktrees/EasyInference/important-emu/products/isb1/workloads/session_trace.py\"}",
+          "metadata": {
+            "tool_name": "Read"
+          }
+        }
+      ],
+      "timestamp": "2026-04-01T03:51:56.206Z",
+      "input_tokens": 24580,
+      "output_tokens": 35,
+      "cumulative_tokens": 120651
+    },
+    {
+      "turn_id": 10,
+      "parent_turn_id": 9,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": ""
+        }
+      ],
+      "timestamp": "2026-04-01T03:51:56.209Z",
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cumulative_tokens": 120651
+    },
+    {
+      "turn_id": 11,
+      "parent_turn_id": 10,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "code",
+          "text": "[Read] {\"file_path\": \"/Users/romirjain/.superset/worktrees/EasyInference/important-emu/products/isb1/workloads/synthetic_v0/traces/synthetic/coding/ca1/ca1_bandit_security.json\"}",
+          "metadata": {
+            "tool_name": "Read"
+          }
+        }
+      ],
+      "timestamp": "2026-04-01T03:51:57.195Z",
+      "input_tokens": 24580,
+      "output_tokens": 35,
+      "cumulative_tokens": 145266
+    },
+    {
+      "turn_id": 12,
+      "parent_turn_id": 11,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "code",
+          "text": "[Read] {\"file_path\": \"/Users/romirjain/.superset/worktrees/EasyInference/important-emu/products/isb1/workloads/synthetic_v0/traces/synthetic/long_chat/lc3/lc3_debug_large_codebase.json\"}",
+          "metadata": {
+            "tool_name": "Read"
+          }
+        }
+      ],
+      "timestamp": "2026-04-01T03:51:57.667Z",
+      "input_tokens": 24580,
+      "output_tokens": 285,
+      "cumulative_tokens": 170131
+    },
+    {
+      "turn_id": 13,
+      "parent_turn_id": 12,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": ""
+        }
+      ],
+      "timestamp": "2026-04-01T03:51:57.845Z",
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cumulative_tokens": 170131
+    },
+    {
+      "turn_id": 14,
+      "parent_turn_id": 13,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": ""
+        }
+      ],
+      "timestamp": "2026-04-01T03:51:58.044Z",
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cumulative_tokens": 170131
+    },
+    {
+      "turn_id": 15,
+      "parent_turn_id": 14,
+      "role": "assistant",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "Let me look at an existing trace for the structure pattern."
+        }
+      ],
+      "timestamp": "2026-04-01T03:52:00.067Z",
+      "input_tokens": 26412,
+      "output_tokens": 3,
+      "cumulative_tokens": 196546
+    },
+    {
+      "turn_id": 16,
+      "parent_turn_id": 15,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "code",
+          "text": "[Read] {\"file_path\": \"/Users/romirjain/.superset/worktrees/EasyInference/important-emu/products/isb1/workloads/synthetic_v0/traces/synthetic/coding/ca1/ca1_bandit_security.json\", \"limit\": 80}",
+          "metadata": {
+            "tool_name": "Read"
+          }
+        }
+      ],
+      "timestamp": "2026-04-01T03:52:02.439Z",
+      "input_tokens": 26412,
+      "output_tokens": 3,
+      "cumulative_tokens": 222961
+    },
+    {
+      "turn_id": 17,
+      "parent_turn_id": 16,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": ""
+        }
+      ],
+      "timestamp": "2026-04-01T03:52:02.604Z",
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cumulative_tokens": 222961
+    },
+    {
+      "turn_id": 18,
+      "parent_turn_id": 17,
+      "role": "assistant",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "Good, I have the schema and an example. Let me also see the tail of the bandit trace for the ending structure and replay/kv_pressure fields."
+        }
+      ],
+      "timestamp": "2026-04-01T03:52:05.870Z",
+      "input_tokens": 30636,
+      "output_tokens": 1,
+      "cumulative_tokens": 253598
+    },
+    {
+      "turn_id": 19,
+      "parent_turn_id": 18,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "code",
+          "text": "[Read] {\"file_path\": \"/Users/romirjain/.superset/worktrees/EasyInference/important-emu/products/isb1/workloads/synthetic_v0/traces/synthetic/coding/ca1/ca1_bandit_security.json\", \"offset\": 520}",
+          "metadata": {
+            "tool_name": "Read"
+          }
+        }
+      ],
+      "timestamp": "2026-04-01T03:52:08.336Z",
+      "input_tokens": 30636,
+      "output_tokens": 162,
+      "cumulative_tokens": 284396
+    },
+    {
+      "turn_id": 20,
+      "parent_turn_id": 19,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": ""
+        }
+      ],
+      "timestamp": "2026-04-01T03:52:08.365Z",
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cumulative_tokens": 284396
+    },
+    {
+      "turn_id": 21,
+      "parent_turn_id": 20,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "code",
+          "text": "[Read] {\"file_path\": \"/Users/romirjain/.superset/worktrees/EasyInference/important-emu/products/isb1/workloads/synthetic_v0/traces/synthetic/coding/ca1/ca1_bandit_security.json\", \"offset\": 300}",
+          "metadata": {
+            "tool_name": "Read"
+          }
+        }
+      ],
+      "timestamp": "2026-04-01T03:52:11.968Z",
+      "input_tokens": 30975,
+      "output_tokens": 127,
+      "cumulative_tokens": 315498
+    },
+    {
+      "turn_id": 22,
+      "parent_turn_id": 21,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": ""
+        }
+      ],
+      "timestamp": "2026-04-01T03:52:11.970Z",
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cumulative_tokens": 315498
+    },
+    {
+      "turn_id": 23,
+      "parent_turn_id": 22,
+      "role": "assistant",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "Now I have the full schema and an example. Let me generate the trace."
+        }
+      ],
+      "timestamp": "2026-04-01T03:52:14.830Z",
+      "input_tokens": 31616,
+      "output_tokens": 2,
+      "cumulative_tokens": 347116
+    },
+    {
+      "turn_id": 24,
+      "parent_turn_id": 23,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "code",
+          "text": "[Write] {\"file_path\": \"/dev/stdout\", \"content\": \"placeholder\"}",
+          "metadata": {
+            "tool_name": "Write"
+          }
+        }
+      ],
+      "timestamp": "2026-04-01T03:52:15.119Z",
+      "input_tokens": 31616,
+      "output_tokens": 90,
+      "cumulative_tokens": 378822
+    },
+    {
+      "turn_id": 25,
+      "parent_turn_id": 24,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": ""
+        }
+      ],
+      "timestamp": "2026-04-01T03:52:15.120Z",
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cumulative_tokens": 378822
+    },
+    {
+      "turn_id": 26,
+      "parent_turn_id": 25,
+      "role": "assistant",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "(assistant response)"
+        }
+      ],
+      "timestamp": "2026-04-01T03:52:18.170Z",
+      "input_tokens": 31785,
+      "output_tokens": 8,
+      "cumulative_tokens": 410615
+    }
+  ],
+  "replay": {
+    "prefix_group_id": "grp_claude_27a50a4c",
+    "prefix_overlap_ratio": 0.914,
+    "reuse_distance_turns": 2,
+    "reuse_distance_seconds": 4,
+    "estimated_kv_bytes_peak": 65698400,
+    "branch_count": 0,
+    "idle_windows_ms": [
+      0,
+      4335,
+      522,
+      45,
+      287,
+      81,
+      0,
+      84,
+      3228,
+      3,
+      986,
+      472,
+      178,
+      199,
+      2023,
+      2372,
+      165,
+      3266,
+      2466,
+      29
+    ],
+    "arrival_pattern": "steady_interactive"
+  },
+  "kv_pressure": {
+    "cold_start": true,
+    "warm_cache_hit_rate": 0.7315534613205948,
+    "estimated_offload_bytes": 32849200,
+    "estimated_reload_bytes": 0,
+    "tier": "CPU",
+    "cache_expectation": "warm",
+    "eviction_risk_score": 0.95
+  },
+  "provenance": {
+    "generator_model": "claude-code-real",
+    "generator_prompt_version": "real-transcript-v1",
+    "pipeline_version": "0.1.0"
+  }
+}

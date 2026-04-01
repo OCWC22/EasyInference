@@ -1,0 +1,231 @@
+{
+  "trace_id": "real_claude_363edb24-6cd",
+  "dataset_version": "0.1.0",
+  "source_type": "real",
+  "workload_family": "coding",
+  "language": "en",
+  "tokenizer": {
+    "name": "cl100k_base",
+    "version": "1.0"
+  },
+  "session": {
+    "session_id": "363edb24-6cd3-4380-81da-d1003bdd5e50",
+    "goal": "Generate a SessionTraceV0 JSON object for inference benchmarking. Workload family: long_chat. Target: 32k-64k cumulative tokens, 22 turns. Goal: Write a technical RFC for migrating from monolith to mi",
+    "contains_tools": true,
+    "contains_rag": false,
+    "contains_branching": false,
+    "contains_multimodal": false
+  },
+  "turns": [
+    {
+      "turn_id": 1,
+      "parent_turn_id": null,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "Generate a SessionTraceV0 JSON object for inference benchmarking. Workload family: long_chat. Target: 32k-64k cumulative tokens, 22 turns. Goal: Write a technical RFC for migrating from monolith to microservices with iterative feedback and revisions. Include prior-turn references, idle windows for think time. Include replay fields (prefix_group_id, prefix_overlap_ratio: 0.88, idle_windows_ms: [0,4000,8000,120000,3000], arrival_pattern: \"reactivation_heavy\") and kv_pressure fields (cold_start: true, tier: \"HBM\", cache_expectation: \"reactivated\", eviction_risk_score: 0.40). turn_id must be integers. Return one JSON object only, no markdown fencing.\n"
+        }
+      ],
+      "timestamp": "2026-04-01T03:42:24.918Z",
+      "input_tokens": 148,
+      "output_tokens": 0,
+      "cumulative_tokens": 148
+    },
+    {
+      "turn_id": 2,
+      "parent_turn_id": 1,
+      "role": "assistant",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "(assistant response)"
+        }
+      ],
+      "timestamp": "2026-04-01T03:42:27.387Z",
+      "input_tokens": 23889,
+      "output_tokens": 36,
+      "cumulative_tokens": 24073
+    },
+    {
+      "turn_id": 3,
+      "parent_turn_id": 2,
+      "role": "assistant",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "Let me check the existing session trace format first."
+        }
+      ],
+      "timestamp": "2026-04-01T03:42:27.950Z",
+      "input_tokens": 23889,
+      "output_tokens": 36,
+      "cumulative_tokens": 47998
+    },
+    {
+      "turn_id": 4,
+      "parent_turn_id": 3,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "[Glob] {\"pattern\": \"**/session_trace*\"}",
+          "metadata": {
+            "tool_name": "Glob"
+          }
+        }
+      ],
+      "timestamp": "2026-04-01T03:42:28.396Z",
+      "input_tokens": 23889,
+      "output_tokens": 36,
+      "cumulative_tokens": 71923
+    },
+    {
+      "turn_id": 5,
+      "parent_turn_id": 4,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": ""
+        }
+      ],
+      "timestamp": "2026-04-01T03:42:28.457Z",
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cumulative_tokens": 71923
+    },
+    {
+      "turn_id": 6,
+      "parent_turn_id": 5,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "[Grep] {\"pattern\": \"SessionTraceV0\", \"output_mode\": \"files_with_matches\"}",
+          "metadata": {
+            "tool_name": "Grep"
+          }
+        }
+      ],
+      "timestamp": "2026-04-01T03:42:28.906Z",
+      "input_tokens": 23889,
+      "output_tokens": 183,
+      "cumulative_tokens": 95995
+    },
+    {
+      "turn_id": 7,
+      "parent_turn_id": 6,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": ""
+        }
+      ],
+      "timestamp": "2026-04-01T03:42:28.927Z",
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cumulative_tokens": 95995
+    },
+    {
+      "turn_id": 8,
+      "parent_turn_id": 7,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "code",
+          "text": "[Read] {\"file_path\": \"/Users/romirjain/.superset/worktrees/EasyInference/important-emu/products/isb1/workloads/session_trace.py\"}",
+          "metadata": {
+            "tool_name": "Read"
+          }
+        }
+      ],
+      "timestamp": "2026-04-01T03:42:32.617Z",
+      "input_tokens": 24228,
+      "output_tokens": 92,
+      "cumulative_tokens": 120315
+    },
+    {
+      "turn_id": 9,
+      "parent_turn_id": 8,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": ""
+        }
+      ],
+      "timestamp": "2026-04-01T03:42:32.659Z",
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cumulative_tokens": 120315
+    },
+    {
+      "turn_id": 10,
+      "parent_turn_id": 9,
+      "role": "assistant",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "(assistant response)"
+        }
+      ],
+      "timestamp": "2026-04-01T03:42:42.204Z",
+      "input_tokens": 25718,
+      "output_tokens": 8,
+      "cumulative_tokens": 146041
+    },
+    {
+      "turn_id": 11,
+      "parent_turn_id": 10,
+      "role": "assistant",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "Now I have the schema. Here's the SessionTraceV0 JSON:\n\n{\"trace_id\":\"st-longchat-rfc-monolith-micro-001\",\"dataset_version\":\"0.1.0\",\"source_type\":\"synthetic\",\"workload_family\":\"long_chat\",\"language\":\"en\",\"tokenizer\":{\"name\":\"cl100k_base\",\"version\":\"0.2.0\"},\"session\":{\"session_id\":\"sess-rfc-mono2micro-7a3e\",\"goal\":\"Write a technical RFC for migrating from monolith to microservices with iterative feedback and revisions\",\"contains_tools\":false,\"contains_rag\":false,\"contains_branching\":false,\"contains_multimodal\":false},\"turns\":[{\"turn_id\":0,\"parent_turn_id\":null,\"role\":\"system\",\"content_blocks\":[{\"type\":\"text\",\"text\":\"You are a senior distributed systems architect. Help the user write a production-quality RFC for migrating a monolithic application to a microservices architecture. Be thorough, cite industry patterns, and respond to feedback iteratively. Structure the RFC with standard sections: motivation, goals, non-goals, design, migration strategy, risks, and rollback plan.\",\"uri\":null,\"mime_type\":null,\"metadata\":{}}],\"timestamp\":\"2026-03-31T14:00:00Z\",\"input_tokens\":82,\"output_tokens\":0,\"cumulative_tokens\":82},{\"turn_id\":1,\"parent_turn_id\":0,\"role\":\"user\",\"content_blocks\":[{\"type\":\"text\",\"text\":\"I need to write an RFC for migrating our e-commerce platform from a Django monolith to microservices. The monolith handles catalog, orders, payments, user accounts, notifications, and inventory. We have about 200 engineers across 8 teams, 40M monthly active users, and the deploy pipeline takes 45 minutes end-to-end with frequent rollback due to coupling. Can you draft the initial RFC structure and the motivation section?\",\"uri\":null,\"mime_type\":null,\"metadata\":{}}],\"timestamp\":\"2026-03-31T14:00:12Z\",\"input_tokens\":96,\"output_tokens\":0,\"cumulative_tokens\":178},{\"turn_id\":2,\"parent_turn_id\":1,\"role\":\"assistant\",\"content_blocks\":[{\"type\":\"text\",\"text\":\"# RFC-2026-037: Monolith-to-Microservices Migration \u2014 E-Commerce Platform\\n\\n## Status: Draft\\n## Authors: [Platform Architecture Team]\\n## Date: 2026-03-31\\n\\n---\\n\\n## 1. Motivation\\n\\nOur e-commerce platform currently runs as a single Django monolith serving all six core domains: catalog, orders, payments, user accounts, notifications, and inventory. While this architecture served us well during early growth, we have reached inflection points across multiple operational dimensions that necessitate decomposition.\\n\\n### 1.1 Deploy Velocity Bottleneck\\nThe current end-to-end deploy pipeline takes 45 minutes. With 200 engineers across 8 teams committing to a shared trunk, the deploy queue creates a 3-5 hour feedback loop from merge to production. Coupled modules mean that a change to the notification template rendering engine requires a full regression suite covering payments and inventory \u2014 domains with zero functional overlap.\\n\\n### 1.2 Blast Radius of Failures\\nIn Q4 2025, a memory leak in the catalog search indexer caused OOM kills that took down the entire platform, including payments processing. Post-incident analysis showed that 73% of our P1 incidents in the past 12 months had blast radii extending beyond the originating domain due to shared process boundaries.\\n\\n### 1.3 Scaling Asymmetry\\nCatalog read traffic follows diurnal patterns with 10x peaks during flash sales, while payment processing is relatively steady. The monolith forces uniform scaling: we provision for peak catalog load, resulting in 4x over-provisioning of payment processing capacity, costing approximately $2.1M/year in excess compute.\\n\\n### 1.4 Team Autonomy\\nDomain boundaries in the codebase do not enforce isolation. Teams routinely reach across module boundaries through direct database queries, shared ORM models, and in-process function calls. This creates implicit coupling that surfaces as merge conflicts (avg 12/week cross-team), broken contracts, and coordination overhead estimated at 15-20% of engineering time.\\n\\n### 1.5 Technology Lock-in\\nAll domains are constrained to Django 4.2/Python 3.11/PostgreSQL 15. The ML team needs to deploy real-time recommendation models that require GPU inference and would benefit from a Go or Rust serving layer. The notifications team wants to adopt an event-driven architecture with Kafka, but the synchronous request-response pattern of the monolith makes this impractical without architectural changes.\\n\\n---\\n\\n## 2. Goals\\n- Independent deployability per domain service (target: <10 min deploy per service)\\n- Fault isolation: failures in one domain do not cascade to others\\n- Independent scaling per domain based on actual traffic patterns\\n- Team autonomy: each team owns their service, schema, and deploy pipeline\\n- Incremental migration: no big-bang cutover; strangler fig pattern\\n\\n## 3. Non-Goals\\n- Rewriting business logic (lift-and-shift, then optimize)\\n- Migrating to a different cloud provider\\n- Adopting Kubernetes (already on K8s)\\n- Changing the customer-facing API contract\\n\\n## 4. Design (to be expanded)\\n## 5. Migration Strategy (to be expan"
+        }
+      ],
+      "timestamp": "2026-04-01T03:48:32.045Z",
+      "input_tokens": 25718,
+      "output_tokens": 16681,
+      "cumulative_tokens": 188440
+    }
+  ],
+  "replay": {
+    "prefix_group_id": "grp_claude_363edb24",
+    "prefix_overlap_ratio": 0.789,
+    "reuse_distance_turns": 2,
+    "reuse_distance_seconds": 349,
+    "estimated_kv_bytes_peak": 30150400,
+    "branch_count": 0,
+    "idle_windows_ms": [
+      0,
+      2469,
+      563,
+      446,
+      61,
+      449,
+      21,
+      3690,
+      42,
+      9545,
+      349841
+    ],
+    "arrival_pattern": "reactivation_heavy"
+  },
+  "kv_pressure": {
+    "cold_start": true,
+    "warm_cache_hit_rate": 0.6314659375934482,
+    "estimated_offload_bytes": 15075200,
+    "estimated_reload_bytes": 7537600,
+    "tier": "CPU",
+    "cache_expectation": "reactivated",
+    "eviction_risk_score": 0.9422
+  },
+  "provenance": {
+    "generator_model": "claude-code-real",
+    "generator_prompt_version": "real-transcript-v1",
+    "pipeline_version": "0.1.0"
+  }
+}

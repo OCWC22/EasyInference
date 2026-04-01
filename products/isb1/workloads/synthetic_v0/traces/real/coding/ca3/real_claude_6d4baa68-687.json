@@ -1,0 +1,215 @@
+{
+  "trace_id": "real_claude_6d4baa68-687",
+  "dataset_version": "0.1.0",
+  "source_type": "real",
+  "workload_family": "coding",
+  "language": "en",
+  "tokenizer": {
+    "name": "cl100k_base",
+    "version": "1.0"
+  },
+  "session": {
+    "session_id": "6d4baa68-6876-4dbd-b0f9-1add813efc77",
+    "goal": "Generate a SessionTraceV0 JSON object for inference benchmarking. Workload family: coding. Target: 64k-96k cumulative tokens, 22 turns. Goal: Debug flaky CI test in a Django-like repo with log analysi",
+    "contains_tools": true,
+    "contains_rag": false,
+    "contains_branching": false,
+    "contains_multimodal": false
+  },
+  "turns": [
+    {
+      "turn_id": 1,
+      "parent_turn_id": null,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "Generate a SessionTraceV0 JSON object for inference benchmarking. Workload family: coding. Target: 64k-96k cumulative tokens, 22 turns. Goal: Debug flaky CI test in a Django-like repo with log analysis. Include tool turns with bash test output, grep results, file reads, and code edits. Include at least one retry where a fix fails and the agent tries again. session.contains_tools: true, session.contains_branching: true. Include replay fields (prefix_group_id, prefix_overlap_ratio: 0.72, idle_windows_ms: [0,4000,15000,120000,5000], arrival_pattern: \"reactivation_heavy\") and kv_pressure fields (cold_start: true, tier: \"CPU\", cache_expectation: \"reactivated\", eviction_risk_score: 0.60). turn_id must be integers. Return one JSON object only, no markdown fencing.\n"
+        }
+      ],
+      "timestamp": "2026-04-01T03:42:53.097Z",
+      "input_tokens": 188,
+      "output_tokens": 0,
+      "cumulative_tokens": 188
+    },
+    {
+      "turn_id": 2,
+      "parent_turn_id": 1,
+      "role": "assistant",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "(assistant response)"
+        }
+      ],
+      "timestamp": "2026-04-01T03:42:55.868Z",
+      "input_tokens": 23916,
+      "output_tokens": 35,
+      "cumulative_tokens": 24139
+    },
+    {
+      "turn_id": 3,
+      "parent_turn_id": 2,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "[Glob] {\"pattern\": \"**/session_trace*\"}",
+          "metadata": {
+            "tool_name": "Glob"
+          }
+        }
+      ],
+      "timestamp": "2026-04-01T03:42:56.678Z",
+      "input_tokens": 23916,
+      "output_tokens": 35,
+      "cumulative_tokens": 48090
+    },
+    {
+      "turn_id": 4,
+      "parent_turn_id": 3,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": ""
+        }
+      ],
+      "timestamp": "2026-04-01T03:42:56.737Z",
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cumulative_tokens": 48090
+    },
+    {
+      "turn_id": 5,
+      "parent_turn_id": 4,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "[Grep] {\"pattern\": \"SessionTraceV0\", \"output_mode\": \"files_with_matches\"}",
+          "metadata": {
+            "tool_name": "Grep"
+          }
+        }
+      ],
+      "timestamp": "2026-04-01T03:42:56.882Z",
+      "input_tokens": 23916,
+      "output_tokens": 169,
+      "cumulative_tokens": 72175
+    },
+    {
+      "turn_id": 6,
+      "parent_turn_id": 5,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": ""
+        }
+      ],
+      "timestamp": "2026-04-01T03:42:56.899Z",
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cumulative_tokens": 72175
+    },
+    {
+      "turn_id": 7,
+      "parent_turn_id": 6,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "code",
+          "text": "[Read] {\"file_path\": \"/Users/romirjain/.superset/worktrees/EasyInference/important-emu/products/isb1/workloads/session_trace.py\"}",
+          "metadata": {
+            "tool_name": "Read"
+          }
+        }
+      ],
+      "timestamp": "2026-04-01T03:43:00.606Z",
+      "input_tokens": 24243,
+      "output_tokens": 92,
+      "cumulative_tokens": 96510
+    },
+    {
+      "turn_id": 8,
+      "parent_turn_id": 7,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": ""
+        }
+      ],
+      "timestamp": "2026-04-01T03:43:00.615Z",
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cumulative_tokens": 96510
+    },
+    {
+      "turn_id": 9,
+      "parent_turn_id": 8,
+      "role": "assistant",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "(assistant response)"
+        }
+      ],
+      "timestamp": "2026-04-01T03:43:25.726Z",
+      "input_tokens": 25733,
+      "output_tokens": 8,
+      "cumulative_tokens": 122251
+    },
+    {
+      "turn_id": 10,
+      "parent_turn_id": 9,
+      "role": "assistant",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "{\"trace_id\":\"st0-coding-django-ci-flaky-001\",\"dataset_version\":\"0.1.0\",\"source_type\":\"synthetic\",\"workload_family\":\"coding\",\"language\":\"en\",\"tokenizer\":{\"name\":\"cl100k_base\",\"version\":\"0.2.0\"},\"session\":{\"session_id\":\"sess-a83f19c0-4e7b-4d1a-b8e2-6c0d3f5a9b12\",\"goal\":\"Debug flaky CI test in a Django-like repo with log analysis \u2014 intermittent test_order_lifecycle failure caused by timezone-dependent datetime comparison and a race condition in cache invalidation\",\"contains_tools\":true,\"contains_rag\":false,\"contains_branching\":true,\"contains_multimodal\":false},\"turns\":[{\"turn_id\":0,\"parent_turn_id\":null,\"role\":\"system\",\"content_blocks\":[{\"type\":\"text\",\"text\":\"You are an expert software engineer. You have access to bash, grep, file read, and file edit tools. Help the user debug their flaky CI test. The project is a Django-like e-commerce application with PostgreSQL and Redis caching. Always read code before modifying it. If a fix does not work, investigate further before retrying.\"}],\"timestamp\":\"2026-03-31T14:00:00Z\",\"input_tokens\":312,\"output_tokens\":0,\"cumulative_tokens\":312},{\"turn_id\":1,\"parent_turn_id\":0,\"role\":\"user\",\"content_blocks\":[{\"type\":\"text\",\"text\":\"Our CI is flaky. The test `test_order_lifecycle` in `tests/test_orders.py` passes locally but fails ~30% of CI runs. Here's the latest CI log:\\n\\n```\\nFAILED tests/test_orders.py::TestOrderLifecycle::test_order_lifecycle - AssertionError: Order status timestamp mismatch: expected 2026-03-31 14:00:00+00:00, got 2026-03-31 07:00:00-07:00\\n\\nDuring handling of the above exception, another exception occurred:\\nassertionError: Cache returned stale order after status transition. Got status='pending', expected='confirmed'\\n```\\n\\nThis has been blocking our deploy for two days. The test creates an order, transitions it through pending -> confirmed -> shipped -> delivered, and checks timestamps and cache consistency at each step. It looks like there are two separate issues \u2014 a timezone comparison bug and some kind of cache race. Can you dig in and fix both?\"},{\"type\":\"log\",\"text\":\"CI Run #4891 \u2014 2026-03-31T13:58:22Z\\nJob: test-suite\\nRunner: ubuntu-22.04\\nPython: 3.12.2\\nDjango: 5.1.3\\nPostgres: 16.2\\nRedis: 7.2.4\\nTimezone: UTC (CI), America/Los_Angeles (dev laptops)\\nDuration: 142s\\nResult: FAILED (1 failure, 247 passed)\\n\\nFull traceback:\\n  File \\\"/app/tests/test_orders.py\\\", line 89\\n    assert order.confirmed_at == expected_ts\\nAssertionError: datetime comparison failed\\n  timezone-aware != timezone-naive\\n\\n  File \\\"/app/tests/test_orders.py\\\", line 112\\n    cached = cache.get(f'order:{order.id}')\\n    assert cached.status == 'confirmed'\\nAssertionError: 'pending' != 'confirmed'\\n\\nCache invalidation log:\\n  [14:00:01.003] cache.set order:17 status=pending ttl=300\\n  [14:00:01.127] order.transition pending->confirmed\\n  [14:00:01.128] cache.delete order:17 (invalidation)\\n  [14:00:01.129] cache.get order:17 -> MISS\\n  [14:00:01.130] db.query SELECT * FROM orders WHERE id=17\\n  [14:00:01.131] cache.set order:17 status=confirmed ttl=300\\n  [14:00:01.003] cache.set order:17 status=pending ttl=300  <-- DUPLICATE late write!\\n\\nNote the duplicate cache.set at 14:00:01.003 \u2014 looks like a delayed write from the initial creation is landing AFTER the invalidation+refill cycle.\"}],\"timestamp\":\"2026-03-31T14:00:05Z\",\"input_tokens\":2840,\"output_tokens\":0,\"cumulative_tokens\":3152},{\"turn_id\":2,\"parent_turn_id\":1,\"role\":\"assistant\",\"content_blocks\":[{\"type\":\"text\",\"text\":\"Two distinct bugs here:\\n\\n1. **Timezone mismatch**: The test compares timezone-aware and timezone-naive datetimes. CI runs in UTC, dev laptops in America/Los_Angeles. The model likely stores aware datetimes but the test constructs naive expected values (or vice versa).\\n\\n2. **Cache race condition**: The CI log shows a delayed `cache.set` for `status=pending` arriving *after* the invalidation+refill cycle for the `confirmed` transition. This is a classic async write reordering bug \u2014 the initial cache population is completing after the transition already invalidated and refreshed the cache.\\n\\nLet me start by running the test suite to reproduce, then read the relevant source files.\\n\\n```tool_call\\nbash: cd /app && python -m pytest tests/test_orders.py::TestOrderLifecycle::test_order_lifecycle -v --tb=long 2>&1\\n```\"}],\"timestamp\":\"2026-03-31T14:00:08Z\",\"input_tokens\":0,\"output_tokens\":680,\"cumulative_tokens\":3832},{\"turn_id\":3,\"parent_turn_id\":2,\"role\":\"tool\",\"content_blocks\":[{\"type\":\"log\",\"text\":\"$ cd /app && python -m pytest tests/test_orders.py::TestOrderLifecycle::test_order_lifecycle -v --tb=long 2>&1\\n\\n================================ test session starts =================================\\nplatform linux -- Python 3.12.2, pytest-8.1.1, pluggy-1.4.0\\nrootdir: /app\\nconfigfile: pyproject.toml\\nplugins: django-4.8.0, redis-3.0.2, asyncio-0.23.5, cov-5.0.0, timeout-2.3.1\\ncollected 1 item\\n\\ntests/test_orders.py::TestOrderLifecycle::test_order_lifecycle \\n\\n--- Order creation ---\\nOrder #42 crea"
+        }
+      ],
+      "timestamp": "2026-04-01T03:49:28.052Z",
+      "input_tokens": 25733,
+      "output_tokens": 27590,
+      "cumulative_tokens": 175574
+    }
+  ],
+  "replay": {
+    "prefix_group_id": "grp_claude_6d4baa68",
+    "prefix_overlap_ratio": 0.742,
+    "reuse_distance_turns": 2,
+    "reuse_distance_seconds": 362,
+    "estimated_kv_bytes_peak": 28091840,
+    "branch_count": 0,
+    "idle_windows_ms": [
+      0,
+      2771,
+      810,
+      59,
+      145,
+      17,
+      3707,
+      9,
+      25111,
+      362326
+    ],
+    "arrival_pattern": "reactivation_heavy"
+  },
+  "kv_pressure": {
+    "cold_start": true,
+    "warm_cache_hit_rate": 0.5937035145246847,
+    "estimated_offload_bytes": 14045920,
+    "estimated_reload_bytes": 7022960,
+    "tier": "CPU",
+    "cache_expectation": "reactivated",
+    "eviction_risk_score": 0.87787
+  },
+  "provenance": {
+    "generator_model": "claude-code-real",
+    "generator_prompt_version": "real-transcript-v1",
+    "pipeline_version": "0.1.0"
+  }
+}

@@ -1,0 +1,266 @@
+{
+  "trace_id": "real_claude_8e9ae3da-4a5",
+  "dataset_version": "0.1.0",
+  "source_type": "real",
+  "workload_family": "coding",
+  "language": "en",
+  "tokenizer": {
+    "name": "cl100k_base",
+    "version": "1.0"
+  },
+  "session": {
+    "session_id": "8e9ae3da-4a54-4415-97ad-c454b1e46b96",
+    "goal": "Generate a SessionTraceV0 JSON object for inference benchmarking. Workload family: coding. Target: 128k+ cumulative tokens, 35 turns. Goal: Build a complete CLI tool from scratch with tests, CI config",
+    "contains_tools": true,
+    "contains_rag": false,
+    "contains_branching": false,
+    "contains_multimodal": false
+  },
+  "turns": [
+    {
+      "turn_id": 1,
+      "parent_turn_id": null,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "Generate a SessionTraceV0 JSON object for inference benchmarking. Workload family: coding. Target: 128k+ cumulative tokens, 35 turns. Goal: Build a complete CLI tool from scratch with tests, CI config, and docs. Include tool turns creating files, running tests, fixing failures, adding features iteratively. Include two alternative approaches tried. session.contains_tools: true, session.contains_branching: true. Include replay fields (prefix_group_id, prefix_overlap_ratio: 0.60, idle_windows_ms: [0,3000,15000,600000,8000,120000], arrival_pattern: \"reactivation_heavy\") and kv_pressure fields (cold_start: true, tier: \"NVMe\", cache_expectation: \"reactivated\", eviction_risk_score: 0.80). turn_id must be integers. Return one JSON object only, no markdown fencing.\n"
+        }
+      ],
+      "timestamp": "2026-04-01T03:43:05.457Z",
+      "input_tokens": 170,
+      "output_tokens": 0,
+      "cumulative_tokens": 170
+    },
+    {
+      "turn_id": 2,
+      "parent_turn_id": 1,
+      "role": "assistant",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "(assistant response)"
+        }
+      ],
+      "timestamp": "2026-04-01T03:43:07.714Z",
+      "input_tokens": 23909,
+      "output_tokens": 35,
+      "cumulative_tokens": 24114
+    },
+    {
+      "turn_id": 3,
+      "parent_turn_id": 2,
+      "role": "assistant",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "Let me check the existing session trace schema and examples in the codebase."
+        }
+      ],
+      "timestamp": "2026-04-01T03:43:08.831Z",
+      "input_tokens": 23909,
+      "output_tokens": 35,
+      "cumulative_tokens": 48058
+    },
+    {
+      "turn_id": 4,
+      "parent_turn_id": 3,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "[Glob] {\"pattern\": \"**/session_trace*\"}",
+          "metadata": {
+            "tool_name": "Glob"
+          }
+        }
+      ],
+      "timestamp": "2026-04-01T03:43:08.842Z",
+      "input_tokens": 23909,
+      "output_tokens": 35,
+      "cumulative_tokens": 72002
+    },
+    {
+      "turn_id": 5,
+      "parent_turn_id": 4,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": ""
+        }
+      ],
+      "timestamp": "2026-04-01T03:43:08.894Z",
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cumulative_tokens": 72002
+    },
+    {
+      "turn_id": 6,
+      "parent_turn_id": 5,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "[Glob] {\"pattern\": \"**/SessionTrace*\"}",
+          "metadata": {
+            "tool_name": "Glob"
+          }
+        }
+      ],
+      "timestamp": "2026-04-01T03:43:09.290Z",
+      "input_tokens": 23909,
+      "output_tokens": 35,
+      "cumulative_tokens": 95946
+    },
+    {
+      "turn_id": 7,
+      "parent_turn_id": 6,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": ""
+        }
+      ],
+      "timestamp": "2026-04-01T03:43:09.373Z",
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cumulative_tokens": 95946
+    },
+    {
+      "turn_id": 8,
+      "parent_turn_id": 7,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "[Grep] {\"pattern\": \"SessionTraceV0\"}",
+          "metadata": {
+            "tool_name": "Grep"
+          }
+        }
+      ],
+      "timestamp": "2026-04-01T03:43:09.544Z",
+      "input_tokens": 23909,
+      "output_tokens": 207,
+      "cumulative_tokens": 120062
+    },
+    {
+      "turn_id": 9,
+      "parent_turn_id": 8,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": ""
+        }
+      ],
+      "timestamp": "2026-04-01T03:43:09.562Z",
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cumulative_tokens": 120062
+    },
+    {
+      "turn_id": 10,
+      "parent_turn_id": 9,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "code",
+          "text": "[Read] {\"file_path\": \"/Users/romirjain/.superset/worktrees/EasyInference/important-emu/products/isb1/workloads/session_trace.py\"}",
+          "metadata": {
+            "tool_name": "Read"
+          }
+        }
+      ],
+      "timestamp": "2026-04-01T03:43:19.309Z",
+      "input_tokens": 24299,
+      "output_tokens": 92,
+      "cumulative_tokens": 144453
+    },
+    {
+      "turn_id": 11,
+      "parent_turn_id": 10,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": ""
+        }
+      ],
+      "timestamp": "2026-04-01T03:43:19.312Z",
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cumulative_tokens": 144453
+    },
+    {
+      "turn_id": 12,
+      "parent_turn_id": 11,
+      "role": "assistant",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "(assistant response)"
+        }
+      ],
+      "timestamp": "2026-04-01T03:43:33.582Z",
+      "input_tokens": 25786,
+      "output_tokens": 8,
+      "cumulative_tokens": 170247
+    },
+    {
+      "turn_id": 13,
+      "parent_turn_id": 12,
+      "role": "assistant",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "Now I have the full schema. Let me generate the JSON object.\n\n{\"trace_id\":\"sess-coding-cli-build-001\",\"dataset_version\":\"0.1.0\",\"source_type\":\"synthetic\",\"workload_family\":\"coding\",\"language\":\"en\",\"tokenizer\":{\"name\":\"cl100k_base\",\"version\":\"0.2.0\"},\"session\":{\"session_id\":\"cli-build-e2e-7a3f\",\"goal\":\"Build a complete CLI tool from scratch with tests, CI config, and docs\",\"contains_tools\":true,\"contains_rag\":false,\"contains_branching\":true,\"contains_multimodal\":false},\"turns\":[{\"turn_id\":0,\"parent_turn_id\":null,\"role\":\"system\",\"content_blocks\":[{\"type\":\"text\",\"text\":\"You are a senior software engineer. Build production-quality Python CLI tools with Click, pytest tests, GitHub Actions CI, and README docs.\",\"metadata\":{}}],\"timestamp\":\"2026-03-31T10:00:00Z\",\"input_tokens\":85,\"output_tokens\":0,\"cumulative_tokens\":85},{\"turn_id\":1,\"parent_turn_id\":0,\"role\":\"user\",\"content_blocks\":[{\"type\":\"text\",\"text\":\"Build a CLI tool called 'filewatch' that monitors a directory for changes and logs events. Support --dir, --pattern, --interval flags. Use Click for argument parsing. Start with project scaffolding: pyproject.toml, src layout, empty test dir.\",\"metadata\":{}}],\"timestamp\":\"2026-03-31T10:00:05Z\",\"input_tokens\":62,\"output_tokens\":0,\"cumulative_tokens\":147},{\"turn_id\":2,\"parent_turn_id\":1,\"role\":\"assistant\",\"content_blocks\":[{\"type\":\"text\",\"text\":\"I'll scaffold the project with a src layout. Here's the plan:\\n1. pyproject.toml with click dependency\\n2. src/filewatch/__init__.py and cli.py\\n3. tests/ directory with conftest.py\",\"metadata\":{}},{\"type\":\"code\",\"text\":\"# pyproject.toml\\n[project]\\nname = \\\"filewatch\\\"\\nversion = \\\"0.1.0\\\"\\nrequires-python = \\\">=3.11\\\"\\ndependencies = [\\\"click>=8.1\\\", \\\"watchdog>=4.0\\\"]\\n\\n[project.scripts]\\nfilewatch = \\\"filewatch.cli:main\\\"\\n\\n[build-system]\\nrequires = [\\\"hatchling\\\"]\\nbuild-backend = \\\"hatchling.build\\\"\\n\\n[tool.hatch.build.targets.wheel]\\npackages = [\\\"src/filewatch\\\"]\\n\\n[tool.pytest.ini_options]\\ntestpaths = [\\\"tests\\\"]\",\"metadata\":{\"filename\":\"pyproject.toml\"}}],\"timestamp\":\"2026-03-31T10:00:18Z\",\"input_tokens\":0,\"output_tokens\":420,\"cumulative_tokens\":567},{\"turn_id\":3,\"parent_turn_id\":2,\"role\":\"tool\",\"content_blocks\":[{\"type\":\"log\",\"text\":\"Created pyproject.toml, src/filewatch/__init__.py, src/filewatch/cli.py, tests/conftest.py\",\"metadata\":{\"tool\":\"file_create\",\"files_created\":4}}],\"timestamp\":\"2026-03-31T10:00:19Z\",\"input_tokens\":0,\"output_tokens\":38,\"cumulative_tokens\":605},{\"turn_id\":4,\"parent_turn_id\":3,\"role\":\"assistant\",\"content_blocks\":[{\"type\":\"code\",\"text\":\"# src/filewatch/cli.py\\nimport click\\nimport time\\nimport fnmatch\\nfrom pathlib import Path\\nfrom watchdog.observers import Observer\\nfrom watchdog.events import FileSystemEventHandler\\n\\nclass PatternHandler(FileSystemEventHandler):\\n    def __init__(self, pattern: str):\\n        self.pattern = pattern\\n        self.events: list[dict] = []\\n\\n    def on_any_event(self, event):\\n        if event.is_directory:\\n            return\\n        if self.pattern and not fnmatch.fnmatch(Path(event.src_path).name, self.pattern):\\n            return\\n        entry = {\\\"type\\\": event.event_type, \\\"path\\\": event.src_path, \\\"ts\\\": time.time()}\\n        self.events.append(entry)\\n        click.echo(f\\\"[{event.event_type}] {event.src_path}\\\")\\n\\n@click.command()\\n@click.option(\\\"--dir\\\", \\\"watch_dir\\\", type=click.Path(exists=True), default=\\\".\\\", help=\\\"Directory to watch\\\")\\n@click.option(\\\"--pattern\\\", default=\\\"*\\\", help=\\\"Glob pattern to filter files\\\")\\n@click.option(\\\"--interval\\\", type=float, default=1.0, help=\\\"Polling interval in seconds\\\")\\ndef main(watch_dir: str, pattern: str, interval: float):\\n    \\\"\\\"\\\"Monitor a directory for file changes.\\\"\\\"\\\"\\n    handler = PatternHandler(pattern)\\n    observer = Observer()\\n    observer.schedule(handler, watch_dir, recursive=True)\\n    observer.start()\\n    click.echo(f\\\"Watching {watch_dir} for '{pattern}' (interval={interval}s)\\\")\\n    try:\\n        while True:\\n            time.sleep(interval)\\n    except KeyboardInterrupt:\\n        observer.stop()\\n    observer.join()\\n\\nif __name__ == \\\"__main__\\\":\\n    main()\",\"metadata\":{\"filename\":\"src/filewatch/cli.py\"}}],\"timestamp\":\"2026-03-31T10:00:35Z\",\"input_tokens\":0,\"output_tokens\":980,\"cumulative_tokens\":1585},{\"turn_id\":5,\"parent_turn_id\":4,\"role\":\"tool\",\"content_blocks\":[{\"type\":\"log\",\"text\":\"Wrote src/filewatch/cli.py (38 lines)\",\"metadata\":{\"tool\":\"file_write\"}}],\"timestamp\":\"2026-03-31T10:00:36Z\",\"input_tokens\":0,\"output_tokens\":22,\"cumulative_tokens\":1607},{\"turn_id\":6,\"parent_turn_id\":5,\"role\":\"user\",\"content_blocks\":[{\"type\":\"text\",\"text\":\"Good start. Now write tests for the CLI. I want unit tests for PatternHandler and integration tests that invoke the CLI via Click's CliRunner. Cover edge cases: empty dir, invalid pattern, permission denied.\",\"metadata\":{}}],\"timestamp\":\"2026-03-31T10:03:10Z\",\"input_tokens\":55,\"output_tokens\":0,\"cumulative_tokens\":1662},{\"turn_id\":7,\"parent_turn_id\":6,\"role\":\"assistant\","
+        }
+      ],
+      "timestamp": "2026-04-01T03:57:45.727Z",
+      "input_tokens": 25786,
+      "output_tokens": 16274,
+      "cumulative_tokens": 212307
+    }
+  ],
+  "replay": {
+    "prefix_group_id": "grp_claude_8e9ae3da",
+    "prefix_overlap_ratio": 0.826,
+    "reuse_distance_turns": 2,
+    "reuse_distance_seconds": 852,
+    "estimated_kv_bytes_peak": 33969120,
+    "branch_count": 0,
+    "idle_windows_ms": [
+      0,
+      2257,
+      1117,
+      11,
+      52,
+      396,
+      83,
+      171,
+      18,
+      9747,
+      3,
+      14270,
+      852145
+    ],
+    "arrival_pattern": "reactivation_heavy"
+  },
+  "kv_pressure": {
+    "cold_start": true,
+    "warm_cache_hit_rate": 0.6606993468311132,
+    "estimated_offload_bytes": 16984560,
+    "estimated_reload_bytes": 8492280,
+    "tier": "CPU",
+    "cache_expectation": "reactivated",
+    "eviction_risk_score": 0.95
+  },
+  "provenance": {
+    "generator_model": "claude-code-real",
+    "generator_prompt_version": "real-transcript-v1",
+    "pipeline_version": "0.1.0"
+  }
+}

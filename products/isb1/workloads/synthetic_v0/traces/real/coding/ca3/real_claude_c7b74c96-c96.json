@@ -1,0 +1,483 @@
+{
+  "trace_id": "real_claude_c7b74c96-c96",
+  "dataset_version": "0.1.0",
+  "source_type": "real",
+  "workload_family": "coding",
+  "language": "en",
+  "tokenizer": {
+    "name": "cl100k_base",
+    "version": "1.0"
+  },
+  "session": {
+    "session_id": "c7b74c96-c963-44ed-84e1-75c8039a198c",
+    "goal": "need to calude plan in a new terminal to bypass permissions claude bypass permissions ro smth",
+    "contains_tools": true,
+    "contains_rag": false,
+    "contains_branching": false,
+    "contains_multimodal": false
+  },
+  "turns": [
+    {
+      "turn_id": 1,
+      "parent_turn_id": null,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "need to calude plan in a new terminal to bypass permissions claude bypass permissions ro smth"
+        }
+      ],
+      "timestamp": "2026-03-04T20:52:56.412Z",
+      "input_tokens": 32,
+      "output_tokens": 0,
+      "cumulative_tokens": 32
+    },
+    {
+      "turn_id": 2,
+      "parent_turn_id": 1,
+      "role": "assistant",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "(assistant response)"
+        }
+      ],
+      "timestamp": "2026-03-04T20:53:01.278Z",
+      "input_tokens": 25477,
+      "output_tokens": 11,
+      "cumulative_tokens": 25520
+    },
+    {
+      "turn_id": 3,
+      "parent_turn_id": 2,
+      "role": "assistant",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "You can run Claude Code with auto-accepted permissions using the `--dangerously-skip-permissions` flag:\n\n```bash\nclaude --dangerously-skip-permissions\n```\n\nThis skips all permission prompts. As the name implies, use it carefully \u2014 it will auto-approve all tool calls (file writes, bash commands, etc.) without asking.\n\n**Other options:**\n\n- **`/allowed-tools`** \u2014 Allowlist specific tools so they don't prompt each time (e.g., allow `Bash(npm test)`)\n- **`--allowedTools`** flag \u2014 Pass allowed tool patterns at startup\n- **Trust settings in `.claude/settings.json`** \u2014 Configure persistent permissions per-project\n\nWould you like help setting up specific permission rules instead of skipping all of them?"
+        }
+      ],
+      "timestamp": "2026-03-04T20:53:05.965Z",
+      "input_tokens": 25477,
+      "output_tokens": 263,
+      "cumulative_tokens": 51260
+    },
+    {
+      "turn_id": 4,
+      "parent_turn_id": 3,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "AfriCal\n/Users/romirjain/Desktop/building projects/AfriCal/AfriCal/Home/HomeView.swift\n/Users/romirjain/Desktop/building projects/AfriCal/AfriCal/Home/HomeView.swift:453:10 Referencing instance method 'onChange(of:perform:)' on 'Optional' requires that 'AnalysisResult' conform to 'Equatable'\n\n/Users/romirjain/Desktop/building projects/AfriCal/AfriCal/Onboarding/FinalCalculateView.swift\n/Users/romirjain/Desktop/building projects/AfriCal/AfriCal/Onboarding/FinalCalculateView.swift:33:26 'animation' was deprecated in iOS 15.0: Use withAnimation or animation(_:value:) instead.\n\n/Users/romirjain/Desktop/building projects/AfriCal/AfriCal/Onboarding/ReviewScreenView.swift\n/Users/romirjain/Desktop/building projects/AfriCal/AfriCal/Onboarding/ReviewScreenView.swift:68:75 'windows' was deprecated in iOS 15.0: Use UIWindowScene.windows on a relevant window scene instead\n"
+        }
+      ],
+      "timestamp": "2026-03-04T23:47:43.243Z",
+      "input_tokens": 100,
+      "output_tokens": 0,
+      "cumulative_tokens": 51360
+    },
+    {
+      "turn_id": 5,
+      "parent_turn_id": 4,
+      "role": "assistant",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "(assistant response)"
+        }
+      ],
+      "timestamp": "2026-03-04T23:47:47.190Z",
+      "input_tokens": 26047,
+      "output_tokens": 9,
+      "cumulative_tokens": 77416
+    },
+    {
+      "turn_id": 6,
+      "parent_turn_id": 5,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "code",
+          "text": "[Read] {\"file_path\": \"/Users/romirjain/Desktop/building projects/AfriCal/AfriCal/Home/HomeView.swift\", \"offset\": 445, \"limit\": 20}",
+          "metadata": {
+            "tool_name": "Read"
+          }
+        }
+      ],
+      "timestamp": "2026-03-04T23:47:48.154Z",
+      "input_tokens": 26047,
+      "output_tokens": 9,
+      "cumulative_tokens": 103472
+    },
+    {
+      "turn_id": 7,
+      "parent_turn_id": 6,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": ""
+        }
+      ],
+      "timestamp": "2026-03-04T23:47:48.176Z",
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cumulative_tokens": 103472
+    },
+    {
+      "turn_id": 8,
+      "parent_turn_id": 7,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "code",
+          "text": "[Read] {\"file_path\": \"/Users/romirjain/Desktop/building projects/AfriCal/AfriCal/Onboarding/FinalCalculateView.swift\", \"offset\": 25, \"limit\": 20}",
+          "metadata": {
+            "tool_name": "Read"
+          }
+        }
+      ],
+      "timestamp": "2026-03-04T23:47:49.029Z",
+      "input_tokens": 26047,
+      "output_tokens": 9,
+      "cumulative_tokens": 129528
+    },
+    {
+      "turn_id": 9,
+      "parent_turn_id": 8,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": ""
+        }
+      ],
+      "timestamp": "2026-03-04T23:47:49.062Z",
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cumulative_tokens": 129528
+    },
+    {
+      "turn_id": 10,
+      "parent_turn_id": 9,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "code",
+          "text": "[Read] {\"file_path\": \"/Users/romirjain/Desktop/building projects/AfriCal/AfriCal/Onboarding/ReviewScreenView.swift\", \"offset\": 60, \"limit\": 20}",
+          "metadata": {
+            "tool_name": "Read"
+          }
+        }
+      ],
+      "timestamp": "2026-03-04T23:47:49.379Z",
+      "input_tokens": 26047,
+      "output_tokens": 352,
+      "cumulative_tokens": 155927
+    },
+    {
+      "turn_id": 11,
+      "parent_turn_id": 10,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": ""
+        }
+      ],
+      "timestamp": "2026-03-04T23:47:49.387Z",
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cumulative_tokens": 155927
+    },
+    {
+      "turn_id": 12,
+      "parent_turn_id": 11,
+      "role": "assistant",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "Let me find the `AnalysisResult` type and the `windows` usage."
+        }
+      ],
+      "timestamp": "2026-03-04T23:47:52.676Z",
+      "input_tokens": 27203,
+      "output_tokens": 1,
+      "cumulative_tokens": 183131
+    },
+    {
+      "turn_id": 13,
+      "parent_turn_id": 12,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "[Grep] {\"pattern\": \"struct AnalysisResult\", \"path\": \"/Users/romirjain/Desktop/building projects/AfriCal\"}",
+          "metadata": {
+            "tool_name": "Grep"
+          }
+        }
+      ],
+      "timestamp": "2026-03-04T23:47:53.221Z",
+      "input_tokens": 27203,
+      "output_tokens": 1,
+      "cumulative_tokens": 210335
+    },
+    {
+      "turn_id": 14,
+      "parent_turn_id": 13,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": ""
+        }
+      ],
+      "timestamp": "2026-03-04T23:47:53.560Z",
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cumulative_tokens": 210335
+    },
+    {
+      "turn_id": 15,
+      "parent_turn_id": 14,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "[Grep] {\"pattern\": \"\\\\.windows\", \"path\": \"/Users/romirjain/Desktop/building projects/AfriCal/AfriCal/Onboarding/ReviewScreenView.swift\", \"output_mode\": \"content\"}",
+          "metadata": {
+            "tool_name": "Grep"
+          }
+        }
+      ],
+      "timestamp": "2026-03-04T23:47:54.113Z",
+      "input_tokens": 27203,
+      "output_tokens": 214,
+      "cumulative_tokens": 237752
+    },
+    {
+      "turn_id": 16,
+      "parent_turn_id": 15,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": ""
+        }
+      ],
+      "timestamp": "2026-03-04T23:47:54.423Z",
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cumulative_tokens": 237752
+    },
+    {
+      "turn_id": 17,
+      "parent_turn_id": 16,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "log",
+          "text": "[Grep] {\"pattern\": \"struct AnalysisResult\", \"path\": \"/Users/romirjain/Desktop/building projects/AfriCal/AfriCal/Home/HomeView.swift\", \"output_mode\": \"content\", \"-A\": 10}",
+          "metadata": {
+            "tool_name": "Grep"
+          }
+        }
+      ],
+      "timestamp": "2026-03-04T23:47:57.507Z",
+      "input_tokens": 27515,
+      "output_tokens": 139,
+      "cumulative_tokens": 265406
+    },
+    {
+      "turn_id": 18,
+      "parent_turn_id": 17,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": ""
+        }
+      ],
+      "timestamp": "2026-03-04T23:47:57.852Z",
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cumulative_tokens": 265406
+    },
+    {
+      "turn_id": 19,
+      "parent_turn_id": 18,
+      "role": "assistant",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "Now I have everything. Let me apply all three fixes."
+        }
+      ],
+      "timestamp": "2026-03-04T23:48:01.787Z",
+      "input_tokens": 27768,
+      "output_tokens": 1,
+      "cumulative_tokens": 293175
+    },
+    {
+      "turn_id": 20,
+      "parent_turn_id": 19,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "code",
+          "text": "[Edit] {\"replace_all\": false, \"file_path\": \"/Users/romirjain/Desktop/building projects/AfriCal/AfriCal/Home/HomeView.swift\", \"old_string\": \"struct AnalysisResult: Codable {\", \"new_string\": \"struct AnalysisResult: Codable, Equatable {\"}",
+          "metadata": {
+            "tool_name": "Edit"
+          }
+        }
+      ],
+      "timestamp": "2026-03-04T23:48:02.702Z",
+      "input_tokens": 27768,
+      "output_tokens": 1,
+      "cumulative_tokens": 320944
+    },
+    {
+      "turn_id": 21,
+      "parent_turn_id": 20,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "code",
+          "text": "[Edit] {\"replace_all\": false, \"file_path\": \"/Users/romirjain/Desktop/building projects/AfriCal/AfriCal/Onboarding/FinalCalculateView.swift\", \"old_string\": \".animation(.none)\", \"new_string\": \".animation(.none, value: currentText)\"}",
+          "metadata": {
+            "tool_name": "Edit"
+          }
+        }
+      ],
+      "timestamp": "2026-03-04T23:48:03.575Z",
+      "input_tokens": 27768,
+      "output_tokens": 1,
+      "cumulative_tokens": 348713
+    },
+    {
+      "turn_id": 22,
+      "parent_turn_id": 21,
+      "role": "tool",
+      "content_blocks": [
+        {
+          "type": "code",
+          "text": "[Edit] {\"replace_all\": false, \"file_path\": \"/Users/romirjain/Desktop/building projects/AfriCal/AfriCal/Onboarding/ReviewScreenView.swift\", \"old_string\": \"if let windowScene = UIApplication.shared.windows.first?.windowScene {\", \"new_string\": \"if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene {\"}",
+          "metadata": {
+            "tool_name": "Edit"
+          }
+        }
+      ],
+      "timestamp": "2026-03-04T23:48:04.753Z",
+      "input_tokens": 27768,
+      "output_tokens": 418,
+      "cumulative_tokens": 376899
+    },
+    {
+      "turn_id": 23,
+      "parent_turn_id": 22,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": ""
+        }
+      ],
+      "timestamp": "2026-03-04T23:48:54.902Z",
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cumulative_tokens": 376899
+    },
+    {
+      "turn_id": 24,
+      "parent_turn_id": 23,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": ""
+        }
+      ],
+      "timestamp": "2026-03-04T23:48:54.994Z",
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cumulative_tokens": 376899
+    },
+    {
+      "turn_id": 25,
+      "parent_turn_id": 24,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": ""
+        }
+      ],
+      "timestamp": "2026-03-04T23:48:55.006Z",
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cumulative_tokens": 376899
+    },
+    {
+      "turn_id": 26,
+      "parent_turn_id": 25,
+      "role": "assistant",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "All three fixes applied:\n\n1. **HomeView.swift:453** \u2014 Added `Equatable` conformance to `AnalysisResult` so `.onChange(of:)` works\n2. **FinalCalculateView.swift:33** \u2014 Changed `.animation(.none)` to `.animation(.none, value: currentText)` (iOS 15+ API)\n3. **ReviewScreenView.swift:68** \u2014 Replaced deprecated `UIApplication.shared.windows` with `UIApplication.shared.connectedScenes.first as? UIWindowScene`"
+        }
+      ],
+      "timestamp": "2026-03-04T23:48:59.561Z",
+      "input_tokens": 28551,
+      "output_tokens": 129,
+      "cumulative_tokens": 405579
+    }
+  ],
+  "replay": {
+    "prefix_group_id": "grp_claude_c7b74c96",
+    "prefix_overlap_ratio": 0.923,
+    "reuse_distance_turns": 2,
+    "reuse_distance_seconds": 10477,
+    "estimated_kv_bytes_peak": 64892640,
+    "branch_count": 0,
+    "idle_windows_ms": [
+      0,
+      4866,
+      4687,
+      10477278,
+      3947,
+      964,
+      22,
+      853,
+      33,
+      317,
+      8,
+      3289,
+      545,
+      339,
+      553,
+      310,
+      3084,
+      345,
+      3935,
+      915
+    ],
+    "arrival_pattern": "reactivation_heavy"
+  },
+  "kv_pressure": {
+    "cold_start": true,
+    "warm_cache_hit_rate": 0.7383104429126552,
+    "estimated_offload_bytes": 32446320,
+    "estimated_reload_bytes": 16223160,
+    "tier": "CPU",
+    "cache_expectation": "reactivated",
+    "eviction_risk_score": 0.95
+  },
+  "provenance": {
+    "generator_model": "claude-code-real",
+    "generator_prompt_version": "real-transcript-v1",
+    "pipeline_version": "0.1.0"
+  }
+}

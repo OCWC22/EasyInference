@@ -1,0 +1,110 @@
+{
+  "trace_id": "real_claude_f7cfbb64-9ea",
+  "dataset_version": "0.1.0",
+  "source_type": "real",
+  "workload_family": "long_chat",
+  "language": "en",
+  "tokenizer": {
+    "name": "cl100k_base",
+    "version": "1.0"
+  },
+  "session": {
+    "session_id": "f7cfbb64-9ea5-4a51-a4b9-cd0c553ee949",
+    "goal": "hi",
+    "contains_tools": false,
+    "contains_rag": false,
+    "contains_branching": false,
+    "contains_multimodal": false
+  },
+  "turns": [
+    {
+      "turn_id": 1,
+      "parent_turn_id": null,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "hi"
+        }
+      ],
+      "timestamp": "2026-03-11T15:54:10.246Z",
+      "input_tokens": 2,
+      "output_tokens": 0,
+      "cumulative_tokens": 2
+    },
+    {
+      "turn_id": 2,
+      "parent_turn_id": 1,
+      "role": "assistant",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "API Error: 401 {\"type\":\"error\",\"error\":{\"type\":\"authentication_error\",\"message\":\"Invalid authentication credentials\"},\"request_id\":\"req_011CYwZdifXg1ojDXEsDq2Cj\"} \u00b7 Please run /login"
+        }
+      ],
+      "timestamp": "2026-03-11T15:54:13.283Z",
+      "input_tokens": 10,
+      "output_tokens": 10,
+      "cumulative_tokens": 22
+    },
+    {
+      "turn_id": 3,
+      "parent_turn_id": 2,
+      "role": "user",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "j"
+        }
+      ],
+      "timestamp": "2026-03-11T15:54:17.096Z",
+      "input_tokens": 2,
+      "output_tokens": 0,
+      "cumulative_tokens": 24
+    },
+    {
+      "turn_id": 4,
+      "parent_turn_id": 3,
+      "role": "assistant",
+      "content_blocks": [
+        {
+          "type": "text",
+          "text": "API Error: 401 {\"type\":\"error\",\"error\":{\"type\":\"authentication_error\",\"message\":\"Invalid authentication credentials\"},\"request_id\":\"req_011CYwZegMQGdMiJq5SofFLH\"} \u00b7 Please run /login"
+        }
+      ],
+      "timestamp": "2026-03-11T15:54:26.292Z",
+      "input_tokens": 10,
+      "output_tokens": 10,
+      "cumulative_tokens": 44
+    }
+  ],
+  "replay": {
+    "prefix_group_id": "grp_claude_f7cfbb64",
+    "prefix_overlap_ratio": 0.391,
+    "reuse_distance_turns": 2,
+    "reuse_distance_seconds": 9,
+    "estimated_kv_bytes_peak": 7040,
+    "branch_count": 0,
+    "idle_windows_ms": [
+      0,
+      3037,
+      3813,
+      9196
+    ],
+    "arrival_pattern": "steady_interactive"
+  },
+  "kv_pressure": {
+    "cold_start": true,
+    "warm_cache_hit_rate": 0.31304347826086953,
+    "estimated_offload_bytes": 0,
+    "estimated_reload_bytes": 0,
+    "tier": "HBM",
+    "cache_expectation": "warm",
+    "eviction_risk_score": 0.00022
+  },
+  "provenance": {
+    "generator_model": "claude-code-real",
+    "generator_prompt_version": "real-transcript-v1",
+    "pipeline_version": "0.1.0"
+  }
+}
